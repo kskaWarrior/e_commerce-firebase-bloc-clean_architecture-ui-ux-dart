@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/widgets/app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
@@ -12,8 +13,62 @@ class PasswordPage extends StatefulWidget {
   State<PasswordPage> createState() => _PasswordPageState();
 }
 
-class _PasswordPageState extends State<PasswordPage> {
+class _PasswordPageState extends State<PasswordPage>
+    with SingleTickerProviderStateMixin {
   bool _obscureText = true;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+
+  // Typewriter effect variables
+  final String _typewriterText = 'Type your password';
+  String _displayedText = '';
+  int _currentIndex = 0;
+  Timer? _typewriterTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(-1, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutBack,
+    ));
+
+    _slideController.forward();
+
+    // Start typewriter effect
+    _startTypewriter();
+  }
+
+  void _startTypewriter() {
+    _displayedText = '';
+    _currentIndex = 0;
+    _typewriterTimer?.cancel();
+    _typewriterTimer =
+        Timer.periodic(const Duration(milliseconds: 45), (timer) {
+      if (_currentIndex < _typewriterText.length) {
+        setState(() {
+          _displayedText += _typewriterText[_currentIndex];
+          _currentIndex++;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    _typewriterTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +88,15 @@ class _PasswordPageState extends State<PasswordPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Welcome back to',
-                    style: TextStyle(
-                      fontFamily: 'CircularStd',
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  SlideTransition(
+                    position: _slideAnimation,
+                    child: const Text(
+                      'Welcome back to',
+                      style: TextStyle(
+                        fontFamily: 'CircularStd',
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -63,7 +121,7 @@ class _PasswordPageState extends State<PasswordPage> {
                           fontSize: 16,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Type your password',
+                          hintText: _displayedText,
                           prefixIcon: const Icon(Icons.password_outlined),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -113,7 +171,7 @@ class _PasswordPageState extends State<PasswordPage> {
                         ),
                         textStyle: const TextStyle(
                           fontFamily: 'CircularStd',
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

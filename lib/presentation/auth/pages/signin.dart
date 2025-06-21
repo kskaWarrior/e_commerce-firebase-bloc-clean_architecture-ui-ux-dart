@@ -1,12 +1,92 @@
+import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
+import 'package:flutter/animation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-class SigninPage extends StatelessWidget {
+class SigninPage extends StatefulWidget {
   const SigninPage({super.key});
+
+  @override
+  State<SigninPage> createState() => _SigninPageState();
+}
+
+class _SigninPageState extends State<SigninPage>
+    with SingleTickerProviderStateMixin {
+  final String _typewriterText = 'Sign in with your email';
+  String _displayedText = '';
+  int _currentIndex = 0;
+  Timer? _timer;
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+  Timer? _shakeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTypewriter();
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+          milliseconds: 700), // Longer duration for floaty effect
+    );
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+          tween: Tween(begin: 0.0, end: -4.0)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 1),
+      TweenSequenceItem(
+          tween: Tween(begin: -4.0, end: 4.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: 4.0, end: -3.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: -3.0, end: 2.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: 2.0, end: -1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: -1.0, end: 0.0)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 1),
+    ]).animate(_shakeController);
+
+    // Start shake every 5 seconds
+    _shakeTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _shakeController.forward(from: 0);
+    });
+  }
+
+  void _startTypewriter() {
+    _timer = Timer.periodic(const Duration(milliseconds: 90), (timer) {
+      if (_currentIndex < _typewriterText.length) {
+        setState(() {
+          _displayedText += _typewriterText[_currentIndex];
+          _currentIndex++;
+        });
+      } else {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _shakeTimer?.cancel();
+    _shakeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +121,13 @@ class SigninPage extends StatelessWidget {
                     elevation: 4,
                     borderRadius: BorderRadius.circular(16),
                     child: TextField(
+                      style: const TextStyle(
+                        fontFamily: 'CircularStd',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
-                        hintText: 'Signin with your email',
+                        hintText: _displayedText,
                         prefixIcon: const Icon(Icons.email_outlined),
                         filled: true,
                         fillColor: Colors.white,
@@ -87,30 +172,52 @@ class SigninPage extends StatelessWidget {
                   left: 32,
                   right: 30,
                   bottom: 85,
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Don\'t have an account? ',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 16,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Sign Up!',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          recognizer: TapGestureRecognizer()..onTap = () {
-                            AppNavigator.push(
-                              context,
-                              const SignUpPage(),
+                  child: (_shakeController == null)
+                      ? const SizedBox.shrink()
+                      : AnimatedBuilder(
+                          animation: _shakeController,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: Offset(
+                                  _shakeController.isAnimating
+                                      ? (_shakeAnimation.value *
+                                          ((_shakeController.value < 0.5)
+                                              ? 1
+                                              : -1))
+                                      : 0,
+                                  0),
+                              child: child,
                             );
                           },
+                          child: RichText(
+                            text: TextSpan(
+                              text: 'Don\'t have an account? ',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 16,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Sign Up!',
+                                  style: TextStyle(
+                                    fontFamily: 'CircularStd',
+                                    fontSize: 16,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      AppNavigator.push(
+                                        context,
+                                        const SignUpPage(),
+                                      );
+                                    },
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),

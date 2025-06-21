@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/widgets/app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/forgot_password.dart';
@@ -8,11 +9,59 @@ class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  State<SignUpPage> createState() => _PasswordPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _PasswordPageState extends State<SignUpPage> {
+class _SignUpPageState extends State<SignUpPage> {
   bool _obscureText = true;
+
+  // Typewriter state for each field
+  final List<String> _typewriterTexts = [
+    'Name',
+    'Phone',
+    'Email',
+    'Password',
+  ];
+  final List<String> _displayedTexts = ['', '', '', ''];
+  int _currentField = 0;
+  int _currentChar = 0;
+  Timer? _typewriterTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTypewriter(0);
+  }
+
+  void _startTypewriter(int fieldIndex) {
+    _typewriterTimer?.cancel();
+    _currentField = fieldIndex;
+    _currentChar = 0;
+    _displayedTexts[fieldIndex] = '';
+    _typewriterTimer =
+        Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (_currentChar < _typewriterTexts[fieldIndex].length) {
+        setState(() {
+          _displayedTexts[fieldIndex] +=
+              _typewriterTexts[fieldIndex][_currentChar];
+          _currentChar++;
+        });
+      } else {
+        timer.cancel();
+        if (fieldIndex + 1 < _typewriterTexts.length) {
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _startTypewriter(fieldIndex + 1);
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _typewriterTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +70,13 @@ class _PasswordPageState extends State<SignUpPage> {
         title: 'Signing Up',
         hideBack: false,
       ),
-      resizeToAvoidBottomInset: true, // Ensures the body resizes when keyboard appears
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: SingleChildScrollView(
           child: SizedBox(
             height: MediaQuery.of(context).size.height -
                 MediaQuery.of(context).padding.top -
-                kToolbarHeight, // subtract AppBar height
+                kToolbarHeight,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -56,6 +105,7 @@ class _PasswordPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 40),
+                  // Name
                   SizedBox(
                     height: 55,
                     width: 350,
@@ -63,8 +113,12 @@ class _PasswordPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        style: const TextStyle(
+                          fontFamily: 'CircularStd',
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'Name',
+                          hintText: _displayedTexts[0],
                           prefixIcon: const Icon(Icons.person_outline),
                           filled: true,
                           fillColor: Colors.white,
@@ -79,6 +133,7 @@ class _PasswordPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Phone
                   SizedBox(
                     height: 55,
                     width: 350,
@@ -86,8 +141,12 @@ class _PasswordPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        style: const TextStyle(
+                          fontFamily: 'CircularStd',
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'Phone',
+                          hintText: _displayedTexts[1],
                           prefixIcon: const Icon(Icons.phone_outlined),
                           filled: true,
                           fillColor: Colors.white,
@@ -102,6 +161,7 @@ class _PasswordPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Email
                   SizedBox(
                     height: 55,
                     width: 350,
@@ -109,8 +169,12 @@ class _PasswordPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        style: const TextStyle(
+                          fontFamily: 'CircularStd',
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'Email',
+                          hintText: _displayedTexts[2],
                           prefixIcon: const Icon(Icons.email_outlined),
                           filled: true,
                           fillColor: Colors.white,
@@ -125,6 +189,7 @@ class _PasswordPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Password
                   SizedBox(
                     height: 55,
                     width: 350,
@@ -132,8 +197,12 @@ class _PasswordPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        style: const TextStyle(
+                          fontFamily: 'CircularStd',
+                          fontSize: 16,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'Password',
+                          hintText: _displayedTexts[3],
                           prefixIcon: const Icon(Icons.password_outlined),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -182,6 +251,7 @@ class _PasswordPageState extends State<SignUpPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         textStyle: const TextStyle(
+                          fontFamily: 'CircularStd',
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
