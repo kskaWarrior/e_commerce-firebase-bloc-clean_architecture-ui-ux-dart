@@ -3,7 +3,6 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
-import 'package:flutter/animation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -172,6 +171,7 @@ class _SigninPageState extends State<SigninPage>
                   left: 32,
                   right: 30,
                   bottom: 85,
+                  // ignore: unnecessary_null_comparison
                   child: (_shakeController == null)
                       ? const SizedBox.shrink()
                       : AnimatedBuilder(

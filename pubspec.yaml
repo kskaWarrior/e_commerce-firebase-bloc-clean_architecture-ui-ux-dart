@@ -30,6 +30,7 @@ environment:
 dependencies:
   firebase_core: ^2.20.0
   firebase_auth: 4.16.0
+  cloud_firestore: ^4.15.8
   flutter:
     sdk: flutter
 
@@ -39,17 +40,18 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_bloc: ^9.1.1
   dartz: ^0.10.1
+  get_it: ^8.0.3
 
 dev_dependencies:
-flutter_test:
-  sdk: flutter
+  flutter_test:
+    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

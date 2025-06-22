@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/button/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/widgets/app_bar.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/forgot_password.dart';
-import 'package:flutter/gestures.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/app_bar.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/gender_and_age.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -15,6 +17,12 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   bool _obscureText = true;
 
+  // Add controllers for each TextField
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
   // Typewriter state for each field
   final List<String> _typewriterTexts = [
     'Name',
@@ -23,6 +31,7 @@ class _SignUpPageState extends State<SignUpPage> {
     'Password',
   ];
   final List<String> _displayedTexts = ['', '', '', ''];
+  // ignore: unused_field
   int _currentField = 0;
   int _currentChar = 0;
   Timer? _typewriterTimer;
@@ -60,6 +69,11 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _typewriterTimer?.cancel();
+    // Dispose controllers
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -84,7 +98,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                      'Only one step away from joining us!',
+                      'Only a few steps!',
                       style: TextStyle(
                         fontFamily: 'CircularStd',
                         fontSize: 20,
@@ -113,6 +127,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _nameController,
                         style: const TextStyle(
                           fontFamily: 'CircularStd',
                           fontSize: 16,
@@ -122,7 +137,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           prefixIcon: const Icon(Icons.person_outline),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -141,6 +157,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _phoneController,
                         style: const TextStyle(
                           fontFamily: 'CircularStd',
                           fontSize: 16,
@@ -150,7 +167,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           prefixIcon: const Icon(Icons.phone_outlined),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -169,6 +187,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _emailController,
                         style: const TextStyle(
                           fontFamily: 'CircularStd',
                           fontSize: 16,
@@ -178,7 +197,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           prefixIcon: const Icon(Icons.email_outlined),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -197,6 +217,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _passwordController,
                         style: const TextStyle(
                           fontFamily: 'CircularStd',
                           fontSize: 16,
@@ -211,11 +232,15 @@ class _SignUpPageState extends State<SignUpPage> {
                                 width: 2,
                                 height: 24,
                                 color: Colors.grey.shade500,
-                                margin: const EdgeInsets.symmetric(vertical: 10,),
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                               ),
                               IconButton(
                                 icon: Icon(
-                                  _obscureText ? Icons.visibility_off : Icons.visibility,
+                                  _obscureText
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -227,7 +252,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -257,9 +283,26 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                       ),
                       onPressed: () {
-                        // TODO: Add your sign in logic here
+                        AppNavigator.push(
+                          context,
+                          BlocProvider(
+                            create: (context) => ButtonCubit(),
+                            child: GenderAndAgePage(
+                              userCreationReq: UserCreationReq(
+                                name: _nameController.text,
+                                phone: _phoneController.text,
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                              ),
+                            ),
+                          ),
+                        );
+                        print('Name: ${_nameController.text}');
+                        print('Phone: ${_phoneController.text}');
+                        print('Email: ${_emailController.text}');
+                        print('Password: ${_passwordController.text}');
                       },
-                      child: const Text('Sign Up'),
+                      child: const Text('Continue'),
                     ),
                   ),
                 ],
