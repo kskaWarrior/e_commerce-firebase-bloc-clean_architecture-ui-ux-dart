@@ -8,4 +8,5 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> signUp(
       UserCreationReq userCreationReq);
   Future<Either<Failure, String>> signOut();
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
 }

@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 abstract class AuthFirebaseService {
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
   Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
   Future<Either<Failure, String>> signOut();
   Future<bool> isSignedIn();
   Future<String?> getCurrentUserId();
@@ -57,7 +58,6 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
 
       return Future.value(const Right('Created user with success!')); // Placeholder for success
     } catch (e) {
-      print((e).toString()); // Log the error for debugging
       // Handle exceptions and return a Failure
       if (e is FirebaseAuthException) {
         switch (e.code) {
@@ -95,4 +95,26 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
   Future<String?> getCurrentUserEmail() {
     throw UnimplementedError();
   }
+  
+  @override
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      return Future.value(const Right('Password reset email sent! Check it out ;)')); // Placeholder for success
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'user-not-found':
+            return Future.value(Left(Failure(error: 'User not found')));
+          case 'invalid-email':
+            return Future.value(Left(Failure(error: 'Invalid email')));
+          default:
+            return Future.value(
+                Left(Failure(error: e.message ?? 'Unknown error')));
+        }
+      }
+      return Future.value(Left(Failure(error: e.toString())));
+    }
+  }
+  
 }

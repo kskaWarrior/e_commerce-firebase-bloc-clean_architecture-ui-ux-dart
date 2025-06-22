@@ -1,6 +1,7 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/repository/auth_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/source/auth_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/send_password_reset_email.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/signup.dart';
 import 'package:get_it/get_it.dart';
@@ -21,4 +22,5 @@ Future<void> init() async {
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
   sl.registerLazySingleton<SigninUseCase>(() => SigninUseCase());
+  sl.registerLazySingleton<SendPasswordEmailResetUseCase>(() => SendPasswordEmailResetUseCase());
 }

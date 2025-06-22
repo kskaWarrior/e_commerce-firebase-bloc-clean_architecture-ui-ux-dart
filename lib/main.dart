@@ -28,10 +28,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(AppTheme.defaultTheme),
         darkTheme: AppTheme.darkTheme,
-        home: const 
-        //PasswordPage()
-        //SigninPage()
-        SplashPage(),
+        home: const SplashPage(),
       ),
     );
   }

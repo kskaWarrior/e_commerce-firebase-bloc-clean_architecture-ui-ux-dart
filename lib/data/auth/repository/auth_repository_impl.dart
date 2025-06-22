@@ -21,4 +21,9 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<Either<Failure, String>> signOut() {
     throw UnimplementedError();
   }
+  
+  @override
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email) async {
+    return await sl<AuthFirebaseService>().sendPasswordEmailResetUseCase(email);
+  }
 }

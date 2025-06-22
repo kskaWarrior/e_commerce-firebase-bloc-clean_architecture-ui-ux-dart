@@ -1,6 +1,7 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/app_colors.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/forgot_password.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/home.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password_forgot.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/pages/bloc/splash_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/pages/bloc/splash_state.dart';
@@ -22,7 +23,7 @@ class SplashPage extends StatelessWidget {
         } else if (state is Authenticated) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+            MaterialPageRoute(builder: (context) => const HomePage()),
           );
         }
       },
@@ -30,9 +31,9 @@ class SplashPage extends StatelessWidget {
         backgroundColor: const Color(AppColors.lightBackground),
         body: Center(
           child: Image.asset(
-            AppImages.appLogo, // Ensure this path is correct
-            width: 200, // Adjust the width as needed
-            height: 200, // Adjust the height as needed
+            AppImages.appLogo,
+            width: 200,
+            height: 200,
           ),
         ),
       ),
