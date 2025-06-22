@@ -16,6 +16,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   int _currentIndex = 0;
   Timer? _typewriterTimer;
 
+  final TextEditingController _emailController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +44,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   void dispose() {
     _typewriterTimer?.cancel();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -92,6 +95,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _emailController,
                         decoration: InputDecoration(
                           hintText: _displayedText,
                           prefixIcon: const Icon(Icons.email_outlined),
@@ -132,7 +136,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         ),
                       ),
                       onPressed: () {
-                        // TODO: Add your reset password logic here
+                        if (_emailController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter your email.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
                       },
                       child: const Text(
                         'Reset Password',

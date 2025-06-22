@@ -16,8 +16,28 @@ abstract class AuthFirebaseService {
 
 class AuthFirebaseServiceImpl implements AuthFirebaseService {
   @override
-  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) {
-    throw UnimplementedError();
+  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: userSigninReq.email,
+        password: userSigninReq.password!,
+      );
+
+      return Future.value(const Right('Login with success!')); // Placeholder for success
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'invalid-credentials':
+            return Future.value(Left(Failure(error: 'Invalid credentials')));
+          case 'invalid-email':
+            return Future.value(Left(Failure(error: 'Invalid email')));
+          default:
+            return Future.value(
+                Left(Failure(error: e.message ?? 'Unknown error')));
+        }
+      }
+      return Future.value(Left(Failure(error: e.toString())));
+    }
   }
 
   @override

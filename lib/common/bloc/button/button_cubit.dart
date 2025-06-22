@@ -9,7 +9,6 @@ class ButtonCubit extends Cubit<ButtonState>{
   Future<void> execute ({dynamic params, required UseCase useCase}) async {
     try {
       emit(LoadingState());
-      //await Future.delayed(const Duration(milliseconds: 2000));
       Either result = await useCase.call(params);
       result.fold(
         (failure) => emit(

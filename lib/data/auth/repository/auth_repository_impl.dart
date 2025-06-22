@@ -8,13 +8,13 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_loc
 
 class AuthRepositoryImpl extends AuthRepository {
   @override
-  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) {
-    throw UnimplementedError();
+  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) async {
+    return await sl<AuthFirebaseService>().signIn(userSigninReq);
   }
 
   @override
-  Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq) {
-    return sl<AuthFirebaseService>().signUp(userCreationReq);
+  Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq) async {
+    return await sl<AuthFirebaseService>().signUp(userCreationReq);
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/app_colors.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/forgot_password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/pages/bloc/splash_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/pages/bloc/splash_state.dart';
@@ -17,9 +18,12 @@ class SplashPage extends StatelessWidget {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const SigninPage()),
-          ); // Adjust the route as needed
+          );
         } else if (state is Authenticated) {
-          Navigator.pushReplacementNamed(context, '/home'); // TODO implementar home page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+          );
         }
       },
       child: Scaffold(

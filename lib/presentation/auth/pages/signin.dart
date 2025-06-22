@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/button/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SigninPage extends StatefulWidget {
   const SigninPage({super.key});
@@ -22,6 +25,8 @@ class _SigninPageState extends State<SigninPage>
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   Timer? _shakeTimer;
+
+  final TextEditingController _emailController = TextEditingController();
 
   @override
   void initState() {
@@ -84,13 +89,15 @@ class _SigninPageState extends State<SigninPage>
     _timer?.cancel();
     _shakeTimer?.cancel();
     _shakeController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // Ensures the body resizes when keyboard appears
+      resizeToAvoidBottomInset:
+          true, // Ensures the body resizes when keyboard appears
       body: SafeArea(
         child: SingleChildScrollView(
           // This prevents overflow by allowing scrolling when keyboard is open
@@ -120,6 +127,7 @@ class _SigninPageState extends State<SigninPage>
                     elevation: 4,
                     borderRadius: BorderRadius.circular(16),
                     child: TextField(
+                      controller: _emailController,
                       style: const TextStyle(
                         fontFamily: 'CircularStd',
                         fontSize: 16,
@@ -130,7 +138,8 @@ class _SigninPageState extends State<SigninPage>
                         prefixIcon: const Icon(Icons.email_outlined),
                         filled: true,
                         fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 20, horizontal: 16),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -159,9 +168,25 @@ class _SigninPageState extends State<SigninPage>
                       ),
                     ),
                     onPressed: () {
+                      if (_emailController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Please enter your email.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
                       AppNavigator.push(
                         context,
-                        const PasswordPage(),
+                        BlocProvider(
+                          create: (context) => ButtonCubit(),
+                          child: PasswordPage(
+                            userSigninReq: UserSigninReq(
+                              email: _emailController.text,
+                            ),
+                          ),
+                        ),
                       );
                     },
                     child: const Text('Continue'),

@@ -283,7 +283,40 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                       ),
                       onPressed: () {
-                        AppNavigator.push(
+                        if (_nameController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter your name.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        } else if (_phoneController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter your phone number.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        } else if (_emailController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter your email.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        } else if (_passwordController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Please enter your password.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        return AppNavigator.push(
                           context,
                           BlocProvider(
                             create: (context) => ButtonCubit(),
@@ -297,10 +330,6 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                           ),
                         );
-                        print('Name: ${_nameController.text}');
-                        print('Phone: ${_phoneController.text}');
-                        print('Email: ${_emailController.text}');
-                        print('Password: ${_passwordController.text}');
                       },
                       child: const Text('Continue'),
                     ),

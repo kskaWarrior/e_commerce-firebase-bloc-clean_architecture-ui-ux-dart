@@ -1,13 +1,22 @@
 import 'dart:async';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/button/button_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/button/button_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/app_bar.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/basic_reactive_button.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/forgot_password.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PasswordPage extends StatefulWidget {
-  const PasswordPage({super.key});
+  final UserSigninReq? userSigninReq;
+
+  const PasswordPage({super.key, required this.userSigninReq});
 
   @override
   State<PasswordPage> createState() => _PasswordPageState();
@@ -24,6 +33,8 @@ class _PasswordPageState extends State<PasswordPage>
   String _displayedText = '';
   int _currentIndex = 0;
   Timer? _typewriterTimer;
+
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -67,6 +78,7 @@ class _PasswordPageState extends State<PasswordPage>
   void dispose() {
     _slideController.dispose();
     _typewriterTimer?.cancel();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -77,138 +89,177 @@ class _PasswordPageState extends State<PasswordPage>
         title: 'Signing In',
         hideBack: false,
       ),
-      resizeToAvoidBottomInset: true, // Ensures the body resizes when keyboard appears
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height -
-                MediaQuery.of(context).padding.top -
-                kToolbarHeight, // subtract AppBar height
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SlideTransition(
-                    position: _slideAnimation,
-                    child: const Text(
-                      'Welcome back to',
-                      style: TextStyle(
-                        fontFamily: 'CircularStd',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: 350,
-                    child: Image.asset(
-                      AppImages.appLogo,
-                      width: 200,
-                      height: 200,
-                    ),
-                  ),
-                  const SizedBox(height: 100),
-                  SizedBox(
-                    height: 55,
-                    width: 350,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(16),
-                      child: TextField(
-                        style: const TextStyle(
-                          fontFamily: 'CircularStd',
-                          fontSize: 16,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: _displayedText,
-                          prefixIcon: const Icon(Icons.password_outlined),
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 2,
-                                height: 24,
-                                color: Colors.grey.shade500,
-                                margin: const EdgeInsets.symmetric(vertical: 10,),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  _obscureText ? Icons.visibility_off : Icons.visibility,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscureText = !_obscureText;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        keyboardType: TextInputType.visiblePassword,
-                        obscureText: _obscureText,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 55,
-                    width: 350,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontFamily: 'CircularStd',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: () {
-                        // TODO: Add your sign in logic here
-                      },
-                      child: const Text('Sign In'),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  RichText(
-                    text: TextSpan(
-                      text: 'Forgot your password? ',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 16,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Click here!',
+      resizeToAvoidBottomInset:
+          true, // Ensures the body resizes when keyboard appears
+      body: BlocProvider(
+        create: (context) => ButtonCubit(),
+        child: BlocListener<ButtonCubit, ButtonState>(
+          listener: (context, state) {
+            if (state is FailureState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } else if (state is SuccessState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              // Navigate to HomePage on success
+              //AppNavigator.pushReplacement(
+              //  context,
+              //  const SigninPage(),
+              //);
+            }
+          },
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height -
+                    MediaQuery.of(context).padding.top -
+                    kToolbarHeight, // subtract AppBar height
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SlideTransition(
+                        position: _slideAnimation,
+                        child: const Text(
+                          'Welcome back to',
                           style: TextStyle(
                             fontFamily: 'CircularStd',
-                            fontSize: 16,
-                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
-                          recognizer: TapGestureRecognizer()..onTap = () {
-                            AppNavigator.push(
-                              context,
-                              const ForgotPasswordPage(),
-                            );
-                          },
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 40),
+                      SizedBox(
+                        width: 350,
+                        child: Image.asset(
+                          AppImages.appLogo,
+                          width: 200,
+                          height: 200,
+                        ),
+                      ),
+                      const SizedBox(height: 100),
+                      SizedBox(
+                        height: 55,
+                        width: 350,
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(16),
+                          child: TextField(
+                            controller: _passwordController,
+                            style: const TextStyle(
+                              fontFamily: 'CircularStd',
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: _displayedText,
+                              prefixIcon: const Icon(Icons.password_outlined),
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 2,
+                                    height: 24,
+                                    color: Colors.grey.shade500,
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      _obscureText
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscureText = !_obscureText;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 20, horizontal: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            keyboardType: TextInputType.visiblePassword,
+                            obscureText: _obscureText,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 55,
+                        width: 350,
+                        child: Builder(
+                          builder: (context) {
+                            return BasicReactiveButton(
+                              text: 'Sign In',
+                              onPressed: () {
+                                if (_passwordController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter your password'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } else {
+                                  widget.userSigninReq!.password = _passwordController.text;
+                                  context.read<ButtonCubit>().execute(
+                                    useCase: sl<SigninUseCase>(),
+                                    params: widget.userSigninReq!
+                                  );
+                                }
+                              },
+                            );
+                          }
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      RichText(
+                        text: TextSpan(
+                          text: 'Forgot your password? ',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 16,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Click here!',
+                              style: TextStyle(
+                                fontFamily: 'CircularStd',
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  AppNavigator.push(
+                                    context,
+                                    const ForgotPasswordPage(),
+                                  );
+                                },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

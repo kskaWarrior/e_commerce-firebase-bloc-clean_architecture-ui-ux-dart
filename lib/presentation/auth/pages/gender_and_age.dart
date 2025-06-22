@@ -14,7 +14,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GenderAndAgePage extends StatefulWidget {
   final UserCreationReq? userCreationReq;
-  const GenderAndAgePage({super.key, this.userCreationReq});
+
+  const GenderAndAgePage({
+    super.key,
+    required this.userCreationReq
+  });
 
   @override
   State<GenderAndAgePage> createState() => _GenderAndAgePageState();
@@ -104,7 +108,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                   backgroundColor: Colors.green,
                 ),
               );
-              // Navigate to SignInPage on success
+              // Navigate to SigninPage on success
               AppNavigator.pushReplacement(
                 context,
                 const SigninPage(),
@@ -301,6 +305,15 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                         return BasicReactiveButton(
                             text: 'Sign Up',
                             onPressed: () {
+                            if (_addressController.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Please enter your address.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
                               widget.userCreationReq?.gender = _selectedGender;
                               widget.userCreationReq?.birthDate = _selectedDate;
                               widget.userCreationReq?.address =

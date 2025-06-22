@@ -30,8 +30,8 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.darkTheme,
         home: const 
         //PasswordPage()
-        SigninPage()
-        ///SplashPage(),
+        //SigninPage()
+        SplashPage(),
       ),
     );
   }
