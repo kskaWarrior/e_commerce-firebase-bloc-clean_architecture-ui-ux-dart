@@ -12,7 +12,7 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Either<Failure, UserCreationReq>> signUp(UserCreationReq userCreationReq) {
+  Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq) {
     return sl<AuthFirebaseService>().signUp(userCreationReq);
   }
 

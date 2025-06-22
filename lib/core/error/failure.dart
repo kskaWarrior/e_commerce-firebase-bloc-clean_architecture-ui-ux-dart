@@ -1,10 +1,10 @@
 class Failure {
 
-  final String message;
-  Failure({required this.message});
+  final String error;
+  Failure({required this.error});
 
   @override
   String toString() {
-    return 'Failure: $message';
+    return 'error: $error';
   }
 }

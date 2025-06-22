@@ -19,16 +19,7 @@ class BasicReactiveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ButtonCubit, ButtonState>(
       builder: (context, state) {
-        if (state is Loading) {
-          return const SizedBox(
-            width: 26,
-            height: 26,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 3,
-            ),
-          );
-        } return SizedBox(
+        return SizedBox(
           height: 55,
           width: 350,
           child: ElevatedButton(
@@ -45,8 +36,17 @@ class BasicReactiveButton extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            onPressed: state is Loading ? null : onPressed,
-            child: Text(text),
+            onPressed: state is LoadingState ? null : onPressed,
+            child: state is LoadingState
+                ? const SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
+                    ),
+                  )
+                : Text(text),
           ),
         );
       },

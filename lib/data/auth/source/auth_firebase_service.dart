@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class AuthFirebaseService {
   Future<void> signIn(String email, String password);
-  Future<Either<Failure, UserCreationReq>> signUp(UserCreationReq userCreationReq);
+  Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
   Future<void> signOut();
   Future<bool> isSignedIn();
   Future<String?> getCurrentUserId();
@@ -20,41 +20,37 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
   }
 
   @override
-  Future<Either<Failure, UserCreationReq>> signUp(
+  Future<Either<Failure, String>> signUp(
       UserCreationReq userCreationReq) async {
-        print('authfirebase service sign up called');
-        print(userCreationReq.toJson());
     try {
       var returnedData =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: userCreationReq.email,
         password: userCreationReq.password!,
       );
-      print(returnedData);
 
       await FirebaseFirestore.instance
           .collection('users')
           .doc(returnedData.user?.uid)
           .set(userCreationReq.toJson());
 
-      return Future.value(Right(userCreationReq)); // Placeholder for success
+      return Future.value(const Right('Created user with success!')); // Placeholder for success
     } catch (e) {
-      print(e.toString());
       // Handle exceptions and return a Failure
       if (e is FirebaseAuthException) {
         switch (e.code) {
           case 'weak-password':
-            return Future.value(Left(Failure(message: 'Weak password')));
+            return Future.value(Left(Failure(error: 'Weak password')));
           case 'email-already-in-use':
-            return Future.value(Left(Failure(message: 'Email already in use')));
+            return Future.value(Left(Failure(error: 'Email already in use')));
           case 'invalid-email':
-            return Future.value(Left(Failure(message: 'Invalid email')));
+            return Future.value(Left(Failure(error: 'Invalid email')));
           default:
             return Future.value(
-                Left(Failure(message: e.message ?? 'Unknown error')));
+                Left(Failure(error: e.message ?? 'Unknown error')));
         }
       }
-      return Future.value(Left(Failure(message: e.toString())));
+      return Future.value(Left(Failure(error: e.toString())));
     }
   }
 

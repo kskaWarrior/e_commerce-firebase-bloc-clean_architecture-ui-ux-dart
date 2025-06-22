@@ -1,18 +1,18 @@
 abstract class ButtonState {}
 
-class Initial extends ButtonState {}
+class InitialState extends ButtonState {}
 
-class Loading extends ButtonState {}
+class LoadingState extends ButtonState {}
 
-class Success extends ButtonState {
+class SuccessState extends ButtonState {
   final String message;
 
-  Success(this.message);
+  SuccessState(this.message);
 }
 
-class Failure extends ButtonState {
+class FailureState extends ButtonState {
   final String error;
 
-  Failure(this.error);
+  FailureState(this.error);
 }
 

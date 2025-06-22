@@ -4,18 +4,20 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/utils/
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ButtonCubit extends Cubit<ButtonState>{
-  ButtonCubit() : super(Initial());
+  ButtonCubit() : super(InitialState());
 
   Future<void> execute ({dynamic params, required UseCase useCase}) async {
     try {
-      emit(Loading());
+      emit(LoadingState());
+      //await Future.delayed(const Duration(milliseconds: 2000));
       Either result = await useCase.call(params);
       result.fold(
-        (failure) => emit(Failure(failure.error())),
-        (data) => emit(Success(data)),
+        (failure) => emit(
+            FailureState(failure is String ? failure : failure.toString())),
+        (data) => emit(SuccessState(data)),
       );
     } catch (e) {
-      emit(Failure(e.toString()));
+      emit(FailureState(e.toString()));
     }
   }
 }
