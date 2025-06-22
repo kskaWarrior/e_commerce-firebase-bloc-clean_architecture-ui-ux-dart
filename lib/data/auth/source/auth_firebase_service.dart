@@ -1,13 +1,14 @@
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class AuthFirebaseService {
-  Future<void> signIn(String email, String password);
+  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
   Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
-  Future<void> signOut();
+  Future<Either<Failure, String>> signOut();
   Future<bool> isSignedIn();
   Future<String?> getCurrentUserId();
   Future<String?> getCurrentUserEmail();
@@ -15,7 +16,7 @@ abstract class AuthFirebaseService {
 
 class AuthFirebaseServiceImpl implements AuthFirebaseService {
   @override
-  Future<void> signIn(String email, String password) {
+  Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) {
     throw UnimplementedError();
   }
 
@@ -36,6 +37,7 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
 
       return Future.value(const Right('Created user with success!')); // Placeholder for success
     } catch (e) {
+      print((e).toString()); // Log the error for debugging
       // Handle exceptions and return a Failure
       if (e is FirebaseAuthException) {
         switch (e.code) {
@@ -55,7 +57,7 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
   }
 
   @override
-  Future<void> signOut() {
+  Future<Either<Failure, String>> signOut() {
     throw UnimplementedError();
   }
 

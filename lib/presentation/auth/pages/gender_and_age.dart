@@ -98,6 +98,12 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                 ),
               );
             } else if (state is SuccessState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                ),
+              );
               // Navigate to SignInPage on success
               AppNavigator.pushReplacement(
                 context,

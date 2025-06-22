@@ -66,7 +66,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                      'Don\'t worry, we will help you recover your password on a blink of an eye ;)',
+                      'Don\'t worry, we will help you recover your password in a blink of an eye ;)',
                       style: TextStyle(
                         fontFamily: 'CircularStd',
                         fontSize: 18,
