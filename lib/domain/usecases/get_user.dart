@@ -1,12 +1,13 @@
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/utils/usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 
-class SendPasswordEmailResetUseCase implements UseCase<Either, String> {
+class GetUserUseCase implements UseCase<Either, void> {
   @override
-  Future<Either<Failure, String>> call(String ? params) async {
-    return await sl<AuthRepository>().sendPasswordEmailResetUseCase(params!);
+  Future<Either<Failure, UserModel>> call(params) async {
+    return await sl<AuthRepository>().getUser();
   }
 }

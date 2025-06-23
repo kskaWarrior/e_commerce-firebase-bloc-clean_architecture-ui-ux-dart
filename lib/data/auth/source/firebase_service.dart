@@ -1,21 +1,21 @@
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-abstract class AuthFirebaseService {
+abstract class FirebaseService {
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
   Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
   Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
   Future<Either<Failure, String>> signOut();
-  Future<bool> isSignedIn();
-  Future<String?> getCurrentUserId();
-  Future<String?> getCurrentUserEmail();
+  Future<bool> isLoggedIn();
+  Future<Either<Failure, UserModel>> getUser();
 }
 
-class AuthFirebaseServiceImpl implements AuthFirebaseService {
+class FirebaseServiceImpl implements FirebaseService {
   @override
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) async {
     try {
@@ -82,18 +82,29 @@ class AuthFirebaseServiceImpl implements AuthFirebaseService {
   }
 
   @override
-  Future<bool> isSignedIn() {
-    throw UnimplementedError();
+  Future<bool> isLoggedIn() {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      return Future.value(user != null);
+    } catch (e) {
+      return Future.value(false);
+    }
   }
 
   @override
-  Future<String?> getCurrentUserId() {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<String?> getCurrentUserEmail() {
-    throw UnimplementedError();
+  Future<Either<Failure, UserModel>> getUser() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final data = userDoc.data();
+      if (data != null) {
+        return Right(UserModel.fromMap(data));
+      } else {
+        return Left(Failure(error: 'User not found'));
+      }
+    } catch (e) {
+      return Left(Failure(error: e.toString()));
+    }
   }
   
   @override

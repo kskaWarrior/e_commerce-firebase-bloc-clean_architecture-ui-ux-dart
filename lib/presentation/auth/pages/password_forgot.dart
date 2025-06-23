@@ -7,6 +7,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widg
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/send_password_reset_email.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -162,7 +163,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 );
                               } else {
                                 context.read<ButtonCubit>().execute(
-                                  useCase: SendPasswordEmailResetUseCase(),
+                                  useCase: sl<SendPasswordEmailResetUseCase>(),
                                   params: _emailController.text.trim()
                                 );
                               }
