@@ -8,8 +8,10 @@ class UserCreationReq {
   String? gender;
   DateTime? birthDate;
   String? address;
+  String? id;
 
   UserCreationReq({
+    this.id,
     required this.email,
     this.password,
     this.name,
@@ -21,6 +23,7 @@ class UserCreationReq {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'email': email,
       'name': name,
       'phone': phone,
@@ -32,6 +35,7 @@ class UserCreationReq {
 
   factory UserCreationReq.fromJson(Map<String, dynamic> json) {
     return UserCreationReq(
+      id: json['id'],
       email: json['email'],
       name: json['name'],
       phone: json['phone'],

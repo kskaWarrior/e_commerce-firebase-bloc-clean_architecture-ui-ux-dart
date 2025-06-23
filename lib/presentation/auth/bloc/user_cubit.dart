@@ -11,11 +11,11 @@ class UserCubit extends Cubit<UserState>{
     try {
       final result = await sl<GetUserUseCase>().call(null);
       result.fold(
-        (failure) => emit(UserError(message: failure.error)),
+        (failure) => emit(UserError(error: failure.toString())),
         (user) => emit(UserLoaded(user: user)), 
       ); 
-    } catch (error) {
-      emit(UserError(message: error.toString()));
+    } catch (e) {
+      emit(UserError(error: e.toString()));
     }
   }
 }

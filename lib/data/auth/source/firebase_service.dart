@@ -50,7 +50,7 @@ class FirebaseServiceImpl implements FirebaseService {
         email: userCreationReq.email,
         password: userCreationReq.password!,
       );
-
+      userCreationReq.id = returnedData.user?.uid;
       await FirebaseFirestore.instance
           .collection('users')
           .doc(returnedData.user?.uid)
@@ -95,14 +95,23 @@ class FirebaseServiceImpl implements FirebaseService {
   Future<Either<Failure, UserModel>> getUser() async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userId == null) {
+        return Left(Failure(error: 'User not logged in'));
+      }
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
       final data = userDoc.data();
       if (data != null) {
+        print('User found: $data');
         return Right(UserModel.fromMap(data));
       } else {
+        print('User not found');
         return Left(Failure(error: 'User not found'));
       }
     } catch (e) {
+      print(e);
       return Left(Failure(error: e.toString()));
     }
   }

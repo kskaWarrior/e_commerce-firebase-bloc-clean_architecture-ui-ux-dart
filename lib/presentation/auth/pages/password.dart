@@ -7,6 +7,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widg
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/usecases/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/home.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password_forgot.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/gestures.dart';
@@ -109,11 +110,10 @@ class _PasswordPageState extends State<PasswordPage>
                   backgroundColor: Colors.green,
                 ),
               );
-              // Navigate to HomePage on success
-              //AppNavigator.pushReplacement(
-              //  context,
-              //  const SigninPage(),
-              //);
+              AppNavigator.pushReplacement(
+                context,
+                const HomePage(),
+              );
             }
           },
           child: SafeArea(

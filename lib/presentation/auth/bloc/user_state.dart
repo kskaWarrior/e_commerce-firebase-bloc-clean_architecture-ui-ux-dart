@@ -12,9 +12,9 @@ class UserLoaded extends UserState {
 }
 
 class UserError extends UserState {
-  final String message;
-  UserError({required this.message});
+  final String error;
+  UserError({required this.error});
 
   @override
-  String toString() => 'UserError: $message';
+  String toString() => 'UserError: $error';
 }

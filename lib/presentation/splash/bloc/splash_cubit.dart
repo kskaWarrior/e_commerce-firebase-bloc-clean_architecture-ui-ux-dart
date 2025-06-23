@@ -19,9 +19,8 @@ class SplashCubit extends Cubit<SplashState>{
           }
         },
       );
-    } on Exception catch (e) {
+    } on Exception {
       emit(UnAuthenticated());
-      print('Error checking login status: $e');
     }
   }
 }

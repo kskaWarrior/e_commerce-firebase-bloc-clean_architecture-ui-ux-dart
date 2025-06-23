@@ -22,7 +22,7 @@ class HomePage extends StatelessWidget {
             if (state is UserError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(state.error),
                   backgroundColor: Colors.red,
                 ),
               );
