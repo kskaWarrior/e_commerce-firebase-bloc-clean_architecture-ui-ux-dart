@@ -1,10 +1,8 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 
-class UserModel {
+class UserEntity {
   final String id;
   final String email;
   final String address;
@@ -13,7 +11,7 @@ class UserModel {
   final DateTime birthDate;
   final String gender;
 
-  UserModel({
+  UserEntity({
     required this.id,
     required this.email,
     required this.address,
@@ -36,8 +34,8 @@ class UserModel {
     };
   }
 
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
+  factory UserEntity.fromMap(Map<String, dynamic> map) {
+    return UserEntity(
       id: map['id'] as String? ?? '',
       email: map['email'] as String? ?? '',
       address: map['address'] as String? ?? '',
@@ -50,20 +48,6 @@ class UserModel {
 
   String toJson() => json.encode(toMap());
 
-  factory UserModel.fromJson(String source) => UserModel.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory UserEntity.fromJson(String source) => UserEntity.fromMap(json.decode(source) as Map<String, dynamic>);
 
-}
-
-extension UserXModel on UserModel {
-  UserEntity toEntity() {
-    return UserEntity(
-      id: id,
-      email: email,
-      address: address,
-      phone: phone,
-      name: name,
-      birthDate: birthDate,
-      gender: gender,
-    );
-  }
 }

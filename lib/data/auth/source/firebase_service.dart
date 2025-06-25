@@ -104,14 +104,19 @@ class FirebaseServiceImpl implements FirebaseService {
           .get();
       final data = userDoc.data();
       if (data != null) {
-        print('User found: $data');
         return Right(UserModel.fromMap(data));
       } else {
-        print('User not found');
         return Left(Failure(error: 'User not found'));
       }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-disabled') {
+        return Left(Failure(error: 'user-disabled'));
+      }
+      return Left(Failure(error: e.message ?? 'Auth error'));
     } catch (e) {
-      print(e);
+      if (e.toString().contains('permission-denied')) {
+        return Left(Failure(error: 'permission-denied'));
+      }
       return Left(Failure(error: e.toString()));
     }
   }

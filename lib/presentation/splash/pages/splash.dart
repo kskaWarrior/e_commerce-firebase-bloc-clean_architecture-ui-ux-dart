@@ -1,6 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/home.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/page/home.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_state.dart';
