@@ -8,4 +8,11 @@ class ImageDisplayHelper {
            title +
            AppUrls.alt;
   }
+
+  static String generateProductImagePath(String title) {
+    return AppUrls.productImage + 
+           //Uri.encodeComponent(title) + 
+           title +
+           AppUrls.alt;
+  }
 }

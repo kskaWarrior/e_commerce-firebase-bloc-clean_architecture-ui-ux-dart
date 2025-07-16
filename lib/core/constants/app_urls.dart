@@ -3,5 +3,6 @@ class AppUrls {
   static const myFirebaseProjectId = 'ecommerceapp-auth-db-cleana.firebasestorage.app';
   
   static const categoryImage = '$storageBaseUrl$myFirebaseProjectId/o/categories%2Fimages%2F';
+  static const productImage = '$storageBaseUrl$myFirebaseProjectId/o/products%2Fimages%2F';
   static const alt = '?alt=media';
 }
