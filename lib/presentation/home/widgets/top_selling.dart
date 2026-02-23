@@ -43,7 +43,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
           return GestureDetector(
             onTap: () => widget.onTap?.call(product),
             child: Card(
-              color: Theme.of(context).colorScheme.inversePrimary,
+              color: const Color.fromARGB(255, 10, 32, 53),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),

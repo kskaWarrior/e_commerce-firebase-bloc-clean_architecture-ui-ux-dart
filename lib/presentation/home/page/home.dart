@@ -68,7 +68,7 @@ class HomePage extends StatelessWidget {
                   child: Material(
                     elevation: 2,
                     borderRadius: BorderRadius.circular(24),
-                    color: colorScheme.surface,
+                    color: Color.fromARGB(255, 10, 32, 53),
                     child: TextField(
                       style: TextStyle(
                         color: colorScheme.primary,
@@ -82,7 +82,7 @@ class HomePage extends StatelessWidget {
                         prefixIcon:
                             Icon(Icons.search, color: colorScheme.primary),
                         filled: true,
-                        fillColor: colorScheme.inverseSurface,
+                        fillColor: Color.fromARGB(255, 10, 32, 53),
                         contentPadding: const EdgeInsets.symmetric(
                             vertical: 0, horizontal: 16),
                         border: OutlineInputBorder(

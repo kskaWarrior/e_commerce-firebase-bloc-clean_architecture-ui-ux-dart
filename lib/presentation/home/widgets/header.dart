@@ -7,7 +7,11 @@ class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.account_circle, size: 42),
+        icon: const Icon(
+          Icons.account_circle,
+          size: 42,
+          color: Color.fromARGB(255, 10, 32, 53), // Ocean dark blue
+        ),
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -18,17 +22,16 @@ class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
         },
         tooltip: 'Profile',
       ),
-      title: const Text(
-        '',
-        style: TextStyle(
-          fontFamily: 'CircularStd',
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
+      title: SizedBox(
+        height: 40,
+        child: Image.asset(
+          'assets/images/buy_buy_horizontal_text.png',
+          fit: BoxFit.contain,
         ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.shopping_cart, size: 42),
+          icon: const Icon(Icons.shopping_cart, size: 42, color: Color.fromARGB(255, 10, 32, 53),),
           onPressed: () {
             // TODO: Add cart navigation
           },

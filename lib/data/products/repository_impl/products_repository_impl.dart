@@ -17,4 +17,10 @@ class ProductsRepositoryImpl extends ProductsRepository {
       ),
     );
   }
+  
+  @override
+  Future<Either> getNewIn() {
+    // TODO: implement getNewIn
+    throw UnimplementedError();
+  }
 }
