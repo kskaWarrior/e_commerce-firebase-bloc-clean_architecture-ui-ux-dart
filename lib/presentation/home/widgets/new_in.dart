@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/product_card.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 
-class TopSellingCarousel extends StatefulWidget {
+class NewInCarousel extends StatefulWidget {
   final List<ProductEntity> products;
   final void Function(ProductEntity)? onTap;
 
-  const TopSellingCarousel({
+  const NewInCarousel({
     super.key,
     required this.products,
     this.onTap,
   });
 
   @override
-  State<TopSellingCarousel> createState() => _TopSellingCarouselState();
+  State<NewInCarousel> createState() => _NewInCarouselState();
 }
 
-class _TopSellingCarouselState extends State<TopSellingCarousel> {
+class _NewInCarouselState extends State<NewInCarousel> {
   late final PageController _pageController;
   late List<bool> _isFavorite;
 
@@ -28,7 +28,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
   }
 
   @override
-  void didUpdateWidget(covariant TopSellingCarousel oldWidget) {
+  void didUpdateWidget(covariant NewInCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.products.length != widget.products.length) {
       final updated = List<bool>.filled(widget.products.length, false);
@@ -50,7 +50,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.products.isEmpty) {
-      return const Center(child: Text('No top selling products found'));
+      return const Center(child: Text('No new products found'));
     }
 
     return SizedBox(

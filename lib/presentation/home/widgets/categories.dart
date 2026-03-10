@@ -35,7 +35,7 @@ class CategoriesWidget extends StatelessWidget {
                     color: Theme.of(context).colorScheme.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),

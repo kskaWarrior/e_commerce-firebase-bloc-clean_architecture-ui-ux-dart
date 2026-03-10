@@ -19,8 +19,15 @@ class ProductsRepositoryImpl extends ProductsRepository {
   }
   
   @override
-  Future<Either> getNewIn() {
-    // TODO: implement getNewIn
-    throw UnimplementedError();
+  Future<Either> getNewIn() async {
+    final data = await sl<ProductsFirebaseService>().getNewIn();
+    return data.fold(
+      (error) => Left(error),
+      (products) => Right(
+        List.from(products)
+            .map((e) => ProductModel.fromMap(e).toEntity())
+            .toList(),
+      ),
+    );
   }
 }

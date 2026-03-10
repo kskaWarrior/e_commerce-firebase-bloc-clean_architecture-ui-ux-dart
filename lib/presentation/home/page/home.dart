@@ -1,9 +1,11 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories.state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/top_selling_display_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/top_selling_display_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/header.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +27,11 @@ class HomePage extends StatelessWidget {
             create: (context) => sl<CategoriesCubit>()..loadCategories(),
           ),
           BlocProvider(
+            create: (context) => sl<NewInDisplayCubit>()..displayProducts(),
+          ),
+          BlocProvider(
             create: (context) =>
-                sl<TopSellingDisplayCubit>()..displayProducts(),
+                sl<ProductsDisplayCubit>()..displayProducts(),
           ),
         ],
         child: MultiBlocListener(
@@ -43,9 +48,21 @@ class HomePage extends StatelessWidget {
                 }
               },
             ),
-            BlocListener<TopSellingDisplayCubit, TopSellingDisplayState>(
+            BlocListener<ProductsDisplayCubit, ProductsDisplayState>(
               listener: (context, state) {
-                if (state is TopSellingDisplayError) {
+                if (state is ProductsDisplayError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+            BlocListener<NewInDisplayCubit, ProductsDisplayState>(
+              listener: (context, state) {
+                if (state is ProductsDisplayError) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(state.message),
@@ -56,7 +73,7 @@ class HomePage extends StatelessWidget {
               },
             ),
           ],
-          child: Center(
+          child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.start,
@@ -77,7 +94,7 @@ class HomePage extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: 'Search for your next buy buy here ;)',
                         hintStyle: TextStyle(
-                          color: colorScheme.primary.withOpacity(0.8),
+                          color: colorScheme.primary.withValues(alpha: 0.8),
                         ),
                         prefixIcon:
                             Icon(Icons.search, color: colorScheme.primary),
@@ -125,7 +142,7 @@ class HomePage extends StatelessWidget {
                       return CategoriesWidget(
                         categories: state.categories, // List<CategoriesEntity>
                         onTap: (category) {
-                          // Handle category tap
+                          //TODO Handle category tap
                         },
                       );
                     } else {
@@ -139,6 +156,93 @@ class HomePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
+                        'New In',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.inversePrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              offset: const Offset(1, 3),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'New In',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              offset: const Offset(1, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'New In',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.inversePrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              offset: const Offset(1, 3),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                BlocBuilder<NewInDisplayCubit, ProductsDisplayState>(
+                  builder: (context, state) {
+                    if (state is ProductsDisplayLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (state is ProductsDisplayError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      );
+                    } else if (state is ProductsDisplayLoaded) {
+                      if (state.products.isEmpty) {
+                        return const Center(
+                            child: Text('No new products found'));
+                      }
+                      return NewInCarousel(
+                        products: state.products,
+                        onTap: (product) {
+                          //TODO Handle product tap
+                        },
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 20.0, right: 20.0, top: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
                         'Top Selling',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 color: Theme.of(context).colorScheme.inversePrimary,
@@ -147,7 +251,7 @@ class HomePage extends StatelessWidget {
                                 fontStyle: FontStyle.italic,
                         shadows: [
                           Shadow(
-                          color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withValues(alpha: 0.4),
                           offset: const Offset(1, 3),
                           blurRadius: 4,
                           ),
@@ -163,7 +267,7 @@ class HomePage extends StatelessWidget {
                                 fontStyle: FontStyle.italic,
                         shadows: [
                           Shadow(
-                          color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withValues(alpha: 0.4),
                           offset: const Offset(1, 2),
                           blurRadius: 4,
                           ),
@@ -179,7 +283,7 @@ class HomePage extends StatelessWidget {
                                 fontStyle: FontStyle.italic,
                         shadows: [
                           Shadow(
-                          color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withValues(alpha: 0.4),
                           offset: const Offset(1, 3),
                           blurRadius: 4,
                           ),
@@ -189,25 +293,25 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                 ),
-                BlocBuilder<TopSellingDisplayCubit, TopSellingDisplayState>(
+                BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
                   builder: (context, state) {
-                    if (state is TopSellingDisplayLoading) {
+                    if (state is ProductsDisplayLoading) {
                       return const Center(child: CircularProgressIndicator());
-                    } else if (state is TopSellingDisplayError) {
+                    } else if (state is ProductsDisplayError) {
                       return Center(
                         child: Text(
                           state.message,
                           style: TextStyle(color: Colors.red),
                         ),
                       );
-                    } else if (state is TopSellingDisplayLoaded) {
+                    } else if (state is ProductsDisplayLoaded) {
                       if (state.products.isEmpty) {
                         return const Center(child: Text('No products found'));
                       }
                       return TopSellingCarousel(
                         products: state.products,
                         onTap: (product) {
-                          // Handle product tap
+                          //TODO Handle product tap
                         },
                       );
                     } else {
@@ -215,6 +319,7 @@ class HomePage extends StatelessWidget {
                     }
                   },
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
