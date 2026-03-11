@@ -7,12 +7,17 @@ class CategoriesCubit extends Cubit<CategoriesState>{
   CategoriesCubit() : super(CategoriesInitial());
 
   void loadCategories() async {
+    emit(CategoriesLoading());
     var data = await sl<GetCategoriesUseCase>().call(null);
+    if (isClosed) return;
+
     data.fold(
       (error) {
+        if (isClosed) return;
         emit(CategoriesError(error.toString()));
       },
       (categories) {
+        if (isClosed) return;
         emit(CategoriesLoaded(categories));
       },
     );

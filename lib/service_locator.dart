@@ -60,7 +60,7 @@ Future<void> init() async {
   //cubits
   sl.registerLazySingleton<UserCubit>(() => UserCubit());
   sl.registerLazySingleton<SplashCubit>(() => SplashCubit()); 
-  sl.registerLazySingleton<CategoriesCubit>(() => CategoriesCubit()); 
+  sl.registerFactory<CategoriesCubit>(() => CategoriesCubit()); 
   sl.registerFactory<NewInDisplayCubit>(
       () => NewInDisplayCubit(sl<GetNewInProductsUseCase>()));
   sl.registerFactory<ProductsDisplayCubit>(
