@@ -110,7 +110,7 @@ class _PasswordPageState extends State<PasswordPage>
                   backgroundColor: Colors.green,
                 ),
               );
-              AppNavigator.pushReplacement(
+              AppNavigator.pushAndRemoveUntil(
                 context,
                 const HomePage(),
               );
