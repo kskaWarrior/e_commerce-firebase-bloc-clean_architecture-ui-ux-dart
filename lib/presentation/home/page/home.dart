@@ -6,7 +6,10 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/header.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in_title.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/search_box.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +19,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: const HomeHeader(),
@@ -78,50 +79,26 @@ class HomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                // --- Modern Search Box ---
+                const SearchBox(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 16.0),
-                  child: Material(
-                    elevation: 2,
-                    borderRadius: BorderRadius.circular(24),
-                    color: Color.fromARGB(255, 10, 32, 53),
-                    child: TextField(
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontSize: 16,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Search for your next buy buy here ;)',
-                        hintStyle: TextStyle(
-                          color: colorScheme.primary.withValues(alpha: 0.8),
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: Text(
+                    'Categories',
+                    style:
+                        Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.inversePrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          offset: const Offset(1, 3),
+                          blurRadius: 4,
                         ),
-                        prefixIcon:
-                            Icon(Icons.search, color: colorScheme.primary),
-                        filled: true,
-                        fillColor: Color.fromARGB(255, 10, 32, 53),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 16),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(
-                            color: colorScheme.primary,
-                            width: 2,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
-                // --- End Search Box ---
                 const SizedBox(height: 5),
                 BlocBuilder<CategoriesCubit, CategoriesState>(
                   builder: (context, state) {
@@ -150,65 +127,7 @@ class HomePage extends StatelessWidget {
                     }
                   },
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'New In',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.inversePrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              offset: const Offset(1, 3),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        'New In',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              offset: const Offset(1, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        'New In',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.inversePrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              offset: const Offset(1, 3),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const NewInTitle(),
                 BlocBuilder<NewInDisplayCubit, ProductsDisplayState>(
                   builder: (context, state) {
                     if (state is ProductsDisplayLoading) {
@@ -236,63 +155,7 @@ class HomePage extends StatelessWidget {
                     }
                   },
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.only(left: 20.0, right: 20.0, top: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Top Selling',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.inversePrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                        shadows: [
-                          Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                          offset: const Offset(1, 3),
-                          blurRadius: 4,
-                          ),
-                        ],
-                              ),
-                      ),
-                      Text(
-                        'Top Selling',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                        shadows: [
-                          Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                          offset: const Offset(1, 2),
-                          blurRadius: 4,
-                          ),
-                        ],
-                              ),
-                      ),
-                      Text(
-                        'Top Selling',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.inversePrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                        shadows: [
-                          Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                          offset: const Offset(1, 3),
-                          blurRadius: 4,
-                          ),
-                        ],
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
+                const TopSellingTitle(),
                 BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
                   builder: (context, state) {
                     if (state is ProductsDisplayLoading) {
