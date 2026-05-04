@@ -99,29 +99,37 @@ class _SigninPageState extends State<SigninPage>
       resizeToAvoidBottomInset:
           true, // Ensures the body resizes when keyboard appears
       body: SafeArea(
-        child: SingleChildScrollView(
-          // This prevents overflow by allowing scrolling when keyboard is open
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height -
-                MediaQuery.of(context).padding.top,
-            child: Stack(
-              children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            final formWidth = (screenWidth - 32).clamp(280.0, 420.0).toDouble();
+            final horizontalInset = (screenWidth - formWidth) / 2;
+            final heroImageSize =
+                (screenWidth * 0.9).clamp(260.0, 520.0).toDouble();
+
+            return SingleChildScrollView(
+              // This keeps the content at least viewport height, while allowing scroll when needed.
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Stack(
+                  children: [
                 Center(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                          SizedBox(height: 80),
                       Image.asset(
                         AppImages.appSplash,
-                        width: 520,
-                        height: 520,
+                            width: heroImageSize,
+                            height: heroImageSize,
                       ),
                     ],
                   ),
                 ),
                 Positioned(
-                  left: 30,
-                  right: 30,
+                      left: horizontalInset,
+                      right: horizontalInset,
                   bottom: 190,
                   child: Material(
                     elevation: 4,
@@ -150,8 +158,8 @@ class _SigninPageState extends State<SigninPage>
                   ),
                 ),
                 Positioned(
-                  left: 30,
-                  right: 30,
+                      left: horizontalInset,
+                      right: horizontalInset,
                   bottom: 120,
                   height: 55,
                   child: ElevatedButton(
@@ -193,60 +201,58 @@ class _SigninPageState extends State<SigninPage>
                   ),
                 ),
                 Positioned(
-                  left: 32,
-                  right: 30,
+                      left: horizontalInset,
+                      right: horizontalInset,
                   bottom: 85,
-                  // ignore: unnecessary_null_comparison
-                  child: (_shakeController == null)
-                      ? const SizedBox.shrink()
-                      : AnimatedBuilder(
-                          animation: _shakeController,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(
-                                  _shakeController.isAnimating
-                                      ? (_shakeAnimation.value *
-                                          ((_shakeController.value < 0.5)
-                                              ? 1
-                                              : -1))
-                                      : 0,
-                                  0),
-                              child: child,
-                            );
-                          },
-                          child: RichText(
-                            text: TextSpan(
-                              text: 'Don\'t have an account? ',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 16,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'Sign Up!',
-                                  style: TextStyle(
-                                    fontFamily: 'CircularStd',
-                                    fontSize: 16,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      AppNavigator.push(
-                                        context,
-                                        const SignUpPage(),
-                                      );
-                                    },
-                                ),
-                              ],
+                      child: AnimatedBuilder(
+                        animation: _shakeController,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(
+                                _shakeController.isAnimating
+                                    ? (_shakeAnimation.value *
+                                        ((_shakeController.value < 0.5)
+                                            ? 1
+                                            : -1))
+                                    : 0,
+                                0),
+                            child: child,
+                          );
+                        },
+                        child: RichText(
+                          text: TextSpan(
+                            text: 'Don\'t have an account? ',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 16,
                             ),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up!',
+                                style: TextStyle(
+                                  fontFamily: 'CircularStd',
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    AppNavigator.push(
+                                      context,
+                                      const SignUpPage(),
+                                    );
+                                  },
+                              ),
+                            ],
                           ),
                         ),
+                      ),
                 ),
-              ],
-            ),
-          ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

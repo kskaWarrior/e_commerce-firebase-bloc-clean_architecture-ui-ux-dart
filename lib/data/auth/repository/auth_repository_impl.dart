@@ -20,8 +20,8 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Either<Failure, String>> signOut() {
-    throw UnimplementedError();
+  Future<Either<Failure, String>> signOut() async {
+    return await sl<FirebaseService>().signOut();
   }
   
   @override

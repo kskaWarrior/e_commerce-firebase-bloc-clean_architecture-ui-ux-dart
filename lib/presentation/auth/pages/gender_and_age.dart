@@ -116,20 +116,27 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
             }
           },
           child: SafeArea(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    kToolbarHeight,
-                child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final formWidth =
+                    (screenWidth - 32).clamp(280.0, 420.0).toDouble();
+                final illustrationSize =
+                    (screenWidth * 0.6).clamp(180.0, 260.0).toDouble();
+
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32.0),
+                            padding: EdgeInsets.symmetric(horizontal: 40.0),
                         child: Text(
                           textAlign: TextAlign.center,
-                          'One step away from the best offers!',
+                              '2. Just one step away from the best offers!',
                           style: TextStyle(
                             fontFamily: 'CircularStd',
                             fontSize: 20,
@@ -139,11 +146,11 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                       ),
                       const SizedBox(height: 20),
                       SizedBox(
-                        width: 350,
+                            width: formWidth,
                         child: Image.asset(
                           AppImages.oneStep,
-                          width: 250,
-                          height: 250,
+                              width: illustrationSize,
+                              height: illustrationSize,
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -225,7 +232,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                       GestureDetector(
                         onTap: () => _pickDate(context),
                         child: Container(
-                          width: 350,
+                              width: formWidth,
                           padding: const EdgeInsets.symmetric(
                               vertical: 16, horizontal: 20),
                           decoration: BoxDecoration(
@@ -271,7 +278,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                       // Address
                       SizedBox(
                         height: 55,
-                        width: 350,
+                            width: formWidth,
                         child: Material(
                           elevation: 4,
                           borderRadius: BorderRadius.circular(16),
@@ -325,8 +332,10 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                       }),
                     ],
                   ),
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

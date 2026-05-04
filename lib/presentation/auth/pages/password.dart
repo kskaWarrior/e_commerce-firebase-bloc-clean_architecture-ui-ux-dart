@@ -117,12 +117,19 @@ class _PasswordPageState extends State<PasswordPage>
             }
           },
           child: SafeArea(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    kToolbarHeight, // subtract AppBar height
-                child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final formWidth =
+                    (screenWidth - 32).clamp(280.0, 420.0).toDouble();
+                final logoSize =
+                    (screenWidth * 0.55).clamp(150.0, 220.0).toDouble();
+
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -139,17 +146,17 @@ class _PasswordPageState extends State<PasswordPage>
                       ),
                       const SizedBox(height: 40),
                       SizedBox(
-                        width: 350,
+                            width: formWidth,
                         child: Image.asset(
                           AppImages.appLogo,
-                          width: 200,
-                          height: 200,
+                              width: logoSize,
+                              height: logoSize,
                         ),
                       ),
                       const SizedBox(height: 100),
                       SizedBox(
                         height: 55,
-                        width: 350,
+                            width: formWidth,
                         child: Material(
                           elevation: 4,
                           borderRadius: BorderRadius.circular(16),
@@ -204,7 +211,7 @@ class _PasswordPageState extends State<PasswordPage>
                       const SizedBox(height: 20),
                       SizedBox(
                         height: 55,
-                        width: 350,
+                            width: formWidth,
                         child: Builder(
                           builder: (context) {
                             return BasicReactiveButton(
@@ -259,8 +266,10 @@ class _PasswordPageState extends State<PasswordPage>
                       ),
                     ],
                   ),
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

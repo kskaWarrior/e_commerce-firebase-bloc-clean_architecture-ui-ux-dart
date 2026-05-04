@@ -12,6 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/is_logged_in.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/send_password_reset_email.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signout.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signup.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/repository/category_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
@@ -19,6 +20,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_new_in_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_top_selling_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
 import 'package:get_it/get_it.dart';
 
@@ -49,6 +51,7 @@ Future<void> init() async {
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
   sl.registerLazySingleton<SigninUseCase>(() => SigninUseCase());
+  sl.registerLazySingleton<SignOutUseCase>(() => SignOutUseCase());
   sl.registerLazySingleton<SendPasswordEmailResetUseCase>(() => SendPasswordEmailResetUseCase());
   sl.registerLazySingleton<IsLoggedInUseCase>(() => IsLoggedInUseCase());
   sl.registerLazySingleton<GetUserUseCase>(() => GetUserUseCase());
@@ -59,6 +62,7 @@ Future<void> init() async {
 
   //cubits
   sl.registerLazySingleton<UserCubit>(() => UserCubit());
+  sl.registerFactory<SignOutCubit>(() => SignOutCubit());
   sl.registerLazySingleton<SplashCubit>(() => SplashCubit()); 
   sl.registerFactory<CategoriesCubit>(() => CategoriesCubit()); 
   sl.registerFactory<NewInDisplayCubit>(

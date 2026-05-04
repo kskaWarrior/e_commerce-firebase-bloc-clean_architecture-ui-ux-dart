@@ -1,26 +1,32 @@
 import 'package:flutter/material.dart';
 
 class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
-  const HomeHeader({super.key});
+  final VoidCallback onLogoutTap;
+  final bool isLoggingOut;
+
+  const HomeHeader({
+    super.key,
+    required this.onLogoutTap,
+    this.isLoggingOut = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(
-          Icons.account_circle,
-          size: 42,
-          color: Color.fromARGB(255, 10, 32, 53), // Ocean dark blue
-        ),
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text("Soon you will be able to update your profile!"),
-              duration: const Duration(seconds: 7),
-            ),
-          );
-        },
-        tooltip: 'Profile',
+        icon: isLoggingOut
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(
+                Icons.logout,
+                size: 32,
+                color: Color.fromARGB(255, 10, 32, 53),
+              ),
+        onPressed: isLoggingOut ? null : onLogoutTap,
+        tooltip: 'Logout',
       ),
       title: SizedBox(
         height: 40,

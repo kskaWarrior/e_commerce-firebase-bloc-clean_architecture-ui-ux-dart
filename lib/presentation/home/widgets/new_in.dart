@@ -53,8 +53,12 @@ class _NewInCarouselState extends State<NewInCarousel> {
       return const Center(child: Text('No new products found'));
     }
 
+    final carouselHeight = (MediaQuery.sizeOf(context).height * 0.58)
+        .clamp(340.0, 500.0)
+        .toDouble();
+
     return SizedBox(
-      height: 460,
+      height: carouselHeight,
       child: PageView.builder(
         itemCount: widget.products.length,
         controller: _pageController,

@@ -69,7 +69,6 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _typewriterTimer?.cancel();
-    // Dispose controllers
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
@@ -86,19 +85,23 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height -
-                MediaQuery.of(context).padding.top -
-                kToolbarHeight,
-            child: Center(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final formWidth = (MediaQuery.sizeOf(context).width - 32)
+                .clamp(280.0, 420.0)
+                .toDouble();
+
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                      'Only a few steps!',
+                          'Only two steps!',
                       style: TextStyle(
                         fontFamily: 'CircularStd',
                         fontSize: 20,
@@ -109,7 +112,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                      'Please fill in your profile below:',
+                          '1. Please fill in your profile below:',
                       style: TextStyle(
                         fontFamily: 'CircularStd',
                         fontStyle: FontStyle.italic,
@@ -122,7 +125,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // Name
                   SizedBox(
                     height: 55,
-                    width: 350,
+                        width: formWidth,
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
@@ -152,7 +155,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // Phone
                   SizedBox(
                     height: 55,
-                    width: 350,
+                        width: formWidth,
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
@@ -182,7 +185,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // Email
                   SizedBox(
                     height: 55,
-                    width: 350,
+                        width: formWidth,
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
@@ -212,7 +215,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // Password
                   SizedBox(
                     height: 55,
-                    width: 350,
+                        width: formWidth,
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(16),
@@ -267,7 +270,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 60),
                   SizedBox(
                     height: 55,
-                    width: 350,
+                        width: formWidth,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -336,8 +339,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ],
               ),
-            ),
-          ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

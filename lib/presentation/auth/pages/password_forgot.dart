@@ -88,12 +88,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             }
           },
           child: SafeArea(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    kToolbarHeight,
-                child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final formWidth =
+                    (screenWidth - 32).clamp(280.0, 420.0).toDouble();
+                final illustrationSize =
+                    (screenWidth * 0.8).clamp(220.0, 360.0).toDouble();
+
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -111,17 +118,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       const SizedBox(height: 40),
                       SizedBox(
-                        width: 350,
+                            width: formWidth,
                         child: Image.asset(
                           AppImages.forgotPassword,
-                          width: 400,
-                          height: 400,
+                              width: illustrationSize,
+                              height: illustrationSize,
                         ),
                       ),
                       const SizedBox(height: 20),
                       SizedBox(
                         height: 55,
-                        width: 350,
+                            width: formWidth,
                         child: Material(
                           elevation: 4,
                           borderRadius: BorderRadius.circular(16),
@@ -173,8 +180,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                     ],
                   ),
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

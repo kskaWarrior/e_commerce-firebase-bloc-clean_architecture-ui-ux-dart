@@ -77,8 +77,15 @@ class FirebaseServiceImpl implements FirebaseService {
   }
 
   @override
-  Future<Either<Failure, String>> signOut() {
-    throw UnimplementedError();
+  Future<Either<Failure, String>> signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      return Future.value(const Right('Logout successful!'));
+    } on FirebaseAuthException catch (e) {
+      return Future.value(Left(Failure(error: e.message ?? 'Unknown error')));
+    } catch (e) {
+      return Future.value(Left(Failure(error: e.toString())));
+    }
   }
 
   @override
