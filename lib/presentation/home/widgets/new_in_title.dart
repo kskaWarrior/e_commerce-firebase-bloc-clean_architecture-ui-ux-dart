@@ -15,7 +15,7 @@ class NewInTitle extends StatelessWidget {
             style:
                 Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.inversePrimary,
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               fontStyle: FontStyle.italic,
               shadows: [
@@ -34,7 +34,7 @@ class NewInTitle extends StatelessWidget {
               style:
                   Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontStyle: FontStyle.italic,
                 shadows: [
@@ -52,7 +52,7 @@ class NewInTitle extends StatelessWidget {
             style:
                 Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.inversePrimary,
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               fontStyle: FontStyle.italic,
               shadows: [

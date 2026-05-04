@@ -23,7 +23,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.51);
+    _pageController = PageController(viewportFraction: 0.62);
     _isFavorite = List<bool>.filled(widget.products.length, false);
   }
 

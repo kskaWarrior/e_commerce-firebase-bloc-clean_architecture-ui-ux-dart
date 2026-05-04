@@ -171,37 +171,7 @@ class HomePage extends StatelessWidget {
                                   }
                                 },
                               ),
-                              const NewInTitle(),
-                              BlocBuilder<NewInDisplayCubit,
-                                  ProductsDisplayState>(
-                                builder: (context, state) {
-                                  if (state is ProductsDisplayLoading) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  } else if (state is ProductsDisplayError) {
-                                    return Center(
-                                      child: Text(
-                                        state.message,
-                                        style:
-                                            const TextStyle(color: Colors.red),
-                                      ),
-                                    );
-                                  } else if (state is ProductsDisplayLoaded) {
-                                    if (state.products.isEmpty) {
-                                      return const Center(
-                                          child: Text('No new products found'));
-                                    }
-                                    return NewInCarousel(
-                                      products: state.products,
-                                      onTap: (product) {
-                                        // TODO Handle product tap
-                                      },
-                                    );
-                                  } else {
-                                    return const SizedBox.shrink();
-                                  }
-                                },
-                              ),
+                              const _SectionSeparator(),
                               const TopSellingTitle(),
                               BlocBuilder<ProductsDisplayCubit,
                                   ProductsDisplayState>(
@@ -233,6 +203,38 @@ class HomePage extends StatelessWidget {
                                   }
                                 },
                               ),
+                              const _SectionSeparator(),
+                              const NewInTitle(),
+                              BlocBuilder<NewInDisplayCubit,
+                                  ProductsDisplayState>(
+                                builder: (context, state) {
+                                  if (state is ProductsDisplayLoading) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  } else if (state is ProductsDisplayError) {
+                                    return Center(
+                                      child: Text(
+                                        state.message,
+                                        style:
+                                            const TextStyle(color: Colors.red),
+                                      ),
+                                    );
+                                  } else if (state is ProductsDisplayLoaded) {
+                                    if (state.products.isEmpty) {
+                                      return const Center(
+                                          child: Text('No new products found'));
+                                    }
+                                    return NewInCarousel(
+                                      products: state.products,
+                                      onTap: (product) {
+                                        // TODO Handle product tap
+                                      },
+                                    );
+                                  } else {
+                                    return const SizedBox.shrink();
+                                  }
+                                },
+                              ),
                               const SizedBox(height: 12),
                             ],
                           ),
@@ -244,6 +246,38 @@ class HomePage extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionSeparator extends StatelessWidget {
+  const _SectionSeparator();
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.primary;
+
+    return Padding(
+      padding:
+          const EdgeInsets.only(top: 7.0, bottom: 3.0, left: 6.0, right: 6.0),
+      child: Container(
+        height: 4,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              baseColor.withValues(alpha: 0.0),
+              baseColor.withValues(alpha: 0.22),
+              baseColor.withValues(alpha: 0.9),
+              baseColor.withValues(alpha: 0.22),
+              baseColor.withValues(alpha: 0.0),
+            ],
+            stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+          ),
         ),
       ),
     );
