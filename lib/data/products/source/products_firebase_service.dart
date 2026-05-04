@@ -24,7 +24,10 @@ class ProductsFirebaseServiceImpl implements ProductsFirebaseService {
   Future<Either> getNewIn() async {
     try {
       var data = await FirebaseFirestore.instance.collection('products')
-      .where('createdDate', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(const Duration(days: 30))))
+          .where('createdDate',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(
+                  DateTime.now().subtract(const Duration(days: 1000))))
+          .orderBy('createdDate', descending: true)
       .get();
       return Right(data.docs.map((doc) => doc.data()).toList());
     } catch (e) {

@@ -118,7 +118,7 @@ class HomePage extends StatelessWidget {
                             children: [
                               const SearchBox(),
                               Padding(
-                                padding: const EdgeInsets.only(left: 16.0),
+                                padding: const EdgeInsets.only(left: 6.0),
                                 child: Text(
                                   'Categories',
                                   style: Theme.of(context)
@@ -141,7 +141,7 @@ class HomePage extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 3),
                               BlocBuilder<CategoriesCubit, CategoriesState>(
                                 builder: (context, state) {
                                   if (state is CategoriesLoading) {
@@ -233,7 +233,7 @@ class HomePage extends StatelessWidget {
                                   }
                                 },
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                             ],
                           ),
                         ),

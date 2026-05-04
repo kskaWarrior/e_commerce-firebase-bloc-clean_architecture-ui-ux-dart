@@ -27,21 +27,22 @@ class ProductCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
-        elevation: 20,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+        shadowColor: Colors.black.withValues(alpha: 0.22),
+        elevation: 9,
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: imageUrl.isNotEmpty
                         ? Image.network(
                             ImageDisplayHelper.generateProductImagePath(imageUrl),
-                            height: 310,
+                            height: 232,
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
@@ -50,88 +51,97 @@ class ProductCard extends StatelessWidget {
                           )
                         : _imagePlaceholder(),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    product.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: onFavoritePressed,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 39,
+                          height: 39,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.07),
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: Colors.red,
+                            size: 22,
+                          ),
                         ),
-                    textAlign: TextAlign.start,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Price: ',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 13,
-                            ),
                       ),
-                      Text(
-                        '\$${product.price.toStringAsFixed(2)}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              decoration: product.discountedPrice < product.price
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: product.discountedPrice < product.price
-                                  ? const Color.fromARGB(255, 255, 139, 139)
-                                  : const Color.fromARGB(255, 255, 255, 255),
-                              decorationColor: Colors.white,
-                              fontSize: 14,
-                            ),
-                      ),
-                    ],
-                  ),
-                  if (product.discountedPrice < product.price)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Discounted: ',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                        ),
-                        Text(
-                          '\$${product.discountedPrice.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                        ),
-                      ],
                     ),
+                  ),
                 ],
               ),
-            ),
-            Positioned(
-              right: 15,
-              bottom: 23,
-              child: Material(
-                color: Colors.transparent,
-                shape: const CircleBorder(),
-                child: IconButton(
-                  icon: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.red,
-                    size: 30,
-                  ),
-                  onPressed: onFavoritePressed,
-                  tooltip: 'Add to favorites',
-                ),
+              const SizedBox(height: 8),
+              Text(
+                product.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                textAlign: TextAlign.start,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Price: ',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                        ),
+                  ),
+                  Text(
+                    '\$${product.price.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          decoration: product.discountedPrice < product.price
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: product.discountedPrice < product.price
+                              ? const Color.fromARGB(255, 255, 139, 139)
+                              : const Color.fromARGB(255, 255, 255, 255),
+                          decorationColor: Colors.white,
+                          fontSize: 12,
+                        ),
+                  ),
+                ],
+              ),
+              if (product.discountedPrice < product.price)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Discounted: ',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                    ),
+                    Text(
+                      '\$${product.discountedPrice.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -139,11 +149,11 @@ class ProductCard extends StatelessWidget {
 
   Widget _imagePlaceholder() {
     return Container(
-      height: 310,
+      height: 232,
       width: double.infinity,
       color: Colors.grey[300],
       alignment: Alignment.center,
-      child: const Icon(Icons.broken_image_outlined, size: 60),
+      child: const Icon(Icons.broken_image_outlined, size: 48),
     );
   }
 }

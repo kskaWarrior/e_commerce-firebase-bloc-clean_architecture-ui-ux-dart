@@ -23,7 +23,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.68);
+    _pageController = PageController(viewportFraction: 0.51);
     _isFavorite = List<bool>.filled(widget.products.length, false);
   }
 
@@ -53,13 +53,12 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
       return const Center(child: Text('No top selling products found'));
     }
 
-    final carouselHeight = (MediaQuery.sizeOf(context).height * 0.58)
-        .clamp(340.0, 500.0)
-        .toDouble();
+    const carouselHeight = 346.0;
 
     return SizedBox(
       height: carouselHeight,
       child: PageView.builder(
+        padEnds: false,
         itemCount: widget.products.length,
         controller: _pageController,
         itemBuilder: (context, index) {

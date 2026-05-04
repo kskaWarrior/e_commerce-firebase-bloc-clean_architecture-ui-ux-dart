@@ -7,7 +7,7 @@ class TopSellingTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding:
-          const EdgeInsets.only(left: 20.0, right: 20.0, top: 8),
+          const EdgeInsets.only(left: 20.0, right: 20.0, top: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

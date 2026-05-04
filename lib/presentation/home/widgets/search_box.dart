@@ -9,7 +9,7 @@ class SearchBox extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: 16.0, vertical: 16.0),
+          horizontal: 6.0, vertical: 12.0),
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(24),
