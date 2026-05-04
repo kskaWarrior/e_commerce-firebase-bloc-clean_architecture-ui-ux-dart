@@ -28,10 +28,14 @@ class FirebaseServiceImpl implements FirebaseService {
     } catch (e) {
       if (e is FirebaseAuthException) {
         switch (e.code) {
-          case 'invalid-credentials':
-            return Future.value(Left(Failure(error: 'Invalid credentials')));
+          case 'wrong-password':
+          case 'invalid-credential':
+            return Future.value(Left(Failure(
+                error:
+                    'That password does not look right. Please try again or reset your password.')));
           case 'invalid-email':
-            return Future.value(Left(Failure(error: 'Invalid email')));
+            return Future.value(
+                Left(Failure(error: 'Please enter a valid email address.')));
           default:
             return Future.value(
                 Left(Failure(error: e.message ?? 'Unknown error')));

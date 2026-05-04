@@ -101,85 +101,91 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     constraints:
                         BoxConstraints(minHeight: constraints.maxHeight),
                     child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32.0),
-                        child: Text(
-                          'Don\'t worry, we will help you recover your password in a blink of an eye ;)',
-                          style: TextStyle(
-                            fontFamily: 'CircularStd',
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 32.0),
+                            child: Text(
+                              'Don\'t worry, we will help you recover your password in a blink of an eye ;)',
+                              style: TextStyle(
+                                fontFamily: 'CircularStd',
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      SizedBox(
+                          const SizedBox(height: 40),
+                          SizedBox(
                             width: formWidth,
-                        child: Image.asset(
-                          AppImages.forgotPassword,
+                            child: Image.asset(
+                              AppImages.forgotPassword,
                               width: illustrationSize,
                               height: illustrationSize,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        height: 55,
-                            width: formWidth,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(16),
-                          child: TextField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              hintText: _displayedText,
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 20, horizontal: 16),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(
-                              fontFamily: 'CircularStd',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Builder(
-                        builder: (context) {
-                          return BasicReactiveButton(
-                            text:'Reset Password',
-                            onPressed: () {
-                              if (_emailController.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please enter your email'),
-                                    backgroundColor: Colors.red,
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 55,
+                            width: formWidth,
+                            child: Material(
+                              elevation: 4,
+                              borderRadius: BorderRadius.circular(16),
+                              child: TextField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  hintText: _displayedText,
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 20, horizontal: 16),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
                                   ),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(
+                                  fontFamily: 'CircularStd',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 55,
+                            width: formWidth,
+                            child: Builder(
+                              builder: (context) {
+                                return BasicReactiveButton(
+                                  text: 'Reset Password',
+                                  onPressed: () {
+                                    if (_emailController.text.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                              Text('Please enter your email'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } else {
+                                      context.read<ButtonCubit>().execute(
+                                          useCase: sl<
+                                              SendPasswordEmailResetUseCase>(),
+                                          params: _emailController.text.trim());
+                                    }
+                                  },
                                 );
-                              } else {
-                                context.read<ButtonCubit>().execute(
-                                  useCase: sl<SendPasswordEmailResetUseCase>(),
-                                  params: _emailController.text.trim()
-                                );
-                              }
-                            },
-                            );
-                        }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                     ),
                   ),
                 );
