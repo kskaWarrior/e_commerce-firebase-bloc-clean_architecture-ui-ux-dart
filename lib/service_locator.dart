@@ -5,6 +5,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/r
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/source/firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/repository/category_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/source/category_firebase_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/favorites/repository/favorite_repository_impl.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/favorites/source/favorites_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/repository_impl/products_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/source/products_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/repository/sales_repository_impl.dart';
@@ -18,6 +20,9 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signup.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/repository/category_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/repository/favorite_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/usecases/get_favorites_by_user_id.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/usecases/register_favorite.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/repository/products_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_new_in_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_top_selling_usecase.dart';
@@ -45,6 +50,9 @@ Future<void> init() async {
     ProductsFirebaseServiceImpl()
   );
 
+  sl.registerSingleton<FavoritesFirebaseService>(
+      FavoritesFirebaseServiceImpl());
+
   sl.registerSingleton<SalesFirebaseService>(SalesFirebaseServiceImpl());
 
   //repositories
@@ -53,6 +61,8 @@ Future<void> init() async {
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl());
   
   sl.registerLazySingleton<ProductsRepository>(() => ProductsRepositoryImpl());
+
+  sl.registerLazySingleton<FavoriteRepository>(() => FavoriteRepositoryImpl());
 
   sl.registerLazySingleton<SalesRepository>(() => SalesRepositoryImpl());
   
@@ -67,6 +77,10 @@ Future<void> init() async {
   sl.registerLazySingleton<GetTopSellingProductsUseCase>(() => GetTopSellingProductsUseCase());
   sl.registerLazySingleton<GetNewInProductsUseCase>(
       () => GetNewInProductsUseCase());
+  sl.registerLazySingleton<GetFavoritesByUserIdUseCase>(
+      () => GetFavoritesByUserIdUseCase());
+  sl.registerLazySingleton<RegisterFavoriteUseCase>(
+      () => RegisterFavoriteUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
 
   //cubits

@@ -22,6 +22,24 @@ class FavoriteModel {
       userId: map['userId'] as String,
     );
   }
+
+  factory FavoriteModel.fromEntity(FavoriteEntity entity) {
+    return FavoriteModel(
+      createdDate: entity.createdDate,
+      id: entity.id,
+      productId: entity.productId,
+      userId: entity.userId,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'createdDate': createdDate,
+      'id': id,
+      'productId': productId,
+      'userId': userId,
+    };
+  }
 }
 
 extension FavoriteXModel on FavoriteModel {
