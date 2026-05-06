@@ -7,6 +7,20 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_loc
 
 class SalesRepositoryImpl extends SalesRepository {
   @override
+  Future<Either> getSalesByUserId(String userId) async {
+    final data = await sl<SalesFirebaseService>().getSalesByUserId(userId);
+
+    return data.fold(
+      (error) => Left(error),
+      (sales) => Right(
+        List.from(sales)
+            .map((e) => SalesModel.fromMap(e as Map<String, dynamic>).toEntity())
+            .toList(),
+      ),
+    );
+  }
+
+  @override
   Future<Either> registerSale(SalesEntity sale) async {
     final model = SalesModel.fromEntity(sale);
     return await sl<SalesFirebaseService>().registerSale(model.toMap());

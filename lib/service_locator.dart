@@ -1,5 +1,7 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/favorites/favorites_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/get_sales_by_user_id_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/register_sale_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/repository/auth_repository_impl.dart';
@@ -29,6 +31,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_new_in_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_top_selling_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/repository/sales_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/get_sales_by_user_id.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
@@ -85,6 +88,8 @@ Future<void> init() async {
       () => RegisterFavoriteUseCase());
   sl.registerLazySingleton<DeleteFavoriteUseCase>(
       () => DeleteFavoriteUseCase());
+    sl.registerLazySingleton<GetSalesByUserIdUseCase>(
+      () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
 
   //cubits
@@ -101,6 +106,16 @@ Future<void> init() async {
       getFavoritesByUserIdUseCase: sl<GetFavoritesByUserIdUseCase>(),
       registerFavoriteUseCase: sl<RegisterFavoriteUseCase>(),
       deleteFavoriteUseCase: sl<DeleteFavoriteUseCase>(),
+    ),
+  );
+  sl.registerFactory<RegisterSaleCubit>(
+    () => RegisterSaleCubit(
+      registerSaleUseCase: sl<RegisterSaleUseCase>(),
+    ),
+  );
+  sl.registerFactory<GetSalesByUserIdCubit>(
+    () => GetSalesByUserIdCubit(
+      getSalesByUserIdUseCase: sl<GetSalesByUserIdUseCase>(),
     ),
   );
 }
