@@ -25,4 +25,12 @@ class FavoriteRepositoryImpl extends FavoriteRepository {
     final model = FavoriteModel.fromEntity(favorite);
     return await sl<FavoritesFirebaseService>().registerFavorite(model.toMap());
   }
+
+  @override
+  Future<Either> deleteFavorite(String userId, String productId) async {
+    return await sl<FavoritesFirebaseService>().deleteFavorite(
+      userId,
+      productId,
+    );
+  }
 }

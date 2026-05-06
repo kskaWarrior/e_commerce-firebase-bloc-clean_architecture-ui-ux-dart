@@ -4,4 +4,5 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favo
 abstract class FavoriteRepository {
   Future<Either> getFavoritesByUserId(String userId);
   Future<Either> registerFavorite(FavoriteEntity favorite);
+  Future<Either> deleteFavorite(String userId, String productId);
 }

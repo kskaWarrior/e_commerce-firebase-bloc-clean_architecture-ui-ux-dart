@@ -1,6 +1,9 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories.state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/favorites/favorites_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/favorites/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_state.dart';
@@ -15,6 +18,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,6 +28,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -36,6 +43,15 @@ class HomePage extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => sl<SignOutCubit>(),
+        ),
+        BlocProvider(
+          create: (context) {
+            final cubit = sl<FavoritesCubit>();
+            if (userId != null && userId.isNotEmpty) {
+              cubit.loadFavoritesByUserId(userId);
+            }
+            return cubit;
+          },
         ),
       ],
       child: MultiBlocListener(
@@ -87,6 +103,36 @@ class HomePage extends StatelessWidget {
                 );
               } else if (state is SignOutSuccess) {
                 AppNavigator.pushAndRemoveUntil(context, const SigninPage());
+              }
+            },
+          ),
+          BlocListener<FavoritesCubit, FavoritesState>(
+            listener: (context, state) {
+              if (state is FavoritesError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else if (state is FavoritesRegisterSuccess) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+              } else if (state is FavoritesDeleteSuccess) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
               }
             },
           ),
@@ -173,66 +219,183 @@ class HomePage extends StatelessWidget {
                               ),
                               const _SectionSeparator(),
                               const TopSellingTitle(),
-                              BlocBuilder<ProductsDisplayCubit,
-                                  ProductsDisplayState>(
-                                builder: (context, state) {
-                                  if (state is ProductsDisplayLoading) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  } else if (state is ProductsDisplayError) {
-                                    return Center(
-                                      child: Text(
-                                        state.message,
-                                        style:
-                                            const TextStyle(color: Colors.red),
-                                      ),
-                                    );
-                                  } else if (state is ProductsDisplayLoaded) {
-                                    if (state.products.isEmpty) {
-                                      return const Center(
-                                          child: Text('No products found'));
-                                    }
-                                    return TopSellingCarousel(
-                                      products: state.products,
-                                      onTap: (product) {
-                                        // TODO Handle product tap
-                                      },
-                                    );
-                                  } else {
-                                    return const SizedBox.shrink();
-                                  }
+                              BlocBuilder<FavoritesCubit, FavoritesState>(
+                                builder: (context, favoritesState) {
+                                  final favoriteProductIds =
+                                      favoritesState is FavoritesLoaded
+                                          ? favoritesState.favorites
+                                              .map((e) => e.productId)
+                                              .toSet()
+                                          : <String>{};
+
+                                  return BlocBuilder<ProductsDisplayCubit,
+                                      ProductsDisplayState>(
+                                    builder: (context, state) {
+                                      if (state is ProductsDisplayLoading) {
+                                        return const Center(
+                                            child: CircularProgressIndicator());
+                                      } else if (state
+                                          is ProductsDisplayError) {
+                                        return Center(
+                                          child: Text(
+                                            state.message,
+                                            style: const TextStyle(
+                                                color: Colors.red),
+                                          ),
+                                        );
+                                      } else if (state
+                                          is ProductsDisplayLoaded) {
+                                        if (state.products.isEmpty) {
+                                          return const Center(
+                                              child: Text('No products found'));
+                                        }
+                                        return TopSellingCarousel(
+                                          products: state.products,
+                                          favoriteProductIds:
+                                              favoriteProductIds,
+                                          onTap: (product) {
+                                            // TODO Handle product tap
+                                          },
+                                          onFavoritePressed: (product) async {
+                                            if (userId == null ||
+                                                userId.isEmpty) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Please sign in to add favorites.'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            if (favoriteProductIds
+                                                .contains(product.productId)) {
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .deleteFavorite(
+                                                    userId,
+                                                    product.productId,
+                                                  );
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .loadFavoritesByUserId(
+                                                      userId);
+                                              return;
+                                            }
+
+                                            final favorite = FavoriteEntity(
+                                              createdDate: Timestamp.now(),
+                                              id: '',
+                                              productId: product.productId,
+                                              userId: userId,
+                                            );
+
+                                            await context
+                                                .read<FavoritesCubit>()
+                                                .registerFavorite(favorite);
+                                            await context
+                                                .read<FavoritesCubit>()
+                                                .loadFavoritesByUserId(userId);
+                                          },
+                                        );
+                                      } else {
+                                        return const SizedBox.shrink();
+                                      }
+                                    },
+                                  );
                                 },
                               ),
                               const _SectionSeparator(),
                               const NewInTitle(),
-                              BlocBuilder<NewInDisplayCubit,
-                                  ProductsDisplayState>(
-                                builder: (context, state) {
-                                  if (state is ProductsDisplayLoading) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  } else if (state is ProductsDisplayError) {
-                                    return Center(
-                                      child: Text(
-                                        state.message,
-                                        style:
-                                            const TextStyle(color: Colors.red),
-                                      ),
-                                    );
-                                  } else if (state is ProductsDisplayLoaded) {
-                                    if (state.products.isEmpty) {
-                                      return const Center(
-                                          child: Text('No new products found'));
-                                    }
-                                    return NewInCarousel(
-                                      products: state.products,
-                                      onTap: (product) {
-                                        // TODO Handle product tap
-                                      },
-                                    );
-                                  } else {
-                                    return const SizedBox.shrink();
-                                  }
+                              BlocBuilder<FavoritesCubit, FavoritesState>(
+                                builder: (context, favoritesState) {
+                                  final favoriteProductIds =
+                                      favoritesState is FavoritesLoaded
+                                          ? favoritesState.favorites
+                                              .map((e) => e.productId)
+                                              .toSet()
+                                          : <String>{};
+
+                                  return BlocBuilder<NewInDisplayCubit,
+                                      ProductsDisplayState>(
+                                    builder: (context, state) {
+                                      if (state is ProductsDisplayLoading) {
+                                        return const Center(
+                                            child: CircularProgressIndicator());
+                                      } else if (state
+                                          is ProductsDisplayError) {
+                                        return Center(
+                                          child: Text(
+                                            state.message,
+                                            style: const TextStyle(
+                                                color: Colors.red),
+                                          ),
+                                        );
+                                      } else if (state
+                                          is ProductsDisplayLoaded) {
+                                        if (state.products.isEmpty) {
+                                          return const Center(
+                                              child: Text(
+                                                  'No new products found'));
+                                        }
+                                        return NewInCarousel(
+                                          products: state.products,
+                                          favoriteProductIds:
+                                              favoriteProductIds,
+                                          onTap: (product) {
+                                            // TODO Handle product tap
+                                          },
+                                          onFavoritePressed: (product) async {
+                                            if (userId == null ||
+                                                userId.isEmpty) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Please sign in to add favorites.'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            if (favoriteProductIds
+                                                .contains(product.productId)) {
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .deleteFavorite(
+                                                    userId,
+                                                    product.productId,
+                                                  );
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .loadFavoritesByUserId(
+                                                      userId);
+                                              return;
+                                            }
+
+                                            final favorite = FavoriteEntity(
+                                              createdDate: Timestamp.now(),
+                                              id: '',
+                                              productId: product.productId,
+                                              userId: userId,
+                                            );
+
+                                            await context
+                                                .read<FavoritesCubit>()
+                                                .registerFavorite(favorite);
+                                            await context
+                                                .read<FavoritesCubit>()
+                                                .loadFavoritesByUserId(userId);
+                                          },
+                                        );
+                                      } else {
+                                        return const SizedBox.shrink();
+                                      }
+                                    },
+                                  );
                                 },
                               ),
                               const SizedBox(height: 12),

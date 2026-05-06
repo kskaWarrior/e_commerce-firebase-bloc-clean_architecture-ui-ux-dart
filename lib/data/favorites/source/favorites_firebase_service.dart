@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 abstract class FavoritesFirebaseService {
   Future<Either> getFavoritesByUserId(String userId);
   Future<Either> registerFavorite(Map<String, dynamic> favorite);
+  Future<Either> deleteFavorite(String userId, String productId);
 }
 
 class FavoritesFirebaseServiceImpl implements FavoritesFirebaseService {
@@ -37,6 +38,29 @@ class FavoritesFirebaseServiceImpl implements FavoritesFirebaseService {
       return const Right('Favorite registered successfully!');
     } catch (e) {
       return Left('Failed to register favorite. Please try again.');
+    }
+  }
+
+  @override
+  Future<Either> deleteFavorite(String userId, String productId) async {
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('favorites')
+          .where('userId', isEqualTo: userId)
+          .where('productId', isEqualTo: productId)
+          .get();
+
+      if (query.docs.isEmpty) {
+        return const Right('Favorite not found.');
+      }
+
+      for (final doc in query.docs) {
+        await doc.reference.delete();
+      }
+
+      return const Right('Favorite removed successfully!');
+    } catch (e) {
+      return Left('Failed to remove favorite. Please try again.');
     }
   }
 }

@@ -5,11 +5,15 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 class TopSellingCarousel extends StatefulWidget {
   final List<ProductEntity> products;
   final void Function(ProductEntity)? onTap;
+  final Set<String> favoriteProductIds;
+  final void Function(ProductEntity)? onFavoritePressed;
 
   const TopSellingCarousel({
     super.key,
     required this.products,
     this.onTap,
+    this.favoriteProductIds = const <String>{},
+    this.onFavoritePressed,
   });
 
   @override
@@ -18,27 +22,11 @@ class TopSellingCarousel extends StatefulWidget {
 
 class _TopSellingCarouselState extends State<TopSellingCarousel> {
   late final PageController _pageController;
-  late List<bool> _isFavorite;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.62);
-    _isFavorite = List<bool>.filled(widget.products.length, false);
-  }
-
-  @override
-  void didUpdateWidget(covariant TopSellingCarousel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.products.length != widget.products.length) {
-      final updated = List<bool>.filled(widget.products.length, false);
-      for (var index = 0;
-          index < updated.length && index < _isFavorite.length;
-          index++) {
-        updated[index] = _isFavorite[index];
-      }
-      _isFavorite = updated;
-    }
   }
 
   @override
@@ -66,12 +54,8 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
           return ProductCard(
             product: product,
             onTap: () => widget.onTap?.call(product),
-            isFavorite: _isFavorite[index],
-            onFavoritePressed: () {
-              setState(() {
-                _isFavorite[index] = !_isFavorite[index];
-              });
-            },
+            isFavorite: widget.favoriteProductIds.contains(product.productId),
+            onFavoritePressed: () => widget.onFavoritePressed?.call(product),
           );
         },
       ),

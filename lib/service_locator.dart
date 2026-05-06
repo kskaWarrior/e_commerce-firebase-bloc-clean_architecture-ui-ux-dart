@@ -1,4 +1,5 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/categories/categories_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/favorites/favorites_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/repository/auth_repository_impl.dart';
@@ -21,6 +22,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/repository/category_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/repository/favorite_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/usecases/delete_favorite.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/usecases/get_favorites_by_user_id.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/usecases/register_favorite.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/repository/products_repository.dart';
@@ -81,6 +83,8 @@ Future<void> init() async {
       () => GetFavoritesByUserIdUseCase());
   sl.registerLazySingleton<RegisterFavoriteUseCase>(
       () => RegisterFavoriteUseCase());
+  sl.registerLazySingleton<DeleteFavoriteUseCase>(
+      () => DeleteFavoriteUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
 
   //cubits
@@ -91,5 +95,12 @@ Future<void> init() async {
   sl.registerFactory<NewInDisplayCubit>(
       () => NewInDisplayCubit(sl<GetNewInProductsUseCase>()));
   sl.registerFactory<ProductsDisplayCubit>(
-      () => ProductsDisplayCubit(sl<GetTopSellingProductsUseCase>())); 
+      () => ProductsDisplayCubit(sl<GetTopSellingProductsUseCase>()));
+  sl.registerFactory<FavoritesCubit>(
+    () => FavoritesCubit(
+      getFavoritesByUserIdUseCase: sl<GetFavoritesByUserIdUseCase>(),
+      registerFavoriteUseCase: sl<RegisterFavoriteUseCase>(),
+      deleteFavoriteUseCase: sl<DeleteFavoriteUseCase>(),
+    ),
+  );
 }
