@@ -271,12 +271,12 @@ class HomePage extends StatelessWidget {
                                             }
 
                                             if (favoriteProductIds
-                                                .contains(product.productId)) {
+                                                .contains(product.id)) {
                                               await context
                                                   .read<FavoritesCubit>()
                                                   .deleteFavorite(
                                                     userId,
-                                                    product.productId,
+                                                    product.id,
                                                   );
                                               await context
                                                   .read<FavoritesCubit>()
@@ -288,7 +288,7 @@ class HomePage extends StatelessWidget {
                                             final favorite = FavoriteEntity(
                                               createdDate: Timestamp.now(),
                                               id: '',
-                                              productId: product.productId,
+                                              productId: product.id,
                                               userId: userId,
                                             );
 
@@ -362,12 +362,12 @@ class HomePage extends StatelessWidget {
                                             }
 
                                             if (favoriteProductIds
-                                                .contains(product.productId)) {
+                                                .contains(product.id)) {
                                               await context
                                                   .read<FavoritesCubit>()
                                                   .deleteFavorite(
                                                     userId,
-                                                    product.productId,
+                                                    product.id,
                                                   );
                                               await context
                                                   .read<FavoritesCubit>()
@@ -379,7 +379,7 @@ class HomePage extends StatelessWidget {
                                             final favorite = FavoriteEntity(
                                               createdDate: Timestamp.now(),
                                               id: '',
-                                              productId: product.productId,
+                                              productId: product.id,
                                               userId: userId,
                                             );
 

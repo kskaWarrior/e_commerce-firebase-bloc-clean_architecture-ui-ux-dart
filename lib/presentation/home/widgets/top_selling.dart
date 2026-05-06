@@ -54,7 +54,7 @@ class _TopSellingCarouselState extends State<TopSellingCarousel> {
           return ProductCard(
             product: product,
             onTap: () => widget.onTap?.call(product),
-            isFavorite: widget.favoriteProductIds.contains(product.productId),
+            isFavorite: widget.favoriteProductIds.contains(product.id),
             onFavoritePressed: () => widget.onFavoritePressed?.call(product),
           );
         },
