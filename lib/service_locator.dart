@@ -7,6 +7,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/catego
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/source/category_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/repository_impl/products_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/source/products_firebase_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/repository/sales_repository_impl.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/source/sales_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/is_logged_in.dart';
@@ -19,6 +21,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/cate
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/repository/products_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_new_in_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_top_selling_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/repository/sales_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
@@ -41,12 +45,16 @@ Future<void> init() async {
     ProductsFirebaseServiceImpl()
   );
 
+  sl.registerSingleton<SalesFirebaseService>(SalesFirebaseServiceImpl());
+
   //repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
   
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl());
   
   sl.registerLazySingleton<ProductsRepository>(() => ProductsRepositoryImpl());
+
+  sl.registerLazySingleton<SalesRepository>(() => SalesRepositoryImpl());
   
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
@@ -59,6 +67,7 @@ Future<void> init() async {
   sl.registerLazySingleton<GetTopSellingProductsUseCase>(() => GetTopSellingProductsUseCase());
   sl.registerLazySingleton<GetNewInProductsUseCase>(
       () => GetNewInProductsUseCase());
+  sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
 
   //cubits
   sl.registerLazySingleton<UserCubit>(() => UserCubit());
