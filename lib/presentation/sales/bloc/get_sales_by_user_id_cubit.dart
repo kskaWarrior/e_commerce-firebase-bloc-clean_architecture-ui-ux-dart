@@ -1,4 +1,4 @@
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/get_sales_by_user_id_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/get_sales_by_user_id.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -1,4 +1,4 @@
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/product_card.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:flutter/material.dart';
 

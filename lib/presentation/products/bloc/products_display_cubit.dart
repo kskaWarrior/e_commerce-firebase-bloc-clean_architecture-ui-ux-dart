@@ -1,4 +1,4 @@
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/utils/usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

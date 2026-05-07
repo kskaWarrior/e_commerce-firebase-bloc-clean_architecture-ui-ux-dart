@@ -1,5 +1,5 @@
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/get_sales_by_user_id_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/get_sales_by_user_id_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -262,12 +262,15 @@ class _PurchaseCardState extends State<_PurchaseCard> {
               value: _formatCurrency(installmentValue),
             ),
             const SizedBox(height: 10),
-            Text(
-              'Products details:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontFamily: 'CircularStd',
-                    fontWeight: FontWeight.w700,
-                  ),
+            Center(
+              child: Text(
+                'Products details:',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontFamily: 'CircularStd',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15
+                    ),
+              ),
             ),
             const SizedBox(height: 8),
             if (products.isEmpty)
@@ -278,17 +281,267 @@ class _PurchaseCardState extends State<_PurchaseCard> {
                     ),
               )
             else
-              ...products.map(
-                (product) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: _LineItem(
-                    label:
-                        '${_productName(product)} x${_productQuantity(product)}',
-                    value: _productPriceLabel(product),
-                  ),
-                ),
+              Column(
+                children: products
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: entry.key == products.length - 1 ? 0 : 8,
+                        ),
+                        child: _ProductItemCard(product: entry.value),
+                      ),
+                    )
+                    .toList(),
               ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductItemCard extends StatelessWidget {
+  final Map<String, dynamic> product;
+
+  const _ProductItemCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final quantity = _productQuantity(product);
+    final unitDiscounted = _productUnitDiscounted(product);
+    final unitPrice = _productUnitPrice(product);
+    final lineTotal = _productLineTotal(
+      product,
+      quantity,
+      unitDiscounted ?? unitPrice,
+    );
+    final sizeLabel = _productSizeLabel(product);
+    final colorName = _productColorName(product);
+    final colorHex = _productColorHex(product);
+    final colorValue = _parseHexColor(colorHex);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  _productName(product),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontFamily: 'CircularStd',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16
+                      ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _QuantityBadge(quantity: quantity),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MetaPill(
+                label: 'Size',
+                value: sizeLabel,
+              ),
+              _ColorMetaPill(
+                colorLabel: colorName,
+                colorHex: colorHex,
+                colorValue: colorValue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _PriceMetric(
+                  label: 'Unit discounted',
+                  value: unitDiscounted != null
+                      ? _formatCurrency(unitDiscounted)
+                      : '-',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PriceMetric(
+                  label: 'Unit price',
+                  value: unitPrice != null ? _formatCurrency(unitPrice) : '-',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PriceMetric(
+                  label: 'Line total',
+                  value: lineTotal != null ? _formatCurrency(lineTotal) : '-',
+                  emphasize: true,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantityBadge extends StatelessWidget {
+  final int quantity;
+
+  const _QuantityBadge({required this.quantity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
+      ),
+      child: Text(
+        'x$quantity',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontFamily: 'CircularStd',
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}
+
+class _PriceMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  const _PriceMetric({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color:
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.65),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontFamily: 'CircularStd',
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontFamily: 'CircularStd',
+                  fontWeight: FontWeight.w800,
+                  color: emphasize ? Colors.green.shade700 : null,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MetaPill({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+      ),
+      child: Text(
+        '$label: $value',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontFamily: 'CircularStd',
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}
+
+class _ColorMetaPill extends StatelessWidget {
+  final String colorLabel;
+  final String colorHex;
+  final Color? colorValue;
+
+  const _ColorMetaPill({
+    required this.colorLabel,
+    required this.colorHex,
+    required this.colorValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = colorLabel.isEmpty ? 'N/A' : colorLabel;
+    final hexLabel = colorHex.isEmpty ? 'N/A' : colorHex;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorValue ?? Colors.transparent,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Color: $label ($hexLabel)',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontFamily: 'CircularStd',
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
         ],
       ),
     );
@@ -541,15 +794,105 @@ int _productQuantity(Map<String, dynamic> product) {
   return 1;
 }
 
-String _productPriceLabel(Map<String, dynamic> product) {
-  final discounted = product['discountedPrice'];
-  final regular = product['price'];
+double? _toDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value.trim());
+  }
+  return null;
+}
 
-  if (discounted is num) {
-    return _formatCurrency(discounted.toDouble());
+double? _productUnitPrice(Map<String, dynamic> product) {
+  return _toDouble(product['unitPrice']) ??
+      _toDouble(product['price']) ??
+      _toDouble(product['regularPrice']);
+}
+
+double? _productUnitDiscounted(Map<String, dynamic> product) {
+  return _toDouble(product['unitDiscounted']) ??
+      _toDouble(product['discountedPrice']) ??
+      _toDouble(product['unitDiscountedPrice']);
+}
+
+double? _productLineTotal(
+  Map<String, dynamic> product,
+  int quantity,
+  double? unitPrice,
+) {
+  return _toDouble(product['totalPrice']) ??
+      _toDouble(product['lineTotal']) ??
+      _toDouble(product['subtotal']) ??
+      (unitPrice != null ? unitPrice * quantity : null);
+}
+
+String _productSizeLabel(Map<String, dynamic> product) {
+  final raw = product['size'];
+  if (raw == null) {
+    return '-';
   }
-  if (regular is num) {
-    return _formatCurrency(regular.toDouble());
+
+  if (raw is int) {
+    return raw.toString();
   }
-  return '-';
+  if (raw is num) {
+    return raw.toInt().toString();
+  }
+
+  if (raw is String) {
+    final text = raw.trim();
+    if (text.isEmpty) {
+      return '-';
+    }
+
+    final normalized = text.replaceAll(',', '.');
+    final intValue = int.tryParse(normalized);
+    if (intValue != null) {
+      return intValue.toString();
+    }
+
+    final doubleValue = double.tryParse(normalized);
+    if (doubleValue != null) {
+      return doubleValue.toInt().toString();
+    }
+
+    return text;
+  }
+
+  final fallback = raw.toString().trim();
+  return fallback.isEmpty ? '-' : fallback;
+}
+
+String _productColorName(Map<String, dynamic> product) {
+  final raw = product['color'];
+  return raw?.toString().trim() ?? '';
+}
+
+String _productColorHex(Map<String, dynamic> product) {
+  final raw = product['colorHex'] ?? product['color_hex'] ?? product['hexColor'];
+  return raw?.toString().trim() ?? '';
+}
+
+Color? _parseHexColor(String input) {
+  final normalized = input.trim().replaceAll('#', '');
+  if (normalized.isEmpty) {
+    return null;
+  }
+
+  final buffer = StringBuffer();
+  if (normalized.length == 6) {
+    buffer.write('FF');
+  }
+  buffer.write(normalized);
+
+  if (buffer.length != 8) {
+    return null;
+  }
+
+  final value = int.tryParse(buffer.toString(), radix: 16);
+  if (value == null) {
+    return null;
+  }
+  return Color(value);
 }

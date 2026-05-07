@@ -1,4 +1,4 @@
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/register_sale_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/register_sale_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
