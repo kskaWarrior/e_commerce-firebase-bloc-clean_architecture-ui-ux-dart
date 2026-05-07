@@ -8,7 +8,7 @@ class SalesEntity {
   final int installmentsNumber;
   final String paymentMethod;
   final double price;
-  final String productId;
+  final List<String> productsIds;
   final double totalPrice;
   final String userId;
 
@@ -20,7 +20,7 @@ class SalesEntity {
     required this.installmentsNumber,
     required this.paymentMethod,
     required this.price,
-    required this.productId,
+    required this.productsIds,
     required this.totalPrice,
     required this.userId,
   });

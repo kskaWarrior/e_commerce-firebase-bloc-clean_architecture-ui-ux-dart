@@ -9,7 +9,7 @@ class SalesModel {
   final int installmentsNumber;
   final String paymentMethod;
   final double price;
-  final String productId;
+  final List<String> productsIds;
   final double totalPrice;
   final String userId;
 
@@ -21,7 +21,7 @@ class SalesModel {
     required this.installmentsNumber,
     required this.paymentMethod,
     required this.price,
-    required this.productId,
+    required this.productsIds,
     required this.totalPrice,
     required this.userId,
   });
@@ -35,7 +35,9 @@ class SalesModel {
       installmentsNumber: map['installmentsNumber'] as int,
       paymentMethod: map['paymentMethod'] as String,
       price: (map['price'] as num).toDouble(),
-      productId: map['productId'] as String,
+      productsIds: (map['productsIds'] as List<dynamic>)
+          .map((id) => id as String)
+          .toList(),
       totalPrice: (map['totalPrice'] as num).toDouble(),
       userId: map['userId'] as String,
     );
@@ -50,7 +52,7 @@ class SalesModel {
       installmentsNumber: entity.installmentsNumber,
       paymentMethod: entity.paymentMethod,
       price: entity.price,
-      productId: entity.productId,
+      productsIds: entity.productsIds,
       totalPrice: entity.totalPrice,
       userId: entity.userId,
     );
@@ -65,7 +67,7 @@ class SalesModel {
       'installmentsNumber': installmentsNumber,
       'paymentMethod': paymentMethod,
       'price': price,
-      'productId': productId,
+      'productsIds': productsIds,
       'totalPrice': totalPrice,
       'userId': userId,
     };
@@ -82,7 +84,7 @@ extension SalesXModel on SalesModel {
       installmentsNumber: installmentsNumber,
       paymentMethod: paymentMethod,
       price: price,
-      productId: productId,
+      productsIds: productsIds,
       totalPrice: totalPrice,
       userId: userId,
     );

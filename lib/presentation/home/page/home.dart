@@ -19,6 +19,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/search_box.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/pages/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -239,7 +240,14 @@ class _HomePageState extends State<HomePage> {
                                             favoriteProductIds:
                                                 favoriteProductIds,
                                             onTap: (product) {
-                                              // TODO Handle product tap
+                                              AppNavigator.push(
+                                                context,
+                                                ProductPage(
+                                                  product: product,
+                                                  topSellingProducts:
+                                                      state.products,
+                                                ),
+                                              );
                                             },
                                             onFavoritePressed: (product) async {
                                               if (userId == null ||
@@ -413,7 +421,14 @@ class _HomePageState extends State<HomePage> {
                                             favoriteProductIds:
                                                 favoriteProductIds,
                                             onTap: (product) {
-                                              // TODO Handle product tap
+                                              AppNavigator.push(
+                                                context,
+                                                ProductPage(
+                                                  product: product,
+                                                  topSellingProducts:
+                                                      state.products,
+                                                ),
+                                              );
                                             },
                                             onFavoritePressed: (product) async {
                                               if (userId == null ||
@@ -505,7 +520,14 @@ class _HomePageState extends State<HomePage> {
                                           favoriteProductIds:
                                               favoriteProductIds,
                                           onTap: (product) {
-                                            // TODO Handle product tap
+                                            AppNavigator.push(
+                                              context,
+                                              ProductPage(
+                                                product: product,
+                                                topSellingProducts:
+                                                    state.products,
+                                              ),
+                                            );
                                           },
                                           onFavoritePressed: (product) async {
                                             if (userId == null ||
@@ -596,7 +618,14 @@ class _HomePageState extends State<HomePage> {
                                           favoriteProductIds:
                                               favoriteProductIds,
                                           onTap: (product) {
-                                            // TODO Handle product tap
+                                            AppNavigator.push(
+                                              context,
+                                              ProductPage(
+                                                product: product,
+                                                topSellingProducts:
+                                                    state.products,
+                                              ),
+                                            );
                                           },
                                           onFavoritePressed: (product) async {
                                             if (userId == null ||
