@@ -20,6 +20,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/pages/product_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,6 +36,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _selectedCategoryId;
   String? _selectedCategoryTitle;
   String _searchQuery = '';
@@ -153,11 +156,183 @@ class _HomePageState extends State<HomePage> {
           builder: (context) {
             final isLoggingOut = context
                 .select((SignOutCubit cubit) => cubit.state is SignOutLoading);
+            final currentUser = FirebaseAuth.instance.currentUser;
+            final userDisplayName = (currentUser?.displayName ?? '').trim();
+            final userEmail = (currentUser?.email ?? 'Signed in user').trim();
 
             return Scaffold(
+              key: _scaffoldKey,
               appBar: HomeHeader(
                 isLoggingOut: isLoggingOut,
-                onLogoutTap: () => context.read<SignOutCubit>().signOut(),
+                onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+                onCartTap: () => AppNavigator.push(context, const CartPage()),
+              ),
+              drawer: Drawer(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(22),
+                    bottomRight: Radius.circular(22),
+                  ),
+                ),
+                child: SafeArea(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.12),
+                          Theme.of(context).colorScheme.surface,
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.28),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                child: Icon(
+                                  Icons.person_outline,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .inversePrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  userEmail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        fontSize: 13,
+                                        fontFamily: 'CircularStd',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (userDisplayName.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                userDisplayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      fontFamily: 'CircularStd',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ListTileTheme(
+                          iconColor:
+                              Theme.of(context).colorScheme.inversePrimary,
+                          textColor:
+                              Theme.of(context).colorScheme.inversePrimary,
+                          child: Column(
+                            children: [
+                              _DrawerNavTile(
+                                icon: Icons.account_circle_outlined,
+                                label: 'My Profile',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  AppNavigator.push(
+                                      context, const _MyProfilePage());
+                                },
+                              ),
+                              _DrawerNavTile(
+                                icon: Icons.favorite_border,
+                                label: 'Favorites',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  AppNavigator.push(
+                                      context, const _FavoritesPage());
+                                },
+                              ),
+                              _DrawerNavTile(
+                                icon: Icons.shopping_bag_outlined,
+                                label: 'My Purchases',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  AppNavigator.push(
+                                      context, const MyPurchasesPage());
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Divider(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 1),
+                            height: 5,
+                          ),
+                        ),
+                        _DrawerNavTile(
+                          icon: Icons.logout,
+                          label: 'Logout',
+                          enabled: !isLoggingOut,
+                          trailing: isLoggingOut
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : null,
+                          onTap: isLoggingOut
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                  context.read<SignOutCubit>().signOut();
+                                },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                ),
               ),
               body: SafeArea(
                 child: LayoutBuilder(
@@ -365,26 +540,52 @@ class _HomePageState extends State<HomePage> {
                                 const SizedBox(height: 8),
                                 Padding(
                                   padding: const EdgeInsets.only(left: 6.0),
-                                  child: Text(
-                                    _selectedCategoryTitle ?? 'Category',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .inversePrimary,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.4),
-                                          offset: const Offset(1, 3),
-                                          blurRadius: 4,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _selectedCategoryTitle ?? 'Category',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .inversePrimary,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.4),
+                                                offset: const Offset(1, 3),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_up,
+                                          size: 28,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .inversePrimary,
+                                        ),
+                                        tooltip: 'Hide category',
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedCategoryId = null;
+                                            _selectedCategoryTitle = null;
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -721,6 +922,95 @@ class _SectionSeparator extends StatelessWidget {
             ],
             stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerNavTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+  final bool enabled;
+
+  const _DrawerNavTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.trailing,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        leading: Icon(icon),
+        title: Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontFamily: 'CircularStd',
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        trailing: trailing,
+        enabled: enabled,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _MyProfilePage extends StatelessWidget {
+  const _MyProfilePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.account_circle_outlined, size: 64),
+              const SizedBox(height: 12),
+              Text(user?.displayName ?? 'Name not available'),
+              const SizedBox(height: 6),
+              Text(user?.email ?? 'Email not available'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoritesPage extends StatelessWidget {
+  const _FavoritesPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Favorites'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Text(
+          'Your favorites are managed directly from product lists.',
+          style: Theme.of(context).textTheme.bodyLarge,
+          textAlign: TextAlign.center,
         ),
       ),
     );

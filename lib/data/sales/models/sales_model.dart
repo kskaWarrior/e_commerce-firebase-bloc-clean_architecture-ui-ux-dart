@@ -9,7 +9,7 @@ class SalesModel {
   final int installmentsNumber;
   final String paymentMethod;
   final double price;
-  final List<String> productsIds;
+  final List<Map<String, dynamic>> productsList;
   final double totalPrice;
   final String userId;
 
@@ -21,25 +21,60 @@ class SalesModel {
     required this.installmentsNumber,
     required this.paymentMethod,
     required this.price,
-    required this.productsIds,
+    required this.productsList,
     required this.totalPrice,
     required this.userId,
   });
 
+  static double _toDouble(dynamic value, {double fallback = 0.0}) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return fallback;
+  }
+
+  static int _toInt(dynamic value, {int fallback = 1}) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return fallback;
+  }
+
+  static Timestamp _toTimestamp(dynamic value) {
+    if (value is Timestamp) {
+      return value;
+    }
+    return Timestamp.now();
+  }
+
+  static List<Map<String, dynamic>> _toProductsList(Map<String, dynamic> map) {
+    final rawItems = map['productsList'] ?? map['productsIds'];
+
+    if (rawItems is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    return rawItems
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
   factory SalesModel.fromMap(Map<String, dynamic> map) {
     return SalesModel(
-      createdDate: map['createdDate'] as Timestamp,
-      discountedPrice: (map['discountedPrice'] as num).toDouble(),
-      freight: (map['freight'] as num).toDouble(),
-      id: map['id'] as String,
-      installmentsNumber: map['installmentsNumber'] as int,
-      paymentMethod: map['paymentMethod'] as String,
-      price: (map['price'] as num).toDouble(),
-      productsIds: (map['productsIds'] as List<dynamic>)
-          .map((id) => id as String)
-          .toList(),
-      totalPrice: (map['totalPrice'] as num).toDouble(),
-      userId: map['userId'] as String,
+      createdDate: _toTimestamp(map['createdDate']),
+      discountedPrice: _toDouble(map['discountedPrice']),
+      freight: _toDouble(map['freight']),
+      id: (map['id'] ?? '').toString(),
+      installmentsNumber: _toInt(map['installmentsNumber']),
+      paymentMethod: (map['paymentMethod'] ?? 'Unknown').toString(),
+      price: _toDouble(map['price']),
+      productsList: _toProductsList(map),
+      totalPrice: _toDouble(map['totalPrice']),
+      userId: (map['userId'] ?? '').toString(),
     );
   }
 
@@ -52,7 +87,7 @@ class SalesModel {
       installmentsNumber: entity.installmentsNumber,
       paymentMethod: entity.paymentMethod,
       price: entity.price,
-      productsIds: entity.productsIds,
+      productsList: entity.productsList,
       totalPrice: entity.totalPrice,
       userId: entity.userId,
     );
@@ -67,7 +102,7 @@ class SalesModel {
       'installmentsNumber': installmentsNumber,
       'paymentMethod': paymentMethod,
       'price': price,
-      'productsIds': productsIds,
+      'productsList': productsList,
       'totalPrice': totalPrice,
       'userId': userId,
     };
@@ -84,7 +119,7 @@ extension SalesXModel on SalesModel {
       installmentsNumber: installmentsNumber,
       paymentMethod: paymentMethod,
       price: price,
-      productsIds: productsIds,
+      productsList: productsList,
       totalPrice: totalPrice,
       userId: userId,
     );

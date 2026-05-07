@@ -12,11 +12,19 @@ class SalesRepositoryImpl extends SalesRepository {
 
     return data.fold(
       (error) => Left(error),
-      (sales) => Right(
-        List.from(sales)
-            .map((e) => SalesModel.fromMap(e as Map<String, dynamic>).toEntity())
-            .toList(),
-      ),
+      (sales) {
+        try {
+          final parsedSales = List.from(sales)
+              .whereType<Map>()
+              .map((e) =>
+                  SalesModel.fromMap(Map<String, dynamic>.from(e)).toEntity())
+              .toList();
+
+          return Right(parsedSales);
+        } catch (_) {
+          return Left('Failed to parse purchases data. Please try again.');
+        }
+      },
     );
   }
 
