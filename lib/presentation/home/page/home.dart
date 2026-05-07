@@ -11,9 +11,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/category_carousel.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/header.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in_title.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/search_carousel.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/search_box.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
@@ -23,8 +25,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String? _selectedCategoryId;
+  String? _selectedCategoryTitle;
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +173,128 @@ class HomePage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              const SearchBox(),
+                              SearchBox(
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                },
+                              ),
+                              if (_searchQuery.trim().isNotEmpty) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6.0),
+                                  child: Text(
+                                    'Search results',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .inversePrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.4),
+                                          offset: const Offset(1, 3),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                BlocBuilder<FavoritesCubit, FavoritesState>(
+                                  builder: (context, favoritesState) {
+                                    final favoriteProductIds =
+                                        favoritesState is FavoritesLoaded
+                                            ? favoritesState.favorites
+                                                .map((e) => e.productId)
+                                                .toSet()
+                                            : <String>{};
+
+                                    return BlocBuilder<ProductsDisplayCubit,
+                                        ProductsDisplayState>(
+                                      builder: (context, state) {
+                                        if (state is ProductsDisplayLoading) {
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        } else if (state
+                                            is ProductsDisplayError) {
+                                          return Center(
+                                            child: Text(
+                                              state.message,
+                                              style: const TextStyle(
+                                                  color: Colors.red),
+                                            ),
+                                          );
+                                        } else if (state
+                                            is ProductsDisplayLoaded) {
+                                          return SearchCarousel(
+                                            query: _searchQuery,
+                                            products: state.products,
+                                            favoriteProductIds:
+                                                favoriteProductIds,
+                                            onTap: (product) {
+                                              // TODO Handle product tap
+                                            },
+                                            onFavoritePressed: (product) async {
+                                              if (userId == null ||
+                                                  userId.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Please sign in to add favorites.'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                                return;
+                                              }
+
+                                              if (favoriteProductIds
+                                                  .contains(product.id)) {
+                                                await context
+                                                    .read<FavoritesCubit>()
+                                                    .deleteFavorite(
+                                                      userId,
+                                                      product.id,
+                                                    );
+                                                await context
+                                                    .read<FavoritesCubit>()
+                                                    .loadFavoritesByUserId(
+                                                        userId);
+                                                return;
+                                              }
+
+                                              final favorite = FavoriteEntity(
+                                                createdDate: Timestamp.now(),
+                                                id: '',
+                                                productId: product.id,
+                                                userId: userId,
+                                              );
+
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .registerFavorite(favorite);
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .loadFavoritesByUserId(
+                                                      userId);
+                                            },
+                                          );
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                                const _SectionSeparator(),
+                              ],
                               Padding(
                                 padding: const EdgeInsets.only(left: 6.0),
                                 child: Text(
@@ -209,7 +341,11 @@ class HomePage extends StatelessWidget {
                                     return CategoriesWidget(
                                       categories: state.categories,
                                       onTap: (category) {
-                                        // TODO Handle category tap
+                                        setState(() {
+                                          _selectedCategoryId = category.id;
+                                          _selectedCategoryTitle =
+                                              category.title;
+                                        });
                                       },
                                     );
                                   } else {
@@ -217,6 +353,121 @@ class HomePage extends StatelessWidget {
                                   }
                                 },
                               ),
+                              if (_selectedCategoryId != null) ...[
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6.0),
+                                  child: Text(
+                                    _selectedCategoryTitle ?? 'Category',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .inversePrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.4),
+                                          offset: const Offset(1, 3),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                BlocBuilder<FavoritesCubit, FavoritesState>(
+                                  builder: (context, favoritesState) {
+                                    final favoriteProductIds =
+                                        favoritesState is FavoritesLoaded
+                                            ? favoritesState.favorites
+                                                .map((e) => e.productId)
+                                                .toSet()
+                                            : <String>{};
+
+                                    return BlocBuilder<ProductsDisplayCubit,
+                                        ProductsDisplayState>(
+                                      builder: (context, state) {
+                                        if (state is ProductsDisplayLoading) {
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        } else if (state
+                                            is ProductsDisplayError) {
+                                          return Center(
+                                            child: Text(
+                                              state.message,
+                                              style: const TextStyle(
+                                                  color: Colors.red),
+                                            ),
+                                          );
+                                        } else if (state
+                                            is ProductsDisplayLoaded) {
+                                          return CategoryCarousel(
+                                            categoryId: _selectedCategoryId!,
+                                            products: state.products,
+                                            favoriteProductIds:
+                                                favoriteProductIds,
+                                            onTap: (product) {
+                                              // TODO Handle product tap
+                                            },
+                                            onFavoritePressed: (product) async {
+                                              if (userId == null ||
+                                                  userId.isEmpty) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Please sign in to add favorites.'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                                return;
+                                              }
+
+                                              if (favoriteProductIds
+                                                  .contains(product.id)) {
+                                                await context
+                                                    .read<FavoritesCubit>()
+                                                    .deleteFavorite(
+                                                      userId,
+                                                      product.id,
+                                                    );
+                                                await context
+                                                    .read<FavoritesCubit>()
+                                                    .loadFavoritesByUserId(
+                                                        userId);
+                                                return;
+                                              }
+
+                                              final favorite = FavoriteEntity(
+                                                createdDate: Timestamp.now(),
+                                                id: '',
+                                                productId: product.id,
+                                                userId: userId,
+                                              );
+
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .registerFavorite(favorite);
+                                              await context
+                                                  .read<FavoritesCubit>()
+                                                  .loadFavoritesByUserId(
+                                                      userId);
+                                            },
+                                          );
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                               const _SectionSeparator(),
                               const TopSellingTitle(),
                               BlocBuilder<FavoritesCubit, FavoritesState>(

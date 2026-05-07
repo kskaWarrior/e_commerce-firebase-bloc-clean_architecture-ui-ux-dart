@@ -19,6 +19,8 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = product.images.isNotEmpty ? product.images.first : '';
+    final hasDiscount =
+        product.discountedPrice > 0 && product.discountedPrice < product.price;
 
     return GestureDetector(
       onTap: onTap,
@@ -106,19 +108,18 @@ class ProductCard extends StatelessWidget {
                   Text(
                     '\$${product.price.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          decoration: product.discountedPrice < product.price
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: product.discountedPrice < product.price
+                          decoration:
+                              hasDiscount ? TextDecoration.lineThrough : null,
+                          color: hasDiscount
                               ? const Color.fromARGB(255, 255, 139, 139)
-                              : const Color.fromARGB(255, 255, 255, 255),
+                              : Theme.of(context).colorScheme.primary,
                           decorationColor: Colors.white,
                           fontSize: 12,
                         ),
                   ),
                 ],
               ),
-              if (product.discountedPrice < product.price)
+              if (hasDiscount)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [

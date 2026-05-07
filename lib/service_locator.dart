@@ -2,7 +2,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/favorites/favorites_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/get_sales_by_user_id_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/sales/register_sale_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/products_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/bloc/product/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/repository/auth_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/source/firebase_service.dart';
@@ -97,8 +97,8 @@ Future<void> init() async {
   sl.registerFactory<SignOutCubit>(() => SignOutCubit());
   sl.registerLazySingleton<SplashCubit>(() => SplashCubit()); 
   sl.registerFactory<CategoriesCubit>(() => CategoriesCubit()); 
-  sl.registerFactory<NewInDisplayCubit>(
-      () => NewInDisplayCubit(sl<GetNewInProductsUseCase>()));
+  sl.registerFactory<ProductsCubit>(
+      () => ProductsCubit(sl<GetNewInProductsUseCase>()));
   sl.registerFactory<ProductsDisplayCubit>(
       () => ProductsDisplayCubit(sl<GetTopSellingProductsUseCase>()));
   sl.registerFactory<FavoritesCubit>(
