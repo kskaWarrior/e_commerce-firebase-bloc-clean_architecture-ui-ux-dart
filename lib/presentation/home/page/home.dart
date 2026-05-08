@@ -9,6 +9,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/my_profile_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
@@ -274,7 +275,7 @@ class _HomePageState extends State<HomePage> {
                                 onTap: () {
                                   Navigator.pop(context);
                                   AppNavigator.push(
-                                      context, const _MyProfilePage());
+                                      context, const MyProfilePage());
                                 },
                               ),
                               _DrawerNavTile(
@@ -477,10 +478,12 @@ class _HomePageState extends State<HomePage> {
                                     );
                                   },
                                 ),
+                                const SizedBox(height: 10),
                                 const _SectionSeparator(),
                               ],
                               Padding(
-                                padding: const EdgeInsets.only(left: 6.0, bottom: 10),
+                                padding: const EdgeInsets.only(
+                                    top: 5, left: 6.0, bottom: 10),
                                 child: Text(
                                   'Categories',
                                   style: Theme.of(context)
@@ -884,8 +887,8 @@ class _HomePageState extends State<HomePage> {
                                 },
                               ),
                               const SizedBox(height: 14),
-															const _SectionSeparator(),
-															const SizedBox(height: 22),
+                              const _SectionSeparator(),
+                              const SizedBox(height: 22),
                               Padding(
                                 padding: const EdgeInsets.only(
                                   left: 10,
@@ -1018,37 +1021,6 @@ class _DrawerNavTile extends StatelessWidget {
         trailing: trailing,
         enabled: enabled,
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _MyProfilePage extends StatelessWidget {
-  const _MyProfilePage();
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.account_circle_outlined, size: 64),
-              const SizedBox(height: 12),
-              Text(user?.displayName ?? 'Name not available'),
-              const SizedBox(height: 6),
-              Text(user?.email ?? 'Email not available'),
-            ],
-          ),
-        ),
       ),
     );
   }

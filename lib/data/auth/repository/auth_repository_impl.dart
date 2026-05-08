@@ -15,17 +15,25 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq) async {
+  Future<Either<Failure, String>> signUp(
+      UserCreationReq userCreationReq) async {
     return await sl<FirebaseService>().signUp(userCreationReq);
+  }
+
+  @override
+  Future<Either<Failure, String>> updateUser(
+      UserCreationReq userCreationReq) async {
+    return await sl<FirebaseService>().updateUser(userCreationReq);
   }
 
   @override
   Future<Either<Failure, String>> signOut() async {
     return await sl<FirebaseService>().signOut();
   }
-  
+
   @override
-  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email) async {
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(
+      String email) async {
     return await sl<FirebaseService>().sendPasswordEmailResetUseCase(email);
   }
 
@@ -37,9 +45,7 @@ class AuthRepositoryImpl extends AuthRepository {
         return Left(error);
       },
       (data) {
-        return Right(
-          UserModel.fromMap(user as Map<String, dynamic>).toEntity(),
-        );
+        return Right(data.toEntity());
       },
     );
   }

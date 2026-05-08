@@ -13,16 +13,14 @@ class UserModel {
   final DateTime birthDate;
   final String gender;
 
-  UserModel({
-    required this.id,
-    required this.email,
-    required this.address,
-    required this.phone,
-    required this.name,
-    required this.birthDate,
-    required this.gender
-});
-  
+  UserModel(
+      {required this.id,
+      required this.email,
+      required this.address,
+      required this.phone,
+      required this.name,
+      required this.birthDate,
+      required this.gender});
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -37,21 +35,31 @@ class UserModel {
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    final dynamic birthDateRaw = map['birthDate'];
+    DateTime parsedBirthDate = DateTime(2000, 1, 1);
+    if (birthDateRaw is Timestamp) {
+      parsedBirthDate = birthDateRaw.toDate();
+    } else if (birthDateRaw is int) {
+      parsedBirthDate = DateTime.fromMillisecondsSinceEpoch(birthDateRaw);
+    } else if (birthDateRaw is String) {
+      parsedBirthDate = DateTime.tryParse(birthDateRaw) ?? parsedBirthDate;
+    }
+
     return UserModel(
       id: map['id'] as String? ?? '',
       email: map['email'] as String? ?? '',
       address: map['address'] as String? ?? '',
       phone: map['phone'] as String? ?? '',
       name: map['name'] as String? ?? '',
-      birthDate: (map['birthDate'] as Timestamp).toDate(),
+      birthDate: parsedBirthDate,
       gender: map['gender'] as String? ?? '',
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory UserModel.fromJson(String source) => UserModel.fromMap(json.decode(source) as Map<String, dynamic>);
-
+  factory UserModel.fromJson(String source) =>
+      UserModel.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
 extension UserXModel on UserModel {

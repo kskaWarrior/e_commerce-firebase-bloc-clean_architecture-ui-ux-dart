@@ -21,6 +21,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signout.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signup.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/repository/category_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/repository/favorite_repository.dart';
@@ -41,19 +42,12 @@ import 'package:get_it/get_it.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-
   //services
-  sl.registerSingleton<FirebaseService>(
-     FirebaseServiceImpl()
-  );
-  
-  sl.registerSingleton<CategoryFirebaseService>(
-    CategoryFirebaseServiceImpl()
-  );
+  sl.registerSingleton<FirebaseService>(FirebaseServiceImpl());
 
-  sl.registerSingleton<ProductsFirebaseService>(
-    ProductsFirebaseServiceImpl()
-  );
+  sl.registerSingleton<CategoryFirebaseService>(CategoryFirebaseServiceImpl());
+
+  sl.registerSingleton<ProductsFirebaseService>(ProductsFirebaseServiceImpl());
 
   sl.registerSingleton<FavoritesFirebaseService>(
       FavoritesFirebaseServiceImpl());
@@ -62,24 +56,27 @@ Future<void> init() async {
 
   //repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
-  
+
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl());
-  
+
   sl.registerLazySingleton<ProductsRepository>(() => ProductsRepositoryImpl());
 
   sl.registerLazySingleton<FavoriteRepository>(() => FavoriteRepositoryImpl());
 
   sl.registerLazySingleton<SalesRepository>(() => SalesRepositoryImpl());
-  
+
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
+  sl.registerLazySingleton<UpdateUserUseCase>(() => UpdateUserUseCase());
   sl.registerLazySingleton<SigninUseCase>(() => SigninUseCase());
   sl.registerLazySingleton<SignOutUseCase>(() => SignOutUseCase());
-  sl.registerLazySingleton<SendPasswordEmailResetUseCase>(() => SendPasswordEmailResetUseCase());
+  sl.registerLazySingleton<SendPasswordEmailResetUseCase>(
+      () => SendPasswordEmailResetUseCase());
   sl.registerLazySingleton<IsLoggedInUseCase>(() => IsLoggedInUseCase());
   sl.registerLazySingleton<GetUserUseCase>(() => GetUserUseCase());
   sl.registerLazySingleton<GetCategoriesUseCase>(() => GetCategoriesUseCase());
-  sl.registerLazySingleton<GetTopSellingProductsUseCase>(() => GetTopSellingProductsUseCase());
+  sl.registerLazySingleton<GetTopSellingProductsUseCase>(
+      () => GetTopSellingProductsUseCase());
   sl.registerLazySingleton<GetNewInProductsUseCase>(
       () => GetNewInProductsUseCase());
   sl.registerLazySingleton<GetFavoritesByUserIdUseCase>(
@@ -88,15 +85,15 @@ Future<void> init() async {
       () => RegisterFavoriteUseCase());
   sl.registerLazySingleton<DeleteFavoriteUseCase>(
       () => DeleteFavoriteUseCase());
-    sl.registerLazySingleton<GetSalesByUserIdUseCase>(
+  sl.registerLazySingleton<GetSalesByUserIdUseCase>(
       () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
 
   //cubits
   sl.registerLazySingleton<UserCubit>(() => UserCubit());
   sl.registerFactory<SignOutCubit>(() => SignOutCubit());
-  sl.registerLazySingleton<SplashCubit>(() => SplashCubit()); 
-  sl.registerFactory<CategoriesCubit>(() => CategoriesCubit()); 
+  sl.registerLazySingleton<SplashCubit>(() => SplashCubit());
+  sl.registerFactory<CategoriesCubit>(() => CategoriesCubit());
   sl.registerFactory<NewInDisplayCubit>(
       () => NewInDisplayCubit(sl<GetNewInProductsUseCase>()));
   sl.registerFactory<ProductsDisplayCubit>(

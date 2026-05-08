@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 abstract class FirebaseService {
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
   Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
+  Future<Either<Failure, String>> updateUser(UserCreationReq userCreationReq);
   Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
   Future<Either<Failure, String>> signOut();
   Future<bool> isLoggedIn();
@@ -24,7 +25,8 @@ class FirebaseServiceImpl implements FirebaseService {
         password: userSigninReq.password!,
       );
 
-      return Future.value(const Right('Login with success!')); // Placeholder for success
+      return Future.value(
+          const Right('Login with success!')); // Placeholder for success
     } catch (e) {
       if (e is FirebaseAuthException) {
         switch (e.code) {
@@ -60,7 +62,8 @@ class FirebaseServiceImpl implements FirebaseService {
           .doc(returnedData.user?.uid)
           .set(userCreationReq.toJson());
 
-      return Future.value(const Right('Created user with success!')); // Placeholder for success
+      return Future.value(
+          const Right('Created user with success!')); // Placeholder for success
     } catch (e) {
       // Handle exceptions and return a Failure
       if (e is FirebaseAuthException) {
@@ -77,6 +80,39 @@ class FirebaseServiceImpl implements FirebaseService {
         }
       }
       return Future.value(Left(Failure(error: e.toString())));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> updateUser(
+      UserCreationReq userCreationReq) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final userId = currentUser?.uid;
+      if (currentUser == null || userId == null) {
+        return Left(Failure(error: 'User not logged in'));
+      }
+
+      if (userCreationReq.password != null &&
+          userCreationReq.password!.isNotEmpty) {
+        await currentUser.updatePassword(userCreationReq.password!);
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'name': userCreationReq.name,
+        'phone': userCreationReq.phone,
+        'address': userCreationReq.address,
+        'birthDate': userCreationReq.birthDate != null
+            ? Timestamp.fromDate(userCreationReq.birthDate!)
+            : null,
+        'gender': userCreationReq.gender,
+      });
+
+      return const Right('Profile updated with success!');
+    } on FirebaseException catch (e) {
+      return Left(Failure(error: e.message ?? 'Unknown error'));
+    } catch (e) {
+      return Left(Failure(error: e.toString()));
     }
   }
 
@@ -131,12 +167,14 @@ class FirebaseServiceImpl implements FirebaseService {
       return Left(Failure(error: e.toString()));
     }
   }
-  
+
   @override
-  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email) async {
+  Future<Either<Failure, String>> sendPasswordEmailResetUseCase(
+      String email) async {
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      return Future.value(const Right('Password reset email sent! Check it out ;)')); // Placeholder for success
+      return Future.value(const Right(
+          'Password reset email sent! Check it out ;)')); // Placeholder for success
     } catch (e) {
       if (e is FirebaseAuthException) {
         switch (e.code) {
@@ -152,5 +190,4 @@ class FirebaseServiceImpl implements FirebaseService {
       return Future.value(Left(Failure(error: e.toString())));
     }
   }
-  
 }
