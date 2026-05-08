@@ -9,11 +9,15 @@ class ProductsDisplayCubit extends Cubit<ProductsDisplayState> {
 
   void displayProducts() async {
     emit(ProductsDisplayLoading());
-    var data = await useCase.call(null);
-    data.fold(
-      (error) => emit(ProductsDisplayError(error)),
-      (products) => emit(ProductsDisplayLoaded(products)),
-    );
+    try {
+      final data = await useCase.call(null);
+      data.fold(
+        (error) => emit(ProductsDisplayError(error.toString())),
+        (products) => emit(ProductsDisplayLoaded(products)),
+      );
+    } catch (e) {
+      emit(ProductsDisplayError('Failed to load products: $e'));
+    }
   }
 
 }

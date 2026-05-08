@@ -6,6 +6,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 class ProductModel {
   final String id;
   final String categoryId;
+  final String categoryName;
   final List<ProductColorModel> colors;
   final Timestamp createdDate;
   final num currentDiscount;
@@ -19,11 +20,12 @@ class ProductModel {
   final int salesNumber;
   final String description;
 
-  ProductModel({required this.id, required this.currentDiscount, required this.categoryId, required this.colors, required this.createdDate, required this.discountedPrice, required this.gender, required this.images, required this.price, required this.sizes, required this.title, required this.productId, required this.salesNumber, required this.description});
+  ProductModel({required this.categoryName, required this.id, required this.currentDiscount, required this.categoryId, required this.colors, required this.createdDate, required this.discountedPrice, required this.gender, required this.images, required this.price, required this.sizes, required this.title, required this.productId, required this.salesNumber, required this.description});
 
 
   factory ProductModel.fromMap(Map<String, dynamic> map) {
     return ProductModel(
+      categoryName: map['categoryName'] as String,
       id: map['id'] as String,
       currentDiscount: map['currentDiscount'] as num,
       categoryId: map['categoryId'] as String,
@@ -47,6 +49,7 @@ class ProductModel {
 extension ProductXModel on ProductModel {
   ProductEntity toEntity() {
     return ProductEntity(
+      categoryName: categoryName,
       id: id,
       currentDiscount: currentDiscount,
       categoryId: categoryId,

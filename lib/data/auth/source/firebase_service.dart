@@ -17,6 +17,10 @@ abstract class FirebaseService {
 }
 
 class FirebaseServiceImpl implements FirebaseService {
+  DateTime _toUtcDateOnly(DateTime date) {
+    return DateTime.utc(date.year, date.month, date.day);
+  }
+
   @override
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq) async {
     try {
@@ -57,10 +61,18 @@ class FirebaseServiceImpl implements FirebaseService {
         password: userCreationReq.password!,
       );
       userCreationReq.id = returnedData.user?.uid;
+      final DateTime? normalizedBirthDate = userCreationReq.birthDate != null
+          ? _toUtcDateOnly(userCreationReq.birthDate!)
+          : null;
       await FirebaseFirestore.instance
           .collection('users')
           .doc(returnedData.user?.uid)
-          .set(userCreationReq.toJson());
+          .set({
+        ...userCreationReq.toJson(),
+        'birthDate': normalizedBirthDate != null
+            ? Timestamp.fromDate(normalizedBirthDate)
+            : null,
+      });
 
       return Future.value(
           const Right('Created user with success!')); // Placeholder for success
@@ -98,12 +110,16 @@ class FirebaseServiceImpl implements FirebaseService {
         await currentUser.updatePassword(userCreationReq.password!);
       }
 
+      final DateTime? normalizedBirthDate = userCreationReq.birthDate != null
+          ? _toUtcDateOnly(userCreationReq.birthDate!)
+          : null;
+
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'name': userCreationReq.name,
         'phone': userCreationReq.phone,
         'address': userCreationReq.address,
-        'birthDate': userCreationReq.birthDate != null
-            ? Timestamp.fromDate(userCreationReq.birthDate!)
+        'birthDate': normalizedBirthDate != null
+            ? Timestamp.fromDate(normalizedBirthDate)
             : null,
         'gender': userCreationReq.gender,
       });

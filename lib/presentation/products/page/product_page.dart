@@ -507,6 +507,7 @@ class _ProductPageState extends State<ProductPage> {
           'id': product.id,
           'title': product.title,
           'productId': product.productId,
+          'categoryName': product.categoryName,
           'size': selectedSize,
           'color': selectedColorTitle,
           'colorHex': selectedColorHex,

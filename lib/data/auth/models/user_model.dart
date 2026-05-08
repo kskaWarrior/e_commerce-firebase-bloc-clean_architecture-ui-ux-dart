@@ -22,6 +22,17 @@ class UserModel {
       required this.birthDate,
       required this.gender});
 
+  static DateTime _dateOnlyFromDateTime(DateTime input) {
+    final DateTime utcDate = input.toUtc();
+    return DateTime(utcDate.year, utcDate.month, utcDate.day);
+  }
+
+  static DateTime _dateOnlyFromEpochMs(int epochMs) {
+    final DateTime utcDate =
+        DateTime.fromMillisecondsSinceEpoch(epochMs, isUtc: true);
+    return DateTime(utcDate.year, utcDate.month, utcDate.day);
+  }
+
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
@@ -38,11 +49,14 @@ class UserModel {
     final dynamic birthDateRaw = map['birthDate'];
     DateTime parsedBirthDate = DateTime(2000, 1, 1);
     if (birthDateRaw is Timestamp) {
-      parsedBirthDate = birthDateRaw.toDate();
+      parsedBirthDate = _dateOnlyFromDateTime(birthDateRaw.toDate());
     } else if (birthDateRaw is int) {
-      parsedBirthDate = DateTime.fromMillisecondsSinceEpoch(birthDateRaw);
+      parsedBirthDate = _dateOnlyFromEpochMs(birthDateRaw);
     } else if (birthDateRaw is String) {
-      parsedBirthDate = DateTime.tryParse(birthDateRaw) ?? parsedBirthDate;
+      final DateTime? parsed = DateTime.tryParse(birthDateRaw);
+      if (parsed != null) {
+        parsedBirthDate = _dateOnlyFromDateTime(parsed);
+      }
     }
 
     return UserModel(

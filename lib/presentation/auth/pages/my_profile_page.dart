@@ -201,7 +201,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         _ProfileInputField(
                           controller: _passwordController,
                           labelText: 'Password',
-                          hintText: 'New password (if you want to change it)',
+                          hintText: 'New password (optional)',
                           icon: Icons.password_outlined,
                           keyboardType: TextInputType.visiblePassword,
                           obscureText: _obscurePassword,

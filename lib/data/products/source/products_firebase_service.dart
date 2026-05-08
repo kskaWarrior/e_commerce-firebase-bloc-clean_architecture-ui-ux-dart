@@ -15,8 +15,11 @@ class ProductsFirebaseServiceImpl implements ProductsFirebaseService {
       .where('salesNumber', isGreaterThanOrEqualTo: 20)
       .get();
       return Right(data.docs.map((doc) => doc.data()).toList());
+    } on FirebaseException catch (e) {
+      return Left(
+          'Top selling query failed [${e.code}]: ${e.message ?? 'unknown error'}');
     } catch (e) {
-      return Left('Please try again');
+      return Left('Top selling query failed: $e');
     }
   }
   
@@ -30,8 +33,11 @@ class ProductsFirebaseServiceImpl implements ProductsFirebaseService {
           .orderBy('createdDate', descending: true)
       .get();
       return Right(data.docs.map((doc) => doc.data()).toList());
+    } on FirebaseException catch (e) {
+      return Left(
+          'New in query failed [${e.code}]: ${e.message ?? 'unknown error'}');
     } catch (e) {
-      return Left('Please try again');
+      return Left('New in query failed: $e');
     }
   }
 }
