@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/cart/cart_draft_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
@@ -243,6 +245,12 @@ class _CartPageState extends State<CartPage> {
                   cardCvvController: _cardCvvController,
                   isConfirmingPurchase: _isConfirmingPurchase,
                   onConfirmPurchase: _confirmPurchase,
+                  onGoToFavorites: () {
+                    AppNavigator.push(context, const FavoritesPage());
+                  },
+                  onReturnHome: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
                 ),
         ),
       ),
@@ -261,6 +269,8 @@ class _CartView extends StatelessWidget {
   final TextEditingController cardCvvController;
   final bool isConfirmingPurchase;
   final VoidCallback onConfirmPurchase;
+  final VoidCallback onGoToFavorites;
+  final VoidCallback onReturnHome;
 
   const _CartView({
     required this.selectedPaymentMethod,
@@ -273,6 +283,8 @@ class _CartView extends StatelessWidget {
     required this.cardCvvController,
     required this.isConfirmingPurchase,
     required this.onConfirmPurchase,
+    required this.onGoToFavorites,
+    required this.onReturnHome,
   });
 
   @override
@@ -283,11 +295,88 @@ class _CartView extends StatelessWidget {
         final drafts = CartDraftStore.instance.drafts;
 
         if (drafts.isEmpty) {
-          return const SizedBox.expand(
-            child: _CenteredInfoCard(
-              title: 'Your cart is empty',
-              body: 'Items you add to cart will appear here.',
-              icon: Icons.shopping_bag_outlined,
+          return SizedBox.expand(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const _CenteredInfoCard(
+                    title: 'Your cart is empty',
+                    body: 'Items you add to cart will appear here.',
+                    icon: Icons.shopping_bag_outlined,
+                  ),
+                  const SizedBox(height: 30),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: onGoToFavorites,
+                              icon: const Icon(Icons.favorite_border),
+                              label: Text(
+                                'Go to favorites',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontFamily: 'CircularStd',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                foregroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .inversePrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: onReturnHome,
+                              icon: const Icon(Icons.home_outlined),
+                              label: Text(
+                                'Return to home',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontFamily: 'CircularStd',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                side: BorderSide(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.8),
+                                  width: 3,
+                                ),
+                                foregroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .inversePrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }

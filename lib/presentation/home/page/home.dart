@@ -10,6 +10,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/category_carousel.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/header.dart';
@@ -282,7 +283,7 @@ class _HomePageState extends State<HomePage> {
                                 onTap: () {
                                   Navigator.pop(context);
                                   AppNavigator.push(
-                                      context, const _FavoritesPage());
+                                      context, const FavoritesPage());
                                 },
                               ),
                               _DrawerNavTile(
@@ -479,7 +480,7 @@ class _HomePageState extends State<HomePage> {
                                 const _SectionSeparator(),
                               ],
                               Padding(
-                                padding: const EdgeInsets.only(left: 6.0),
+                                padding: const EdgeInsets.only(left: 6.0, bottom: 10),
                                 child: Text(
                                   'Categories',
                                   style: Theme.of(context)
@@ -502,7 +503,6 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 3),
                               BlocBuilder<CategoriesCubit, CategoriesState>(
                                 builder: (context, state) {
                                   if (state is CategoriesLoading) {
@@ -684,7 +684,9 @@ class _HomePageState extends State<HomePage> {
                                   },
                                 ),
                               ],
+                              const SizedBox(height: 7),
                               const _SectionSeparator(),
+                              const SizedBox(height: 7),
                               const TopSellingTitle(),
                               BlocBuilder<FavoritesCubit, FavoritesState>(
                                 builder: (context, favoritesState) {
@@ -781,7 +783,9 @@ class _HomePageState extends State<HomePage> {
                                   );
                                 },
                               ),
+                              const SizedBox(height: 10),
                               const _SectionSeparator(),
+                              const SizedBox(height: 7),
                               const NewInTitle(),
                               BlocBuilder<FavoritesCubit, FavoritesState>(
                                 builder: (context, favoritesState) {
@@ -878,6 +882,60 @@ class _HomePageState extends State<HomePage> {
                                     },
                                   );
                                 },
+                              ),
+                              const SizedBox(height: 14),
+															const _SectionSeparator(),
+															const SizedBox(height: 22),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 10,
+                                  right: 10,
+                                  bottom: 10,
+                                ),
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 460),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        AppNavigator.push(
+                                          context,
+                                          const FavoritesPage(),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.favorite_border),
+                                      label: Text(
+                                        'Go to favorites',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontFamily: 'CircularStd',
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 13,
+                                        ),
+                                        backgroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        side: BorderSide(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.8),
+                                          width: 3,
+                                        ),
+                                        foregroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .inversePrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 12),
                             ],
@@ -990,27 +1048,6 @@ class _MyProfilePage extends StatelessWidget {
               Text(user?.email ?? 'Email not available'),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FavoritesPage extends StatelessWidget {
-  const _FavoritesPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Favorites'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Text(
-          'Your favorites are managed directly from product lists.',
-          style: Theme.of(context).textTheme.bodyLarge,
-          textAlign: TextAlign.center,
         ),
       ),
     );

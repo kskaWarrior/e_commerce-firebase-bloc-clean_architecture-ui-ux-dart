@@ -7,6 +7,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isFavorite;
   final VoidCallback? onFavoritePressed;
+  final bool compactInfo;
 
   const ProductCard({
     super.key,
@@ -14,6 +15,7 @@ class ProductCard extends StatelessWidget {
     this.onTap,
     this.isFavorite = false,
     this.onFavoritePressed,
+    this.compactInfo = false,
   });
 
   @override
@@ -21,6 +23,10 @@ class ProductCard extends StatelessWidget {
     final imageUrl = product.images.isNotEmpty ? product.images.first : '';
     final hasDiscount =
         product.discountedPrice > 0 && product.discountedPrice < product.price;
+    final colorDots = product.colors.take(5).toList(growable: false);
+    final hiddenColorsCount = product.colors.length - colorDots.length;
+    final titleFontSize = compactInfo ? 12.0 : 14.0;
+    final infoFontSize = compactInfo ? 10.0 : 12.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -79,6 +85,55 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (colorDots.isNotEmpty)
+                    Positioned(
+                      right: 6,
+                      bottom: 6,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ...colorDots.map(
+                            (colorOption) => Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                width: 21,
+                                height: 21,
+                                decoration: BoxDecoration(
+                                  color: _parseColor(colorOption.hexCode),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (hiddenColorsCount > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  shape: BoxShape.circle,
+                                  border:
+                                      Border.all(color: Colors.white, width: 1),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '+$hiddenColorsCount',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -87,7 +142,7 @@ class ProductCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: titleFontSize,
                     ),
                 textAlign: TextAlign.start,
                 maxLines: 2,
@@ -101,8 +156,8 @@ class ProductCard extends StatelessWidget {
                     'Price: ',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontSize: infoFontSize,
                         ),
                   ),
                   Text(
@@ -114,7 +169,8 @@ class ProductCard extends StatelessWidget {
                               ? const Color.fromARGB(255, 255, 139, 139)
                               : Theme.of(context).colorScheme.primary,
                           decorationColor: Colors.white,
-                          fontSize: 12,
+                          fontSize: infoFontSize,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                 ],
@@ -128,7 +184,7 @@ class ProductCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
-                            fontSize: 12,
+                            fontSize: infoFontSize,
                           ),
                     ),
                     Text(
@@ -136,7 +192,7 @@ class ProductCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.green,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: infoFontSize,
                           ),
                     ),
                   ],
@@ -156,5 +212,25 @@ class ProductCard extends StatelessWidget {
       alignment: Alignment.center,
       child: const Icon(Icons.broken_image_outlined, size: 48),
     );
+  }
+
+  Color _parseColor(String hexCode) {
+    final normalized = hexCode.replaceAll('#', '').trim();
+
+    if (normalized.length == 6) {
+      final intColor = int.tryParse('FF$normalized', radix: 16);
+      if (intColor != null) {
+        return Color(intColor);
+      }
+    }
+
+    if (normalized.length == 8) {
+      final intColor = int.tryParse(normalized, radix: 16);
+      if (intColor != null) {
+        return Color(intColor);
+      }
+    }
+
+    return Colors.grey;
   }
 }
