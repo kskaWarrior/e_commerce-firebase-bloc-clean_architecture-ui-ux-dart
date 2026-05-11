@@ -10,7 +10,9 @@ class SalesEntity {
   final double price;
   final List<Map<String, dynamic>> productsList;
   final double totalPrice;
+  final Timestamp userBirthDate;
   final String userId;
+  final String userName;
 
   SalesEntity({
     required this.createdDate,
@@ -22,6 +24,8 @@ class SalesEntity {
     required this.price,
     required this.productsList,
     required this.totalPrice,
+    required this.userBirthDate,
     required this.userId,
+    required this.userName,
   });
 }

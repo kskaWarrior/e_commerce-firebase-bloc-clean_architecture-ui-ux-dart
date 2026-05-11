@@ -11,7 +11,9 @@ class SalesModel {
   final double price;
   final List<Map<String, dynamic>> productsList;
   final double totalPrice;
+  final Timestamp userBirthDate;
   final String userId;
+  final String userName;
 
   SalesModel({
     required this.createdDate,
@@ -23,7 +25,9 @@ class SalesModel {
     required this.price,
     required this.productsList,
     required this.totalPrice,
+    required this.userBirthDate,
     required this.userId,
+    required this.userName,
   });
 
   static double _toDouble(dynamic value, {double fallback = 0.0}) {
@@ -74,7 +78,9 @@ class SalesModel {
       price: _toDouble(map['price']),
       productsList: _toProductsList(map),
       totalPrice: _toDouble(map['totalPrice']),
+      userBirthDate: _toTimestamp(map['userBirthDate']),
       userId: (map['userId'] ?? '').toString(),
+      userName: (map['userName'] ?? '').toString(),
     );
   }
 
@@ -89,7 +95,9 @@ class SalesModel {
       price: entity.price,
       productsList: entity.productsList,
       totalPrice: entity.totalPrice,
+      userBirthDate: entity.userBirthDate,
       userId: entity.userId,
+      userName: entity.userName,
     );
   }
 
@@ -104,7 +112,9 @@ class SalesModel {
       'price': price,
       'productsList': productsList,
       'totalPrice': totalPrice,
+      'userBirthDate': userBirthDate,
       'userId': userId,
+      'userName': userName,
     };
   }
 }
@@ -121,7 +131,9 @@ extension SalesXModel on SalesModel {
       price: price,
       productsList: productsList,
       totalPrice: totalPrice,
+      userBirthDate: userBirthDate,
       userId: userId,
+      userName: userName,
     );
   }
 }

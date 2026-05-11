@@ -3,11 +3,14 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 
@@ -24,12 +27,22 @@ class _CartPageState extends State<CartPage> {
   bool _isConfirmingPurchase = false;
   _PaymentMethod _selectedPaymentMethod = _PaymentMethod.debitCard;
   int _creditInstallments = 1;
+  late final UserCubit _userCubit;
 
   final TextEditingController _cardholderNameController =
       TextEditingController();
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _cardExpiryController = TextEditingController();
   final TextEditingController _cardCvvController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _userCubit = sl<UserCubit>();
+    if (_userCubit.state is! UserLoaded) {
+      _userCubit.getUser();
+    }
+  }
 
   @override
   void dispose() {
@@ -109,6 +122,36 @@ class _CartPageState extends State<CartPage> {
       _isConfirmingPurchase = true;
     });
 
+    if (_userCubit.state is! UserLoaded) {
+      await _userCubit.getUser();
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    final userState = _userCubit.state;
+    if (userState is! UserLoaded) {
+      final message = userState is UserError
+          ? userState.error
+          : 'Unable to load your profile data. Please try again.';
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      setState(() {
+        _isConfirmingPurchase = false;
+      });
+      return;
+    }
+
+    final userName = userState.user.name.trim();
+    final userBirthDate = Timestamp.fromDate(userState.user.birthDate);
+
     final mergedProducts = <Map<String, dynamic>>[];
     for (final draft in drafts) {
       mergedProducts.addAll(draft.productsList);
@@ -148,7 +191,9 @@ class _CartPageState extends State<CartPage> {
       price: totalPriceWithoutDiscount,
       productsList: mergedProducts,
       totalPrice: totalPriceWithoutDiscount + freight - totalDiscount,
+      userBirthDate: userBirthDate,
       userId: userId,
+      userName: userName,
     );
 
     final result = await sl<RegisterSaleUseCase>().call(finalSale);
@@ -196,62 +241,65 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'My cart',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontFamily: 'CircularStd',
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-      ),
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
-                Theme.of(context).scaffoldBackgroundColor,
-                Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
-              ],
-            ),
-          ),
-          child: userId == null || userId.isEmpty
-              ? const _AuthRequiredView()
-              : _CartView(
-                  selectedPaymentMethod: _selectedPaymentMethod,
-                  onPaymentMethodChanged: (value) {
-                    setState(() {
-                      _selectedPaymentMethod = value;
-                      if (value == _PaymentMethod.debitCard) {
-                        _creditInstallments = 1;
-                      }
-                    });
-                  },
-                  creditInstallments: _creditInstallments,
-                  onCreditInstallmentsChanged: (value) {
-                    setState(() {
-                      _creditInstallments = value;
-                    });
-                  },
-                  cardholderNameController: _cardholderNameController,
-                  cardNumberController: _cardNumberController,
-                  cardExpiryController: _cardExpiryController,
-                  cardCvvController: _cardCvvController,
-                  isConfirmingPurchase: _isConfirmingPurchase,
-                  onConfirmPurchase: _confirmPurchase,
-                  onGoToFavorites: () {
-                    AppNavigator.push(context, const FavoritesPage());
-                  },
-                  onReturnHome: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
+    return BlocProvider<UserCubit>.value(
+      value: _userCubit,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'My cart',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontFamily: 'CircularStd',
+                  fontWeight: FontWeight.w700,
                 ),
+          ),
+          centerTitle: true,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+        body: SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+                  Theme.of(context).scaffoldBackgroundColor,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
+                ],
+              ),
+            ),
+            child: userId == null || userId.isEmpty
+                ? const _AuthRequiredView()
+                : _CartView(
+                    selectedPaymentMethod: _selectedPaymentMethod,
+                    onPaymentMethodChanged: (value) {
+                      setState(() {
+                        _selectedPaymentMethod = value;
+                        if (value == _PaymentMethod.debitCard) {
+                          _creditInstallments = 1;
+                        }
+                      });
+                    },
+                    creditInstallments: _creditInstallments,
+                    onCreditInstallmentsChanged: (value) {
+                      setState(() {
+                        _creditInstallments = value;
+                      });
+                    },
+                    cardholderNameController: _cardholderNameController,
+                    cardNumberController: _cardNumberController,
+                    cardExpiryController: _cardExpiryController,
+                    cardCvvController: _cardCvvController,
+                    isConfirmingPurchase: _isConfirmingPurchase,
+                    onConfirmPurchase: _confirmPurchase,
+                    onGoToFavorites: () {
+                      AppNavigator.push(context, const FavoritesPage());
+                    },
+                    onReturnHome: () {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                  ),
+          ),
         ),
       ),
     );

@@ -518,7 +518,9 @@ class _ProductPageState extends State<ProductPage> {
         },
       ],
       totalPrice: multipliedDiscountedPrice,
+      userBirthDate: Timestamp.fromDate(DateTime(1970, 1, 1)),
       userId: userId,
+      userName: '',
     );
 
     CartDraftStore.instance.addDraft(sale);
