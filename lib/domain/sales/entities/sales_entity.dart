@@ -11,6 +11,7 @@ class SalesEntity {
   final List<Map<String, dynamic>> productsList;
   final double totalPrice;
   final Timestamp userBirthDate;
+  final String userGender;
   final String userId;
   final String userName;
 
@@ -25,6 +26,7 @@ class SalesEntity {
     required this.productsList,
     required this.totalPrice,
     required this.userBirthDate,
+    required this.userGender,
     required this.userId,
     required this.userName,
   });

@@ -102,6 +102,7 @@ class _SigninPageState extends State<SigninPage>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = MediaQuery.sizeOf(context).width;
+            final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
             final formWidth = (screenWidth - 32).clamp(280.0, 420.0).toDouble();
             final horizontalInset = (screenWidth - formWidth) / 2;
             final heroImageSize =
@@ -130,7 +131,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                  bottom: 190,
+                      bottom: isKeyboardOpen ? 105 : 190,
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(16),
@@ -160,7 +161,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                  bottom: 120,
+                      bottom: isKeyboardOpen ? 35 : 120,
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -203,7 +204,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                  bottom: 85,
+                      bottom: isKeyboardOpen ? 0 : 85,
                       child: AnimatedBuilder(
                         animation: _shakeController,
                         builder: (context, child) {
@@ -224,14 +225,14 @@ class _SigninPageState extends State<SigninPage>
                             text: 'Don\'t have an account? ',
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: 16,
+                              fontSize: 14.7,
                             ),
                             children: [
                               TextSpan(
                                 text: 'Sign Up!',
                                 style: TextStyle(
                                   fontFamily: 'CircularStd',
-                                  fontSize: 16,
+                                  fontSize: 14.7,
                                   color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),

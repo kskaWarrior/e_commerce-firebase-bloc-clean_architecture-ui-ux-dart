@@ -151,6 +151,7 @@ class _CartPageState extends State<CartPage> {
 
     final userName = userState.user.name.trim();
     final userBirthDate = Timestamp.fromDate(userState.user.birthDate);
+    final userGender = userState.user.gender.trim();
 
     final mergedProducts = <Map<String, dynamic>>[];
     for (final draft in drafts) {
@@ -192,6 +193,7 @@ class _CartPageState extends State<CartPage> {
       productsList: mergedProducts,
       totalPrice: totalPriceWithoutDiscount + freight - totalDiscount,
       userBirthDate: userBirthDate,
+      userGender: userGender,
       userId: userId,
       userName: userName,
     );
@@ -246,7 +248,7 @@ class _CartPageState extends State<CartPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'My cart',
+            'My Cart',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,

@@ -258,7 +258,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 													Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: Text(
-                              'Favorites gallery',
+                              'My Favorites',
                               style:
                                   Theme.of(context).textTheme.titleLarge?.copyWith(
                                       fontFamily: 'CircularStd',

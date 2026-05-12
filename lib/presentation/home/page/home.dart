@@ -3,6 +3,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
@@ -37,11 +38,68 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  ModalRoute<dynamic>? _currentRoute;
+  BuildContext? _providerContext;
   String? _selectedCategoryId;
   String? _selectedCategoryTitle;
   String _searchQuery = '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final route = ModalRoute.of(context);
+    if (_currentRoute == route || route is! PageRoute) {
+      return;
+    }
+
+    if (_currentRoute != null) {
+      appRouteObserver.unsubscribe(this);
+    }
+
+    _currentRoute = route;
+    appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshFavorites();
+    });
+  }
+
+  @override
+  void didPush() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshFavorites();
+    });
+  }
+
+  void _refreshFavorites() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    final providerContext = _providerContext;
+    if (providerContext == null) {
+      return;
+    }
+
+    try {
+      providerContext.read<FavoritesCubit>().loadFavoritesByUserId(userId);
+    } catch (_) {
+      // Favorites provider may not be mounted yet on the first frame.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +214,7 @@ class _HomePageState extends State<HomePage> {
         ],
         child: Builder(
           builder: (context) {
+            _providerContext = context;
             final isLoggingOut = context
                 .select((SignOutCubit cubit) => cubit.state is SignOutLoading);
             final currentUser = FirebaseAuth.instance.currentUser;

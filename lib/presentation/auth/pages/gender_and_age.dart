@@ -167,7 +167,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
                       // Gender selection buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -307,7 +307,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                       Builder(builder: (context) {
                         return BasicReactiveButton(
                             text: 'Sign Up',
