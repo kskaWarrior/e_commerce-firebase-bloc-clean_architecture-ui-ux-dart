@@ -132,7 +132,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                      bottom: isKeyboardOpen ? keyboardInset + 118 : 190,
+                      bottom: isKeyboardOpen ? keyboardInset + 98 : 190,
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(16),
@@ -162,7 +162,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                      bottom: isKeyboardOpen ? keyboardInset + 48 : 120,
+                      bottom: isKeyboardOpen ? keyboardInset + 28 : 120,
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(

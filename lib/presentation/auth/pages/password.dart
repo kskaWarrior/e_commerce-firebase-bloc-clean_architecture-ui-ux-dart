@@ -26,6 +26,7 @@ class PasswordPage extends StatefulWidget {
 class _PasswordPageState extends State<PasswordPage>
     with SingleTickerProviderStateMixin {
   bool _obscureText = true;
+  bool _isPasswordFieldFocused = false;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
 
@@ -36,6 +37,7 @@ class _PasswordPageState extends State<PasswordPage>
   Timer? _typewriterTimer;
 
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -53,6 +55,13 @@ class _PasswordPageState extends State<PasswordPage>
     ));
 
     _slideController.forward();
+
+    _passwordFocusNode.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        _isPasswordFieldFocused = _passwordFocusNode.hasFocus;
+      });
+    });
 
     // Start typewriter effect
     _startTypewriter();
@@ -79,6 +88,7 @@ class _PasswordPageState extends State<PasswordPage>
   void dispose() {
     _slideController.dispose();
     _typewriterTimer?.cancel();
+    _passwordFocusNode.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -120,7 +130,7 @@ class _PasswordPageState extends State<PasswordPage>
               builder: (context, constraints) {
                 final screenWidth = MediaQuery.sizeOf(context).width;
                 final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-                final isKeyboardOpen = keyboardInset > 0;
+                final isKeyboardOpen = keyboardInset > 0 || _isPasswordFieldFocused;
                 final formWidth =
                     (screenWidth - 32).clamp(280.0, 420.0).toDouble();
                 final logoSize =
@@ -149,7 +159,7 @@ class _PasswordPageState extends State<PasswordPage>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: isKeyboardOpen ? 20 : 40),
                       SizedBox(
                             width: formWidth,
                         child: Image.asset(
@@ -158,7 +168,7 @@ class _PasswordPageState extends State<PasswordPage>
                               height: logoSize,
                         ),
                       ),
-                          SizedBox(height: isKeyboardOpen ? 32 : 100),
+                      SizedBox(height: isKeyboardOpen ? 32 : 100),
                       SizedBox(
                         height: 55,
                             width: formWidth,
@@ -167,6 +177,7 @@ class _PasswordPageState extends State<PasswordPage>
                           borderRadius: BorderRadius.circular(16),
                           child: TextField(
                             controller: _passwordController,
+                            focusNode: _passwordFocusNode,
                             style: const TextStyle(
                               fontFamily: 'CircularStd',
                               fontSize: 16,
@@ -241,7 +252,7 @@ class _PasswordPageState extends State<PasswordPage>
                           }
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: isKeyboardOpen ? 8 : 20),
                           if (!isKeyboardOpen)
                             SizedBox(
                               width: formWidth,
