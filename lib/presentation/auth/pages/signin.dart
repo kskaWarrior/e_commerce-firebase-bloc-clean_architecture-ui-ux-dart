@@ -96,13 +96,14 @@ class _SigninPageState extends State<SigninPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset:
-          true, // Ensures the body resizes when keyboard appears
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
+        bottom: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = MediaQuery.sizeOf(context).width;
-            final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+            final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+            final isKeyboardOpen = keyboardInset > 0;
             final formWidth = (screenWidth - 32).clamp(280.0, 420.0).toDouble();
             final horizontalInset = (screenWidth - formWidth) / 2;
             final heroImageSize =
@@ -131,7 +132,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                      bottom: isKeyboardOpen ? 105 : 190,
+                      bottom: isKeyboardOpen ? keyboardInset + 118 : 190,
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(16),
@@ -161,7 +162,7 @@ class _SigninPageState extends State<SigninPage>
                 Positioned(
                       left: horizontalInset,
                       right: horizontalInset,
-                      bottom: isKeyboardOpen ? 35 : 120,
+                      bottom: isKeyboardOpen ? keyboardInset + 48 : 120,
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -201,54 +202,56 @@ class _SigninPageState extends State<SigninPage>
                     child: const Text('Continue'),
                   ),
                 ),
-                Positioned(
-                      left: horizontalInset,
-                      right: horizontalInset,
-                      bottom: isKeyboardOpen ? 0 : 85,
-                      child: AnimatedBuilder(
-                        animation: _shakeController,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(
-                                _shakeController.isAnimating
-                                    ? (_shakeAnimation.value *
-                                        ((_shakeController.value < 0.5)
-                                            ? 1
-                                            : -1))
-                                    : 0,
-                                0),
-                            child: child,
-                          );
-                        },
-                        child: RichText(
-                          text: TextSpan(
-                            text: 'Don\'t have an account? ',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: 14.7,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: 'Sign Up!',
-                                style: TextStyle(
-                                  fontFamily: 'CircularStd',
-                                  fontSize: 14.7,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    AppNavigator.push(
-                                      context,
-                                      const SignUpPage(),
-                                    );
-                                  },
+                    if (!isKeyboardOpen)
+                      Positioned(
+                        left: horizontalInset,
+                        right: horizontalInset,
+                        bottom: 85,
+                        child: AnimatedBuilder(
+                          animation: _shakeController,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: Offset(
+                                  _shakeController.isAnimating
+                                      ? (_shakeAnimation.value *
+                                          ((_shakeController.value < 0.5)
+                                              ? 1
+                                              : -1))
+                                      : 0,
+                                  0),
+                              child: child,
+                            );
+                          },
+                          child: RichText(
+                            text: TextSpan(
+                              text: 'Don\'t have an account? ',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14.7,
                               ),
-                            ],
+                              children: [
+                                TextSpan(
+                                  text: 'Sign Up!',
+                                  style: TextStyle(
+                                    fontFamily: 'CircularStd',
+                                    fontSize: 14.7,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      AppNavigator.push(
+                                        context,
+                                        const SignUpPage(),
+                                      );
+                                    },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                ),
                   ],
                 ),
               ),

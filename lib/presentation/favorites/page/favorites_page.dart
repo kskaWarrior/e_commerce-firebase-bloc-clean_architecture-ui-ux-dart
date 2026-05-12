@@ -44,7 +44,7 @@ class FavoritesPage extends StatelessWidget {
 			child: Scaffold(
 				appBar: AppBar(
 					title: Text(
-						'My favorites',
+						'My Favorites',
 						style: Theme.of(context).textTheme.titleLarge?.copyWith(
 									fontFamily: 'CircularStd',
 									fontWeight: FontWeight.w700,

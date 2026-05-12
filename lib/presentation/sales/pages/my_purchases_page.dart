@@ -24,7 +24,7 @@ class MyPurchasesPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'My purchases',
+            'My Purchases',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
@@ -130,7 +130,7 @@ class _PurchasesView extends StatelessWidget {
               const _SectionSeparator(),
               const SizedBox(height: 8),
               Text(
-                'Recent purchases',
+                'Recent Purchases',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,

@@ -90,8 +90,7 @@ class _PasswordPageState extends State<PasswordPage>
         title: 'Signing In',
         hideBack: false,
       ),
-      resizeToAvoidBottomInset:
-          true, // Ensures the body resizes when keyboard appears
+      resizeToAvoidBottomInset: true,
       body: BlocProvider(
         create: (context) => ButtonCubit(),
         child: BlocListener<ButtonCubit, ButtonState>(
@@ -120,19 +119,25 @@ class _PasswordPageState extends State<PasswordPage>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final screenWidth = MediaQuery.sizeOf(context).width;
+                final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+                final isKeyboardOpen = keyboardInset > 0;
                 final formWidth =
                     (screenWidth - 32).clamp(280.0, 420.0).toDouble();
                 final logoSize =
                     (screenWidth * 0.55).clamp(150.0, 220.0).toDouble();
 
                 return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.only(bottom: keyboardInset + 24),
                   child: ConstrainedBox(
                     constraints:
                         BoxConstraints(minHeight: constraints.maxHeight),
                     child: Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
                     children: [
+                          SizedBox(height: isKeyboardOpen ? 24 : 60),
                       SlideTransition(
                         position: _slideAnimation,
                         child: const Text(
@@ -153,7 +158,7 @@ class _PasswordPageState extends State<PasswordPage>
                               height: logoSize,
                         ),
                       ),
-                      const SizedBox(height: 100),
+                          SizedBox(height: isKeyboardOpen ? 32 : 100),
                       SizedBox(
                         height: 55,
                             width: formWidth,
@@ -237,33 +242,44 @@ class _PasswordPageState extends State<PasswordPage>
                         ),
                       ),
                       const SizedBox(height: 20),
-                      RichText(
-                        text: TextSpan(
-                          text: 'Forgot your password? ',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 16,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'Click here!',
-                              style: TextStyle(
-                                fontFamily: 'CircularStd',
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                          if (!isKeyboardOpen)
+                            SizedBox(
+                              width: formWidth,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: RichText(
+                                  text: TextSpan(
+                                    text: 'Forgot your password? ',
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      fontSize: 14.7,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Click here!',
+                                        style: TextStyle(
+                                          fontFamily: 'CircularStd',
+                                          fontSize: 14.7,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            AppNavigator.push(
+                                              context,
+                                              const ForgotPasswordPage(),
+                                            );
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  AppNavigator.push(
-                                    context,
-                                    const ForgotPasswordPage(),
-                                  );
-                                },
                             ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                     ),
