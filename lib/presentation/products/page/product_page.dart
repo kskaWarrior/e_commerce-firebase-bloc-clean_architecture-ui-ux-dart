@@ -46,6 +46,32 @@ class _ProductPageState extends State<ProductPage> {
   void initState() {
     super.initState();
     _imagePageController = PageController();
+    _initializeAutoSelections();
+  }
+
+  void _initializeAutoSelections() {
+    final normalizedSizes = widget.product.sizes
+        .map((size) => size.toString().trim())
+        .where((size) => size.isNotEmpty)
+        .toList(growable: false);
+
+    if (normalizedSizes.length == 1) {
+      _selectedSize = normalizedSizes.first;
+    }
+
+    final availableColors = widget.product.colors
+        .where(
+          (color) =>
+              color.title.trim().isNotEmpty || color.hexCode.trim().isNotEmpty,
+        )
+        .toList(growable: false);
+
+    if (availableColors.length == 1) {
+      final singleColor = availableColors.first;
+      _selectedColorTitle = singleColor.title;
+      _selectedColorHex = singleColor.hexCode;
+      _selectedColorKey = '${singleColor.title}_${singleColor.hexCode}';
+    }
   }
 
   @override
