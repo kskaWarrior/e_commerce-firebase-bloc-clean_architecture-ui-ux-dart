@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/auth/signin_lockout_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
@@ -10,7 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SigninPage extends StatefulWidget {
-  const SigninPage({super.key});
+  final String? initialEmail;
+
+  const SigninPage({super.key, this.initialEmail});
 
   @override
   State<SigninPage> createState() => _SigninPageState();
@@ -25,12 +28,16 @@ class _SigninPageState extends State<SigninPage>
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   Timer? _shakeTimer;
+  final SigninLockoutStore _signinLockoutStore = SigninLockoutStore();
 
   final TextEditingController _emailController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    if ((widget.initialEmail ?? '').trim().isNotEmpty) {
+      _emailController.text = widget.initialEmail!.trim();
+    }
     _startTypewriter();
 
     _shakeController = AnimationController(
@@ -177,7 +184,7 @@ class _SigninPageState extends State<SigninPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () {
+                        onPressed: () async {
                       if (_emailController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -187,13 +194,32 @@ class _SigninPageState extends State<SigninPage>
                         );
                         return;
                       }
+
+                          final email = _emailController.text.trim();
+                          final lockoutStatus =
+                              await _signinLockoutStore.getStatus(email);
+                          if (!mounted) return;
+
+                          if (lockoutStatus.isLocked) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'This email is temporarily locked. Try again in '
+                                  '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
                       AppNavigator.push(
                         context,
                         BlocProvider(
                           create: (context) => ButtonCubit(),
                           child: PasswordPage(
                             userSigninReq: UserSigninReq(
-                              email: _emailController.text,
+                                  email: email,
                             ),
                           ),
                         ),

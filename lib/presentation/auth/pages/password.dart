@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/auth/signin_lockout_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
@@ -38,6 +39,17 @@ class _PasswordPageState extends State<PasswordPage>
 
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _passwordFocusNode = FocusNode();
+  final SigninLockoutStore _signinLockoutStore = SigninLockoutStore();
+
+  bool _isInvalidCredentialsError(String error) {
+    final lower = error.toLowerCase();
+    return lower.contains('password does not look right') ||
+        lower.contains('invalid-credential') ||
+        lower.contains('wrong-password') ||
+        lower.contains('user-not-found') ||
+        lower.contains('no user record') ||
+        lower.contains('invalid login credentials');
+  }
 
   @override
   void initState() {
@@ -104,8 +116,56 @@ class _PasswordPageState extends State<PasswordPage>
       body: BlocProvider(
         create: (context) => ButtonCubit(),
         child: BlocListener<ButtonCubit, ButtonState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is FailureState) {
+              final email = widget.userSigninReq?.email ?? '';
+              final isInvalidCredentials =
+                  email.isNotEmpty && _isInvalidCredentialsError(state.error);
+
+              if (isInvalidCredentials) {
+                final hasBeenLocked =
+                    await _signinLockoutStore.registerInvalidAttempt(email);
+                if (!mounted) return;
+
+                if (hasBeenLocked) {
+                  final lockoutStatus =
+                      await _signinLockoutStore.getStatus(email);
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Too many invalid attempts. This email is locked for '
+                        '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+
+                  AppNavigator.pushAndRemoveUntil(
+                    context,
+                    SigninPage(initialEmail: email),
+                  );
+                  return;
+                }
+
+                final status = await _signinLockoutStore.getStatus(email);
+                if (!mounted) return;
+                final remainingAttempts =
+                    (SigninLockoutStore.maxAttempts - status.failedAttempts)
+                        .clamp(0, SigninLockoutStore.maxAttempts);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${state.error} Attempts left before lock: $remainingAttempts.',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error),
@@ -113,6 +173,10 @@ class _PasswordPageState extends State<PasswordPage>
                 ),
               );
             } else if (state is SuccessState) {
+              final email = widget.userSigninReq?.email;
+              if (email != null && email.isNotEmpty) {
+                await _signinLockoutStore.clearAttempts(email);
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -232,7 +296,7 @@ class _PasswordPageState extends State<PasswordPage>
                           builder: (context) {
                             return BasicReactiveButton(
                               text: 'Sign In',
-                              onPressed: () {
+                                onPressed: () async {
                                 if (_passwordController.text.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -241,6 +305,33 @@ class _PasswordPageState extends State<PasswordPage>
                                     ),
                                   );
                                 } else {
+                                    final email =
+                                        widget.userSigninReq?.email ?? '';
+                                    if (email.isNotEmpty) {
+                                      final lockoutStatus =
+                                          await _signinLockoutStore
+                                              .getStatus(email);
+                                      if (!context.mounted) return;
+
+                                      if (lockoutStatus.isLocked) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'This email is locked. Try again in '
+                                              '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        AppNavigator.pushAndRemoveUntil(
+                                          context,
+                                          SigninPage(initialEmail: email),
+                                        );
+                                        return;
+                                      }
+                                    }
+
                                   widget.userSigninReq!.password = _passwordController.text;
                                   context.read<ButtonCubit>().execute(
                                     useCase: sl<SigninUseCase>(),

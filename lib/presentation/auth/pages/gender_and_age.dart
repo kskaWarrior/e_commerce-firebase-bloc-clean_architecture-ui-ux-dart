@@ -34,6 +34,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
   Timer? _typewriterTimer;
   String _selectedGender = 'Male';
   DateTime? _selectedDate = DateTime(2000, 1, 1);
+  static const int _minimumAge = 12;
 
   @override
   void initState() {
@@ -62,17 +63,38 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
   }
 
   Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final latestAllowedBirthDate =
+        DateTime(now.year - _minimumAge, now.month, now.day);
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000, 1, 1),
+      initialDate: _selectedDate != null &&
+              _selectedDate!.isBefore(latestAllowedBirthDate)
+          ? _selectedDate
+          : latestAllowedBirthDate,
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: latestAllowedBirthDate,
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
       });
     }
+  }
+
+  bool _isAtLeastMinimumAge(DateTime birthDate) {
+    final now = DateTime.now();
+    var age = now.year - birthDate.year;
+
+    final hasNotHadBirthdayThisYear = now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day);
+
+    if (hasNotHadBirthdayThisYear) {
+      age--;
+    }
+
+    return age >= _minimumAge;
   }
 
   @override
@@ -325,6 +347,21 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                                       );
                                       return;
                                     }
+
+                                    if (_selectedDate == null ||
+                                        !_isAtLeastMinimumAge(_selectedDate!)) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'You must be at least 12 years old to create an account.',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
                                     widget.userCreationReq?.gender =
                                         _selectedGender;
                                     widget.userCreationReq?.birthDate =
