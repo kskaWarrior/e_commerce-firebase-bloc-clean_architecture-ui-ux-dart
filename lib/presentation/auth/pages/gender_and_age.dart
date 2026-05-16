@@ -309,26 +309,33 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                       ),
                       const SizedBox(height: 20),
                       Builder(builder: (context) {
-                        return BasicReactiveButton(
-                            text: 'Sign Up',
-                            onPressed: () {
-                            if (_addressController.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Please enter your address.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                              widget.userCreationReq?.gender = _selectedGender;
-                              widget.userCreationReq?.birthDate = _selectedDate;
-                              widget.userCreationReq?.address =
-                                  _addressController.text;
-                              context.read<ButtonCubit>().execute(
-                                  useCase: sl<SignupUseCase>(),
-                                  params: widget.userCreationReq);
-                            });
+                            return SizedBox(
+                              width: formWidth,
+                              child: BasicReactiveButton(
+                                  text: 'Sign Up',
+                                  onPressed: () {
+                                    if (_addressController.text.isEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Please enter your address.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    widget.userCreationReq?.gender =
+                                        _selectedGender;
+                                    widget.userCreationReq?.birthDate =
+                                        _selectedDate;
+                                    widget.userCreationReq?.address =
+                                        _addressController.text;
+                                    context.read<ButtonCubit>().execute(
+                                        useCase: sl<SignupUseCase>(),
+                                        params: widget.userCreationReq);
+                                  }),
+                            );
                       }),
                     ],
                   ),
