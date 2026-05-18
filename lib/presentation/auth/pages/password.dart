@@ -10,6 +10,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/m
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/page/home.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password_forgot.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart'
+    as auth_pages;
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -144,7 +146,7 @@ class _PasswordPageState extends State<PasswordPage>
 
                   AppNavigator.pushAndRemoveUntil(
                     context,
-                    SigninPage(initialEmail: email),
+                    auth_pages.SigninPage(initialEmail: email),
                   );
                   return;
                 }
@@ -326,7 +328,8 @@ class _PasswordPageState extends State<PasswordPage>
                                         );
                                         AppNavigator.pushAndRemoveUntil(
                                           context,
-                                          SigninPage(initialEmail: email),
+                                          auth_pages.SigninPage(
+                                              initialEmail: email),
                                         );
                                         return;
                                       }
