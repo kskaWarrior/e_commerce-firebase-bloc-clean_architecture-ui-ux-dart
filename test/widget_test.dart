@@ -1,30 +1,65 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/main.dart';
+Widget _wrapForTest(Widget child) {
+  return MaterialApp(
+    home: child,
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('Signin shows snackbar when email is empty',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_wrapForTest(const SigninPage()));
+
+    await tester.tap(find.text('Continue'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Please enter your email.'), findsOneWidget);
+  });
+
+  testWidgets('Signin shows snackbar when email format is invalid',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_wrapForTest(const SigninPage()));
+
+    await tester.enterText(find.byType(TextField).first, 'invalid-email');
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+
+    expect(find.text('Please enter a valid email address.'), findsOneWidget);
+  });
+
+  testWidgets('Signin navigates to PasswordPage with a valid email',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_wrapForTest(const SigninPage()));
+
+    await tester.enterText(find.byType(TextField).first, 'user@example.com');
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PasswordPage), findsOneWidget);
+  });
+
+  testWidgets('PasswordPage recovers when sign-in request is missing',
+      (WidgetTester tester) async {
+    await tester
+        .pumpWidget(_wrapForTest(const PasswordPage(userSigninReq: null)));
+
+    await tester.enterText(find.byType(TextField).first, '123456');
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign-in session expired. Please try again.'),
+        findsOneWidget);
+    expect(find.byType(SigninPage), findsOneWidget);
   });
 }
