@@ -5,6 +5,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
@@ -99,6 +100,42 @@ class _HomePageState extends State<HomePage> with RouteAware {
     } catch (_) {
       // Favorites provider may not be mounted yet on the first frame.
     }
+  }
+
+  Future<void> _toggleFavorite({
+    required BuildContext context,
+    required ProductEntity product,
+    required Set<String> favoriteProductIds,
+    required String? userId,
+  }) async {
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to add favorites.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final favoritesCubit = context.read<FavoritesCubit>();
+    if (favoriteProductIds.contains(product.id)) {
+      await favoritesCubit.deleteFavorite(userId, product.id);
+      if (!context.mounted) return;
+      await favoritesCubit.loadFavoritesByUserId(userId);
+      return;
+    }
+
+    final favorite = FavoriteEntity(
+      createdDate: Timestamp.now(),
+      id: '',
+      productId: product.id,
+      userId: userId,
+    );
+
+    await favoritesCubit.registerFavorite(favorite);
+    if (!context.mounted) return;
+    await favoritesCubit.loadFavoritesByUserId(userId);
   }
 
   @override
@@ -486,48 +523,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                               );
                                             },
                                             onFavoritePressed: (product) async {
-                                              if (userId == null ||
-                                                  userId.isEmpty) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Please sign in to add favorites.'),
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                );
-                                                return;
-                                              }
-
-                                              if (favoriteProductIds
-                                                  .contains(product.id)) {
-                                                await context
-                                                    .read<FavoritesCubit>()
-                                                    .deleteFavorite(
-                                                      userId,
-                                                      product.id,
-                                                    );
-                                                await context
-                                                    .read<FavoritesCubit>()
-                                                    .loadFavoritesByUserId(
-                                                        userId);
-                                                return;
-                                              }
-
-                                              final favorite = FavoriteEntity(
-                                                createdDate: Timestamp.now(),
-                                                id: '',
-                                                productId: product.id,
+                                              await _toggleFavorite(
+                                                context: context,
+                                                product: product,
+                                                favoriteProductIds:
+                                                    favoriteProductIds,
                                                 userId: userId,
                                               );
-
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .registerFavorite(favorite);
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .loadFavoritesByUserId(
-                                                      userId);
                                             },
                                           );
                                         } else {
@@ -694,48 +696,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                               );
                                             },
                                             onFavoritePressed: (product) async {
-                                              if (userId == null ||
-                                                  userId.isEmpty) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Please sign in to add favorites.'),
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                );
-                                                return;
-                                              }
-
-                                              if (favoriteProductIds
-                                                  .contains(product.id)) {
-                                                await context
-                                                    .read<FavoritesCubit>()
-                                                    .deleteFavorite(
-                                                      userId,
-                                                      product.id,
-                                                    );
-                                                await context
-                                                    .read<FavoritesCubit>()
-                                                    .loadFavoritesByUserId(
-                                                        userId);
-                                                return;
-                                              }
-
-                                              final favorite = FavoriteEntity(
-                                                createdDate: Timestamp.now(),
-                                                id: '',
-                                                productId: product.id,
+                                              await _toggleFavorite(
+                                                context: context,
+                                                product: product,
+                                                favoriteProductIds:
+                                                    favoriteProductIds,
                                                 userId: userId,
                                               );
-
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .registerFavorite(favorite);
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .loadFavoritesByUserId(
-                                                      userId);
                                             },
                                           );
                                         } else {
@@ -795,47 +762,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                             );
                                           },
                                           onFavoritePressed: (product) async {
-                                            if (userId == null ||
-                                                userId.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Please sign in to add favorites.'),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
-
-                                            if (favoriteProductIds
-                                                .contains(product.id)) {
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .deleteFavorite(
-                                                    userId,
-                                                    product.id,
-                                                  );
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .loadFavoritesByUserId(
-                                                      userId);
-                                              return;
-                                            }
-
-                                            final favorite = FavoriteEntity(
-                                              createdDate: Timestamp.now(),
-                                              id: '',
-                                              productId: product.id,
+                                            await _toggleFavorite(
+                                              context: context,
+                                              product: product,
+                                              favoriteProductIds:
+                                                  favoriteProductIds,
                                               userId: userId,
                                             );
-
-                                            await context
-                                                .read<FavoritesCubit>()
-                                                .registerFavorite(favorite);
-                                            await context
-                                                .read<FavoritesCubit>()
-                                                .loadFavoritesByUserId(userId);
                                           },
                                         );
                                       } else {
@@ -895,47 +828,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                             );
                                           },
                                           onFavoritePressed: (product) async {
-                                            if (userId == null ||
-                                                userId.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Please sign in to add favorites.'),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
-
-                                            if (favoriteProductIds
-                                                .contains(product.id)) {
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .deleteFavorite(
-                                                    userId,
-                                                    product.id,
-                                                  );
-                                              await context
-                                                  .read<FavoritesCubit>()
-                                                  .loadFavoritesByUserId(
-                                                      userId);
-                                              return;
-                                            }
-
-                                            final favorite = FavoriteEntity(
-                                              createdDate: Timestamp.now(),
-                                              id: '',
-                                              productId: product.id,
+                                            await _toggleFavorite(
+                                              context: context,
+                                              product: product,
+                                              favoriteProductIds:
+                                                  favoriteProductIds,
                                               userId: userId,
                                             );
-
-                                            await context
-                                                .read<FavoritesCubit>()
-                                                .registerFavorite(favorite);
-                                            await context
-                                                .read<FavoritesCubit>()
-                                                .loadFavoritesByUserId(userId);
                                           },
                                         );
                                       } else {

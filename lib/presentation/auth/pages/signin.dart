@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/auth/signin_lockout_store.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
@@ -8,7 +7,6 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SigninPage extends StatefulWidget {
   final String? initialEmail;
@@ -80,6 +78,10 @@ class _SigninPageState extends State<SigninPage>
 
   void _startTypewriter() {
     _timer = Timer.periodic(const Duration(milliseconds: 90), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_currentIndex < _typewriterText.length) {
         setState(() {
           _displayedText += _typewriterText[_currentIndex];
@@ -185,7 +187,8 @@ class _SigninPageState extends State<SigninPage>
                       ),
                     ),
                         onPressed: () async {
-                      if (_emailController.text.isEmpty) {
+                          final email = _emailController.text.trim();
+                          if (email.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Please enter your email.'),
@@ -195,10 +198,20 @@ class _SigninPageState extends State<SigninPage>
                         return;
                       }
 
-                          final email = _emailController.text.trim();
+                          if (!email.contains('@') || !email.contains('.')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Please enter a valid email address.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
                           final lockoutStatus =
                               await _signinLockoutStore.getStatus(email);
-                          if (!mounted) return;
+                          if (!context.mounted) return;
 
                           if (lockoutStatus.isLocked) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -215,12 +228,9 @@ class _SigninPageState extends State<SigninPage>
 
                       AppNavigator.push(
                         context,
-                        BlocProvider(
-                          create: (context) => ButtonCubit(),
-                          child: PasswordPage(
-                            userSigninReq: UserSigninReq(
-                                  email: email,
-                            ),
+                            PasswordPage(
+                              userSigninReq: UserSigninReq(
+                                email: email,
                           ),
                         ),
                       );

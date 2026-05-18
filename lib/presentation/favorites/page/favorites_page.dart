@@ -202,6 +202,8 @@ class _FavoritesViewState extends State<_FavoritesView> {
 									}
 
 									final missingCount = favorites.length - favoriteProducts.length;
+                  final favoriteProductIds =
+                      favorites.map((e) => e.productId).toSet();
 
 									if (favoriteProducts.isEmpty && favorites.isNotEmpty) {
 										return _CenteredStateView(
@@ -300,6 +302,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 																	await context
 																			.read<FavoritesCubit>()
 																				.deleteFavorite(widget.userId, product.id);
+                                  if (!context.mounted) return;
 																	await context
 																			.read<FavoritesCubit>()
 																				.loadFavoritesByUserId(widget.userId);
@@ -314,8 +317,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 													const NewInTitle(),
 													NewInCarousel(
 														products: newIn,
-														favoriteProductIds:
-																favorites.map((e) => e.productId).toSet(),
+                          favoriteProductIds: favoriteProductIds,
 														onTap: (product) {
 															AppNavigator.push(
 																context,
@@ -326,12 +328,11 @@ class _FavoritesViewState extends State<_FavoritesView> {
 															);
 														},
 														onFavoritePressed: (product) async {
-															if (favorites
-																	.map((e) => e.productId)
-																	.contains(product.id)) {
+                            if (favoriteProductIds.contains(product.id)) {
 																await context
 																		.read<FavoritesCubit>()
 																		.deleteFavorite(widget.userId, product.id);
+                              if (!context.mounted) return;
 																await context
 																		.read<FavoritesCubit>()
 																		.loadFavoritesByUserId(widget.userId);
@@ -348,6 +349,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 															await context
 																	.read<FavoritesCubit>()
 																	.registerFavorite(favorite);
+                            if (!context.mounted) return;
 															await context
 																	.read<FavoritesCubit>()
 																	.loadFavoritesByUserId(widget.userId);

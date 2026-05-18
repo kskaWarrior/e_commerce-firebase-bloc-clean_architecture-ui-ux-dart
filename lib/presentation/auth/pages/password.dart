@@ -87,6 +87,10 @@ class _PasswordPageState extends State<PasswordPage>
     _typewriterTimer?.cancel();
     _typewriterTimer =
         Timer.periodic(const Duration(milliseconds: 45), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_currentIndex < _typewriterText.length) {
         setState(() {
           _displayedText += _typewriterText[_currentIndex];
@@ -127,12 +131,12 @@ class _PasswordPageState extends State<PasswordPage>
               if (isInvalidCredentials) {
                 final hasBeenLocked =
                     await _signinLockoutStore.registerInvalidAttempt(email);
-                if (!mounted) return;
+                if (!context.mounted) return;
 
                 if (hasBeenLocked) {
                   final lockoutStatus =
                       await _signinLockoutStore.getStatus(email);
-                  if (!mounted) return;
+                  if (!context.mounted) return;
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -152,7 +156,7 @@ class _PasswordPageState extends State<PasswordPage>
                 }
 
                 final status = await _signinLockoutStore.getStatus(email);
-                if (!mounted) return;
+                if (!context.mounted) return;
                 final remainingAttempts =
                     (SigninLockoutStore.maxAttempts - status.failedAttempts)
                         .clamp(0, SigninLockoutStore.maxAttempts);
@@ -178,6 +182,7 @@ class _PasswordPageState extends State<PasswordPage>
               final email = widget.userSigninReq?.email;
               if (email != null && email.isNotEmpty) {
                 await _signinLockoutStore.clearAttempts(email);
+                if (!context.mounted) return;
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -299,7 +304,8 @@ class _PasswordPageState extends State<PasswordPage>
                             return BasicReactiveButton(
                               text: 'Sign In',
                                 onPressed: () async {
-                                if (_passwordController.text.isEmpty) {
+                                  final password = _passwordController.text;
+                                  if (password.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('Please enter your password'),
@@ -335,10 +341,27 @@ class _PasswordPageState extends State<PasswordPage>
                                       }
                                     }
 
-                                  widget.userSigninReq!.password = _passwordController.text;
+                                    final signInReq = widget.userSigninReq;
+                                    if (signInReq == null) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Sign-in session expired. Please try again.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      AppNavigator.pushAndRemoveUntil(
+                                        context,
+                                        const auth_pages.SigninPage(),
+                                      );
+                                      return;
+                                    }
+
+                                    signInReq.password = password;
                                   context.read<ButtonCubit>().execute(
                                     useCase: sl<SigninUseCase>(),
-                                    params: widget.userSigninReq!
+                                          params: signInReq,
                                   );
                                 }
                               },

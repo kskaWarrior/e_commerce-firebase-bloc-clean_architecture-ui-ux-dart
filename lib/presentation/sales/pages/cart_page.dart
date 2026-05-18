@@ -78,6 +78,21 @@ class _CartPageState extends State<CartPage> {
       return false;
     }
 
+    final expiryMatch = expiryPattern.firstMatch(expiry);
+    if (expiryMatch == null) {
+      _showPaymentError('Please enter the expiry date as MM/YY.');
+      return false;
+    }
+    final expiryMonth = int.parse(expiryMatch.group(1)!);
+    final expiryYear = 2000 + int.parse(expiryMatch.group(2)!);
+    final now = DateTime.now();
+    final isExpired = expiryYear < now.year ||
+        (expiryYear == now.year && expiryMonth < now.month);
+    if (isExpired) {
+      _showPaymentError('This card appears to be expired.');
+      return false;
+    }
+
     if (cvvDigits.length < 3 || cvvDigits.length > 4) {
       _showPaymentError('Please enter a valid CVV.');
       return false;
@@ -104,7 +119,8 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
-    final productId = (firstItem['id'] ?? '').toString().trim();
+    final productId =
+        ((firstItem['id'] ?? firstItem['productId']) ?? '').toString().trim();
     if (productId.isEmpty) {
       _showPaymentError('Product details are unavailable for this item.');
       return;
@@ -261,15 +277,16 @@ class _CartPageState extends State<CartPage> {
 
     final totalDiscountedPrice = drafts.fold<double>(
       0,
-      (sum, draft) => sum + draft.discountedPrice,
+      (runningTotal, draft) => runningTotal + draft.discountedPrice,
     );
     final totalPriceWithoutDiscount = drafts.fold<double>(
       0,
-      (sum, draft) => sum + draft.price,
+      (runningTotal, draft) => runningTotal + draft.price,
     );
     final totalDiscount = drafts.fold<double>(
       0,
-      (sum, draft) => sum + (draft.price - draft.discountedPrice),
+      (runningTotal, draft) =>
+          runningTotal + (draft.price - draft.discountedPrice),
     );
     final freight = _randomFreight();
 
