@@ -12,6 +12,7 @@ class UserModel {
   final String name;
   final DateTime birthDate;
   final String gender;
+  final String profileImageUrl;
 
   UserModel(
       {required this.id,
@@ -20,7 +21,8 @@ class UserModel {
       required this.phone,
       required this.name,
       required this.birthDate,
-      required this.gender});
+      required this.gender,
+      this.profileImageUrl = ''});
 
   static DateTime _dateOnlyFromDateTime(DateTime input) {
     final DateTime utcDate = input.toUtc();
@@ -42,6 +44,7 @@ class UserModel {
       'name': name,
       'birthDate': birthDate.millisecondsSinceEpoch,
       'gender': gender,
+      'profileImageUrl': profileImageUrl,
     };
   }
 
@@ -67,6 +70,7 @@ class UserModel {
       name: map['name'] as String? ?? '',
       birthDate: parsedBirthDate,
       gender: map['gender'] as String? ?? '',
+      profileImageUrl: map['profileImageUrl'] as String? ?? '',
     );
   }
 
@@ -86,6 +90,7 @@ extension UserXModel on UserModel {
       name: name,
       birthDate: birthDate,
       gender: gender,
+      profileImageUrl: profileImageUrl,
     );
   }
 }

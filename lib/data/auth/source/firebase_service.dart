@@ -2,15 +2,19 @@ import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 abstract class FirebaseService {
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
   Future<Either<Failure, String>> signUp(UserCreationReq userCreationReq);
   Future<Either<Failure, String>> updateUser(UserCreationReq userCreationReq);
   Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
+  Future<Either<Failure, String>> uploadProfileImage(
+      UploadProfileImageParams params);
   Future<Either<Failure, String>> signOut();
   Future<bool> isLoggedIn();
   Future<Either<Failure, UserModel>> getUser();
@@ -204,6 +208,37 @@ class FirebaseServiceImpl implements FirebaseService {
         }
       }
       return Future.value(Left(Failure(error: e.toString())));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadProfileImage(
+      UploadProfileImageParams params) async {
+    try {
+      final String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        return Left(Failure(error: 'User not logged in'));
+      }
+
+      final Reference ref =
+          FirebaseStorage.instance.ref().child('profile/images/$userId');
+
+      await ref.putData(
+        params.bytes,
+        SettableMetadata(contentType: params.contentType),
+      );
+
+      final String downloadUrl = await ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'profileImageUrl': downloadUrl,
+      });
+
+      return Right(downloadUrl);
+    } on FirebaseException catch (e) {
+      return Left(Failure(error: e.message ?? 'Failed to upload image'));
+    } catch (e) {
+      return Left(Failure(error: e.toString()));
     }
   }
 }

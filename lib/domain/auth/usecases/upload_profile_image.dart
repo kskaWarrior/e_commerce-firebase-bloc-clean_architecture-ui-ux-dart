@@ -1,0 +1,25 @@
+import 'dart:typed_data';
+
+import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/utils/usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+
+class UploadProfileImageUseCase
+    implements UseCase<Either<Failure, String>, UploadProfileImageParams> {
+  @override
+  Future<Either<Failure, String>> call(UploadProfileImageParams params) async {
+    return await sl<AuthRepository>().uploadProfileImage(params);
+  }
+}
+
+class UploadProfileImageParams {
+  final Uint8List bytes;
+  final String contentType;
+
+  const UploadProfileImageParams({
+    required this.bytes,
+    required this.contentType,
+  });
+}

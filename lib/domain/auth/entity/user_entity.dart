@@ -10,6 +10,7 @@ class UserEntity {
   final String name;
   final DateTime birthDate;
   final String gender;
+  final String profileImageUrl;
 
   UserEntity({
     required this.id,
@@ -18,9 +19,9 @@ class UserEntity {
     required this.phone,
     required this.name,
     required this.birthDate,
-    required this.gender
-});
-  
+    required this.gender,
+    this.profileImageUrl = '',
+  });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -31,6 +32,7 @@ class UserEntity {
       'name': name,
       'birthDate': birthDate.millisecondsSinceEpoch,
       'gender': gender,
+      'profileImageUrl': profileImageUrl,
     };
   }
 
@@ -43,11 +45,12 @@ class UserEntity {
       name: map['name'] as String? ?? '',
       birthDate: (map['birthDate'] as Timestamp).toDate(),
       gender: map['gender'] as String? ?? '',
+      profileImageUrl: map['profileImageUrl'] as String? ?? '',
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory UserEntity.fromJson(String source) => UserEntity.fromMap(json.decode(source) as Map<String, dynamic>);
-
+  factory UserEntity.fromJson(String source) =>
+      UserEntity.fromMap(json.decode(source) as Map<String, dynamic>);
 }

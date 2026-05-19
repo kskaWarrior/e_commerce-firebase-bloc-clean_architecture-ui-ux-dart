@@ -21,6 +21,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signout.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signup.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/repository/category_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
@@ -74,6 +75,8 @@ Future<void> init() async {
       () => SendPasswordEmailResetUseCase());
   sl.registerLazySingleton<IsLoggedInUseCase>(() => IsLoggedInUseCase());
   sl.registerLazySingleton<GetUserUseCase>(() => GetUserUseCase());
+  sl.registerLazySingleton<UploadProfileImageUseCase>(
+      () => UploadProfileImageUseCase());
   sl.registerLazySingleton<GetCategoriesUseCase>(() => GetCategoriesUseCase());
   sl.registerLazySingleton<GetTopSellingProductsUseCase>(
       () => GetTopSellingProductsUseCase());

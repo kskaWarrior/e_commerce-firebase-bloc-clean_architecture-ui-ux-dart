@@ -3,6 +3,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 
 abstract class AuthRepository {
   Future<Either<Failure, String>> signIn(UserSigninReq userSigninReq);
@@ -10,6 +11,8 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> updateUser(UserCreationReq userCreationReq);
   Future<Either<Failure, String>> signOut();
   Future<Either<Failure, String>> sendPasswordEmailResetUseCase(String email);
+  Future<Either<Failure, String>> uploadProfileImage(
+      UploadProfileImageParams params);
   Future<bool> isLoggedIn();
   Future<Either<Failure, UserEntity>> getUser();
 }

@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart' show Either;
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({super.key});
@@ -16,6 +20,7 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
+  final ImagePicker _imagePicker = ImagePicker();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -26,7 +31,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
   DateTime _selectedDate = DateTime(2000, 1, 1);
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
   bool _obscurePassword = true;
+  String _profileImageUrl = '';
+  String _registeredEmail = '';
 
   @override
   void initState() {
@@ -69,15 +77,86 @@ class _MyProfilePageState extends State<MyProfilePage> {
         _nameController.text = user.name;
         _phoneController.text = user.phone;
         _emailController.text = user.email;
+        _registeredEmail = user.email;
         _addressController.text = user.address;
         _selectedGender = user.gender.isNotEmpty ? user.gender : 'Male';
         _selectedDate = user.birthDate;
+        _profileImageUrl = user.profileImageUrl;
       },
     );
 
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _pickAndUploadProfileImage() async {
+    final XFile? pickedImage =
+        await _imagePicker.pickImage(source: ImageSource.gallery);
+
+    if (pickedImage == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    final Uint8List imageBytes = await pickedImage.readAsBytes();
+    final String loweredName = pickedImage.name.toLowerCase();
+    final String contentType = _guessContentType(loweredName);
+
+    final Either<Failure, String> result =
+        await sl<UploadProfileImageUseCase>()(
+      UploadProfileImageParams(bytes: imageBytes, contentType: contentType),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.error),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+      (uploadedUrl) {
+        setState(() {
+          _profileImageUrl = uploadedUrl;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile image updated successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      },
+    );
+
+    setState(() {
+      _isUploadingImage = false;
+    });
+  }
+
+  String _guessContentType(String fileName) {
+    if (fileName.endsWith('.png')) {
+      return 'image/png';
+    }
+    if (fileName.endsWith('.webp')) {
+      return 'image/webp';
+    }
+    if (fileName.endsWith('.heic')) {
+      return 'image/heic';
+    }
+    if (fileName.endsWith('.gif')) {
+      return 'image/gif';
+    }
+    return 'image/jpeg';
   }
 
   Future<void> _pickDate() async {
@@ -113,7 +192,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
     });
 
     final UserCreationReq params = UserCreationReq(
-      email: _emailController.text.trim(),
+      email: _registeredEmail,
       password: _passwordController.text.trim().isEmpty
           ? null
           : _passwordController.text.trim(),
@@ -176,10 +255,80 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Center(
+                          child: GestureDetector(
+                            onTap: (_isSaving || _isUploadingImage)
+                                ? null
+                                : _pickAndUploadProfileImage,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                CircleAvatar(
+                                  radius: 52,
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.15),
+                                  backgroundImage: _profileImageUrl.isNotEmpty
+                                      ? NetworkImage(_profileImageUrl)
+                                      : null,
+                                  child: _profileImageUrl.isEmpty
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 52,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                                Positioned(
+                                  right: -2,
+                                  bottom: -2,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors.white, width: 2),
+                                    ),
+                                    child: _isUploadingImage
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(8),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.camera_alt_outlined,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Tap to change photo',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'CircularStd',
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _emailController,
                           labelText: 'Email',
+                          hintText: 'Registered email (locked)',
                           icon: Icons.email_outlined,
+                          suffixIcon: const Icon(Icons.lock_outline),
                           enabled: false,
                           keyboardType: TextInputType.emailAddress,
                         ),

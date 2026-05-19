@@ -6,6 +6,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/m
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/source/firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 
 class AuthRepositoryImpl extends AuthRepository {
@@ -35,6 +36,12 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<Either<Failure, String>> sendPasswordEmailResetUseCase(
       String email) async {
     return await sl<FirebaseService>().sendPasswordEmailResetUseCase(email);
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadProfileImage(
+      UploadProfileImageParams params) async {
+    return await sl<FirebaseService>().uploadProfileImage(params);
   }
 
   @override
