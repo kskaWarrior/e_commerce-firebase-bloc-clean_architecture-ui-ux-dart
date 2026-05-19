@@ -11,6 +11,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -818,12 +819,14 @@ class _ProductGallery extends StatelessWidget {
                           onPageChanged: onPageChanged,
                           itemCount: imagePaths.length,
                           itemBuilder: (context, index) {
-                            return Image.network(
-                              ImageDisplayHelper.generateProductImagePath(
+                            return CachedNetworkImage(
+                              imageUrl:
+                                  ImageDisplayHelper.generateProductImagePath(
                                 imagePaths[index],
                               ),
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
+                              placeholder: (context, url) => _placeholder(),
+                              errorWidget: (context, url, error) {
                                 return _placeholder();
                               },
                             );
@@ -1141,12 +1144,13 @@ class _FullscreenProductGalleryPageState
                   minScale: 1,
                   maxScale: 4,
                   child: Center(
-                    child: Image.network(
-                      ImageDisplayHelper.generateProductImagePath(
+                    child: CachedNetworkImage(
+                      imageUrl: ImageDisplayHelper.generateProductImagePath(
                         widget.imagePaths[index],
                       ),
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
+                      placeholder: (context, url) => const SizedBox.shrink(),
+                      errorWidget: (context, url, error) {
                         return const Icon(
                           Icons.broken_image_outlined,
                           color: Colors.white70,

@@ -1,5 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class ProductCard extends StatelessWidget {
@@ -48,12 +49,16 @@ class ProductCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: imageUrl.isNotEmpty
-                        ? Image.network(
-                            ImageDisplayHelper.generateProductImagePath(imageUrl),
+                        ? CachedNetworkImage(
+                            imageUrl:
+                                ImageDisplayHelper.generateProductImagePath(
+                              imageUrl,
+                            ),
                             height: 232,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            placeholder: (context, url) => _imagePlaceholder(),
+                            errorWidget: (context, url, error) {
                               return _imagePlaceholder();
                             },
                           )

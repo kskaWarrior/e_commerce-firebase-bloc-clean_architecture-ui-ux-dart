@@ -1,5 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/entities/categories_entity.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class CategoriesWidget extends StatelessWidget {
@@ -41,12 +42,16 @@ class CategoriesWidget extends StatelessWidget {
                         offset: const Offset(0, 2),
                       ),
                     ],
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        ImageDisplayHelper.generateCategoryImagePath(
-                        category.image)
-                        ),
+                  ),
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: ImageDisplayHelper.generateCategoryImagePath(
+                        category.image,
+                      ),
                       fit: BoxFit.cover,
+                      errorWidget: (context, url, error) => const Center(
+                        child: Icon(Icons.broken_image_outlined),
+                      ),
                     ),
                   ),
                 ),
