@@ -46,6 +46,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
   String? _selectedCategoryId;
   String? _selectedCategoryTitle;
   String _searchQuery = '';
+  String _profileImageUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrawerProfileImage();
+  }
 
   @override
   void didChangeDependencies() {
@@ -74,6 +81,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshFavorites();
+      _loadDrawerProfileImage();
     });
   }
 
@@ -81,7 +89,38 @@ class _HomePageState extends State<HomePage> with RouteAware {
   void didPush() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshFavorites();
+      _loadDrawerProfileImage();
     });
+  }
+
+  Future<void> _loadDrawerProfileImage() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null || userId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _profileImageUrl = '';
+      });
+      return;
+    }
+
+    try {
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final String fetchedImageUrl =
+          (userDoc.data()?['profileImageUrl'] as String? ?? '').trim();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _profileImageUrl = fetchedImageUrl;
+      });
+    } catch (_) {
+      // Ignore profile image fetch failures and keep a safe fallback avatar.
+    }
   }
 
   void _refreshFavorites() {
@@ -389,12 +428,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                 radius: 24,
                                 backgroundColor:
                                     Theme.of(context).colorScheme.primary,
-                                child: Icon(
-                                  Icons.person_outline,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .inversePrimary,
-                                ),
+                                backgroundImage: _profileImageUrl.isNotEmpty
+                                    ? NetworkImage(_profileImageUrl)
+                                    : null,
+                                child: _profileImageUrl.isEmpty
+                                    ? Icon(
+                                        Icons.person_outline,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .inversePrimary,
+                                      )
+                                    : null,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
