@@ -20,6 +20,8 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
+  static const int _maxProfileImageBytes = 10 * 1024 * 1024;
+
   final ImagePicker _imagePicker = ImagePicker();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -103,6 +105,26 @@ class _MyProfilePageState extends State<MyProfilePage> {
     });
 
     final Uint8List imageBytes = await pickedImage.readAsBytes();
+    if (imageBytes.lengthInBytes > _maxProfileImageBytes) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isUploadingImage = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selected image is larger than 10 MB. Please choose a smaller file.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final String loweredName = pickedImage.name.toLowerCase();
     final String contentType = _guessContentType(loweredName);
 
