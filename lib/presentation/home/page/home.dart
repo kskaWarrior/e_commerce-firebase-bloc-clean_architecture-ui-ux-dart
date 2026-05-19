@@ -138,6 +138,82 @@ class _HomePageState extends State<HomePage> with RouteAware {
     await favoritesCubit.loadFavoritesByUserId(userId);
   }
 
+  Future<void> _confirmAndSignOut(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
+        final textTheme = Theme.of(dialogContext).textTheme;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: colorScheme.surface,
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+          title: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.logout,
+                  size: 20,
+                  color: colorScheme.inversePrimary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Confirm logout',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontFamily: 'CircularStd',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to log out of your account?',
+            style: textTheme.bodyMedium?.copyWith(
+              fontFamily: 'CircularStd',
+              height: 1.3,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Logout'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.inversePrimary,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true || !context.mounted) {
+      return;
+    }
+
+    Navigator.pop(context);
+    context.read<SignOutCubit>().signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -421,10 +497,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                               : null,
                           onTap: isLoggingOut
                               ? null
-                              : () {
-                                  Navigator.pop(context);
-                                  context.read<SignOutCubit>().signOut();
-                                },
+                              : () => _confirmAndSignOut(context),
                         ),
                         const SizedBox(height: 10),
                       ],
