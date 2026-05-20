@@ -90,3 +90,77 @@ workflows:
     artifacts:
       - build/app/outputs/**/*.apk
       - coverage/lcov.info
+
+  ios_simulator_integration:
+    name: iOS Simulator Integration Tests
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
+        IOS_SIMULATOR_NAME: "iPhone 15"
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/ios/Pods
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+
+      - name: Static analysis
+        script: |
+          flutter analyze
+
+      - name: Unit and widget tests
+        script: |
+          flutter test --coverage
+
+      - name: Install iOS pods
+        script: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Boot iOS simulator
+        script: |
+          xcrun simctl list devices available
+
+          SIMULATOR_UDID=$(xcrun simctl list devices available | awk -F '[()]' -v device="$IOS_SIMULATOR_NAME" '$0 ~ device { print $2; exit }')
+          if [ -z "$SIMULATOR_UDID" ]; then
+            echo "Unable to find an available simulator named '$IOS_SIMULATOR_NAME'."
+            exit 1
+          fi
+
+          echo "Using simulator: $IOS_SIMULATOR_NAME ($SIMULATOR_UDID)"
+          xcrun simctl boot "$SIMULATOR_UDID" || true
+          open -a Simulator
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          flutter devices
+
+      - name: Run integration tests on iOS simulator
+        script: |
+          SIMULATOR_UDID=$(xcrun simctl list devices available | awk -F '[()]' -v device="$IOS_SIMULATOR_NAME" '$0 ~ device { print $2; exit }')
+          if [ -z "$SIMULATOR_UDID" ]; then
+            echo "Unable to resolve simulator UDID for '$IOS_SIMULATOR_NAME'."
+            exit 1
+          fi
+
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=$FLUTTER_TARGET \
+            -d "$SIMULATOR_UDID" \
+            --verbose
+
+    artifacts:
+      - build/ios/**/*.app
+      - build/ios/**/*.xcresult
+      - coverage/lcov.info
