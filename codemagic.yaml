@@ -140,9 +140,12 @@ workflows:
             SELECTED_MODEL=$(echo "$AVAILABLE_MODELS" | head -n 1)
           fi
 
-          AVAILABLE_VERSIONS=$(gcloud firebase test android versions list --model="$SELECTED_MODEL" --format='value(VERSION_ID)' 2>/dev/null || true)
+          SUPPORTED_VERSIONS_RAW=$(gcloud firebase test android models describe "$SELECTED_MODEL" --format='value(supportedVersionIds)' 2>/dev/null || true)
+          AVAILABLE_VERSIONS=$(echo "$SUPPORTED_VERSIONS_RAW" | tr ',[]' '\n' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | grep -E '^[0-9]+$' || true)
+
           if [ -z "$AVAILABLE_VERSIONS" ]; then
-            echo "Unable to list Firebase Test Lab versions for model: $SELECTED_MODEL"
+            echo "Unable to resolve supported Firebase Test Lab versions for model: $SELECTED_MODEL"
+            echo "Raw supportedVersionIds: $SUPPORTED_VERSIONS_RAW"
             exit 1
           fi
 
