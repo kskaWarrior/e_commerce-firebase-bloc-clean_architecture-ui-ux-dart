@@ -20,17 +20,31 @@ void main() {
       WidgetsFlutterBinding.ensureInitialized();
       await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform);
-      await FirebasePerformance.instance
-          .setPerformanceCollectionEnabled(!kDebugMode);
+
+      // Keep app launch path lean to avoid startup stalls/ANR on CI devices.
+      unawaited(
+        FirebasePerformance.instance
+            .setPerformanceCollectionEnabled(!kDebugMode)
+            .timeout(const Duration(seconds: 3))
+            .catchError((_) {}),
+      );
+
       FlutterError.onError =
           FirebaseCrashlytics.instance.recordFlutterFatalError;
       PlatformDispatcher.instance.onError = (error, stack) {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
+
       await init();
-      await CartDraftStore.instance.restore();
       runApp(const MyApp());
+
+      unawaited(
+        CartDraftStore.instance
+            .restore()
+            .timeout(const Duration(seconds: 3), onTimeout: () {})
+            .catchError((_) {}),
+      );
     },
     (error, stack) =>
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
