@@ -386,9 +386,9 @@ class _CartPageState extends State<CartPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.06),
                   Theme.of(context).scaffoldBackgroundColor,
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
+                  Theme.of(context).colorScheme.surface.withOpacity(0.45),
                 ],
               ),
             ),
@@ -537,7 +537,7 @@ class _CartView extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .primary
-                                      .withValues(alpha: 0.8),
+                                      .withOpacity(0.8),
                                   width: 3,
                                 ),
                                 foregroundColor: Theme.of(context)
@@ -711,7 +711,7 @@ class _PaymentSection extends StatelessWidget {
                 if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).colorScheme.primary;
                 }
-                return Colors.white.withValues(alpha: 0.85);
+                return Colors.white.withOpacity(0.85);
               }),
               foregroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
@@ -724,7 +724,7 @@ class _PaymentSection extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .primary
-                      .withValues(alpha: 0.35),
+                      .withOpacity(0.35),
                 );
               }),
             ),
@@ -856,17 +856,17 @@ InputDecoration _paymentInputDecoration(
     floatingLabelBehavior: FloatingLabelBehavior.always,
     prefixIcon: Icon(icon, size: 18),
     filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.8),
+    fillColor: Colors.white.withOpacity(0.8),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
       ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
       ),
     ),
     focusedBorder: OutlineInputBorder(
@@ -1063,7 +1063,7 @@ class _StatsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           width: 5,
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
         ),
       ),
       child: Column(
@@ -1204,10 +1204,10 @@ class _InfoCard extends StatelessWidget {
       margin: margin,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: Colors.white.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -1242,7 +1242,7 @@ class _TagPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -1273,11 +1273,11 @@ class _SectionSeparator extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              baseColor.withValues(alpha: 0.0),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.9),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.0),
+              baseColor.withOpacity(0.0),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.9),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.0),
             ],
             stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
           ),

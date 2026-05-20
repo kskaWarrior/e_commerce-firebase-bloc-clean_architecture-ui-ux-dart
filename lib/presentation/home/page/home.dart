@@ -198,7 +198,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.14),
+                  color: colorScheme.primary.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -397,7 +397,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                           Theme.of(context)
                               .colorScheme
                               .primary
-                              .withValues(alpha: 0.12),
+                              .withOpacity(0.12),
                           Theme.of(context).colorScheme.surface,
                         ],
                       ),
@@ -412,13 +412,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withValues(alpha: 0.14),
+                                .withOpacity(0.14),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: Theme.of(context)
                                   .colorScheme
                                   .primary
-                                  .withValues(alpha: 0.28),
+                                  .withOpacity(0.28),
                             ),
                           ),
                           child: Row(
@@ -522,7 +522,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withValues(alpha: 1),
+                                .withOpacity(1),
                             height: 5,
                           ),
                         ),
@@ -588,7 +588,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                       shadows: [
                                         Shadow(
                                           color: Colors.black
-                                              .withValues(alpha: 0.4),
+                                              .withOpacity(0.4),
                                           offset: const Offset(1, 3),
                                           blurRadius: 4,
                                         ),
@@ -676,7 +676,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                     shadows: [
                                       Shadow(
                                         color:
-                                            Colors.black.withValues(alpha: 0.4),
+                                            Colors.black.withOpacity(0.4),
                                         offset: const Offset(1, 3),
                                         blurRadius: 4,
                                       ),
@@ -738,7 +738,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                             shadows: [
                                               Shadow(
                                                 color: Colors.black
-                                                    .withValues(alpha: 0.4),
+                                                    .withOpacity(0.4),
                                                 offset: const Offset(1, 3),
                                                 blurRadius: 4,
                                               ),
@@ -1004,7 +1004,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                           color: Theme.of(context)
                                               .colorScheme
                                               .primary
-                                              .withValues(alpha: 0.8),
+                                              .withOpacity(0.8),
                                           width: 3,
                                         ),
                                         foregroundColor: Theme.of(context)
@@ -1050,11 +1050,11 @@ class _SectionSeparator extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              baseColor.withValues(alpha: 0.0),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.9),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.0),
+              baseColor.withOpacity(0.0),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.9),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.0),
             ],
             stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
           ),

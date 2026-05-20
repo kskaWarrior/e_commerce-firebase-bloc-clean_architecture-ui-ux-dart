@@ -25,7 +25,7 @@ class SearchBox extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search for your next buy buy here ;)',
             hintStyle: TextStyle(
-              color: colorScheme.primary.withValues(alpha: 0.8),
+              color: colorScheme.primary.withOpacity(0.8),
             ),
             prefixIcon:
                 Icon(Icons.search, color: colorScheme.primary),

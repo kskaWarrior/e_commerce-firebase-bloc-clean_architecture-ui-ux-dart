@@ -42,9 +42,9 @@ class MyPurchasesPage extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.06),
                   Theme.of(context).scaffoldBackgroundColor,
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
+                  Theme.of(context).colorScheme.surface.withOpacity(0.45),
                 ],
               ),
             ),
@@ -328,10 +328,10 @@ class _ProductItemCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.55),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
         ),
       ),
       child: Column(
@@ -417,7 +417,7 @@ class _QuantityBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.16),
       ),
       child: Text(
         'x$quantity',
@@ -448,7 +448,7 @@ class _PriceMetric extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color:
-            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.65),
+            Theme.of(context).scaffoldBackgroundColor.withOpacity(0.65),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +487,7 @@ class _MetaPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
       ),
       child: Text(
         '$label: $value',
@@ -520,7 +520,7 @@ class _ColorMetaPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -532,7 +532,7 @@ class _ColorMetaPill extends StatelessWidget {
               shape: BoxShape.circle,
               color: colorValue ?? Colors.transparent,
               border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35),
               ),
             ),
           ),
@@ -570,7 +570,7 @@ class _StatsCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
         ),
       ),
       child: Column(
@@ -683,10 +683,10 @@ class _InfoCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: Colors.white.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -717,7 +717,7 @@ class _TagPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -748,11 +748,11 @@ class _SectionSeparator extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              baseColor.withValues(alpha: 0.0),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.9),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.0),
+              baseColor.withOpacity(0.0),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.9),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.0),
             ],
             stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
           ),

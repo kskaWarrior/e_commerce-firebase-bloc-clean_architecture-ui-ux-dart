@@ -36,7 +36,7 @@ class ProductCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
-        shadowColor: Colors.black.withValues(alpha: 0.22),
+        shadowColor: Colors.black.withOpacity(0.22),
         elevation: 9,
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
         child: Padding(
@@ -77,7 +77,7 @@ class ProductCard extends StatelessWidget {
                           width: 39,
                           height: 39,
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.07),
+                            color: Colors.black.withOpacity(0.07),
                             shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
@@ -117,7 +117,7 @@ class ProductCard extends StatelessWidget {
                                 width: 22,
                                 height: 22,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.4),
+                                  color: Colors.black.withOpacity(0.4),
                                   shape: BoxShape.circle,
                                   border:
                                       Border.all(color: Colors.white, width: 1),

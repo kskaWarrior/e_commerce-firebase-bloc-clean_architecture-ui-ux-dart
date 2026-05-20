@@ -290,7 +290,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                   backgroundColor: Theme.of(context)
                                       .colorScheme
                                       .primary
-                                      .withValues(alpha: 0.15),
+                                      .withOpacity(0.15),
                                   backgroundImage: _profileImageUrl.isNotEmpty
                                       ? NetworkImage(_profileImageUrl)
                                       : null,
@@ -453,7 +453,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                               border: Border.all(color: Colors.grey.shade300),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
+                                  color: Colors.black.withOpacity(0.03),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -547,11 +547,11 @@ class _ProfileSectionSeparator extends StatelessWidget {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            baseColor.withValues(alpha: 0.0),
-            baseColor.withValues(alpha: 0.22),
-            baseColor.withValues(alpha: 0.85),
-            baseColor.withValues(alpha: 0.22),
-            baseColor.withValues(alpha: 0.0),
+            baseColor.withOpacity(0.0),
+            baseColor.withOpacity(0.22),
+            baseColor.withOpacity(0.85),
+            baseColor.withOpacity(0.22),
+            baseColor.withOpacity(0.0),
           ],
           stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
         ),

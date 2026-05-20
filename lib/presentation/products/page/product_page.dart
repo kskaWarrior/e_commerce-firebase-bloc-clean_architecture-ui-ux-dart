@@ -143,7 +143,7 @@ class _ProductPageState extends State<ProductPage> {
               size: 32,
               color: canUseFavorites
                   ? Colors.red
-                  : Colors.red.withValues(alpha: 0.45),
+                  : Colors.red.withOpacity(0.45),
             ),
           ),
           IconButton(
@@ -166,9 +166,9 @@ class _ProductPageState extends State<ProductPage> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                colorScheme.primary.withValues(alpha: 0.06),
+                colorScheme.primary.withOpacity(0.06),
                 Theme.of(context).scaffoldBackgroundColor,
-                colorScheme.surface.withValues(alpha: 0.45),
+                colorScheme.surface.withOpacity(0.45),
               ],
             ),
           ),
@@ -266,7 +266,7 @@ class _ProductPageState extends State<ProductPage> {
                               color: Theme.of(context)
                                   .colorScheme
                                   .primary
-                                  .withValues(alpha: 0.5),
+                                  .withOpacity(0.5),
                             ),
                           ),
                           child: Text(
@@ -338,7 +338,7 @@ class _ProductPageState extends State<ProductPage> {
                           color: Theme.of(context)
                               .colorScheme
                               .primary
-                              .withValues(alpha: 0.8),
+                              .withOpacity(0.8),
                           width: 4,
                         ),
                         foregroundColor:
@@ -519,13 +519,13 @@ class _ProductPageState extends State<ProductPage> {
               ),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? colorScheme.primary.withValues(alpha: 0.24)
+                    ? colorScheme.primary.withOpacity(0.24)
                     : colorScheme.surface,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
                   color: isSelected
                       ? colorScheme.primary
-                      : colorScheme.primary.withValues(alpha: 0.5),
+                      : colorScheme.primary.withOpacity(0.5),
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -583,7 +583,7 @@ class _ProductPageState extends State<ProductPage> {
                 border: Border.all(
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary
-                      : Colors.white.withValues(alpha: 0.1),
+                      : Colors.white.withOpacity(0.1),
                   width: isSelected ? 1.6 : 1,
                 ),
               ),
@@ -798,7 +798,7 @@ class _ProductGallery extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: Colors.black.withOpacity(0.18),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -844,7 +844,7 @@ class _ProductGallery extends StatelessWidget {
                       child: Ink(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
+                          color: Colors.black.withOpacity(0.45),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -873,7 +873,7 @@ class _ProductGallery extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: currentImageIndex == index
                         ? Theme.of(context).colorScheme.primary
-                        : Colors.white.withValues(alpha: 0.35),
+                        : Colors.white.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -910,7 +910,7 @@ class _PriceSection extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
         ),
       ),
       child: Column(
@@ -972,10 +972,10 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: Colors.white.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -1006,7 +1006,7 @@ class _TagPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -1038,12 +1038,12 @@ class _QuantityButton extends StatelessWidget {
           height: 42,
           decoration: BoxDecoration(
             color: onTap == null
-                ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.45)
-                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                ? Theme.of(context).colorScheme.surface.withOpacity(0.45)
+                : Theme.of(context).colorScheme.primary.withOpacity(0.2),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.5),
             ),
           ),
           child: Icon(
@@ -1052,7 +1052,7 @@ class _QuantityButton extends StatelessWidget {
                 ? Theme.of(context)
                     .colorScheme
                     .inversePrimary
-                    .withValues(alpha: 0.45)
+                    .withOpacity(0.45)
                 : Theme.of(context).colorScheme.inversePrimary,
           ),
         ),
@@ -1078,11 +1078,11 @@ class _SectionSeparator extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              baseColor.withValues(alpha: 0.0),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.9),
-              baseColor.withValues(alpha: 0.22),
-              baseColor.withValues(alpha: 0.0),
+              baseColor.withOpacity(0.0),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.9),
+              baseColor.withOpacity(0.22),
+              baseColor.withOpacity(0.0),
             ],
             stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
           ),
@@ -1187,7 +1187,7 @@ class _FullscreenProductGalleryPageState
                       decoration: BoxDecoration(
                         color: _currentIndex == index
                             ? Colors.white
-                            : Colors.white.withValues(alpha: 0.35),
+                            : Colors.white.withOpacity(0.35),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
