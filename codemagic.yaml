@@ -8,8 +8,12 @@ workflows:
       flutter: stable
       vars:
         FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
-      groups:
-        - firebase_credentials
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
 
     scripts:
       - name: Install dependencies
@@ -37,14 +41,26 @@ workflows:
           source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
           gcloud --version
 
-      - name: Authenticate gcloud (service account JSON from env var)
+      - name: Authenticate gcloud (service account JSON from base64 env var)
         script: |
-          if [ -z "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" ]; then
-            echo "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS is not set. Add it as a secured variable in Codemagic group 'firebase_credentials'."
+          if [ -z "$GCLOUD_KEY_FILE" ]; then
+            echo "GCLOUD_KEY_FILE is not set. Add it as an app-level base64 environment variable in Codemagic."
             exit 1
           fi
-          echo "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" > "$CM_BUILD_DIR/gcloud-service-account.json"
-          gcloud auth activate-service-account --key-file="$CM_BUILD_DIR/gcloud-service-account.json"
+
+          KEY_FILE="$CM_BUILD_DIR/gcloud-key.json"
+
+          if ! (echo "$GCLOUD_KEY_FILE" | base64 --decode > "$KEY_FILE" 2>/dev/null || echo "$GCLOUD_KEY_FILE" | base64 -D > "$KEY_FILE" 2>/dev/null); then
+            echo "Failed to decode GCLOUD_KEY_FILE as base64."
+            exit 1
+          fi
+
+          if ! grep -q '"type"[[:space:]]*:[[:space:]]*"service_account"' "$KEY_FILE"; then
+            echo "Decoded GCLOUD_KEY_FILE is not a valid service account JSON key."
+            exit 1
+          fi
+
+          gcloud auth activate-service-account --key-file="$KEY_FILE"
           gcloud config set project "$FIREBASE_PROJECT_ID"
 
       - name: Run integration test in Firebase Test Lab
