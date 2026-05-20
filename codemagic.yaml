@@ -89,18 +89,25 @@ workflows:
             export PATH="$(brew --prefix)/bin:$PATH"
           fi
 
-          APP_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
-          TEST_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          APP_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
+            -type f -name "*.apk" 2>/dev/null | grep -E '/(debug|flutter-apk)/' | grep -Ev 'androidTest' | head -n 1 || true)
+          TEST_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
+            -type f -name "*androidTest*.apk" 2>/dev/null | head -n 1 || true)
 
-          if [ ! -f "$APP_APK" ]; then
-            echo "Missing app APK: $APP_APK"
+          if [ -z "$APP_APK" ] || [ ! -f "$APP_APK" ]; then
+            echo "Missing app APK. Checked Android output folders:"
+            find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" -maxdepth 6 -type f 2>/dev/null || true
             exit 1
           fi
 
-          if [ ! -f "$TEST_APK" ]; then
-            echo "Missing androidTest APK: $TEST_APK"
+          if [ -z "$TEST_APK" ] || [ ! -f "$TEST_APK" ]; then
+            echo "Missing androidTest APK. Checked Android output folders:"
+            find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" -maxdepth 6 -type f 2>/dev/null || true
             exit 1
           fi
+
+          echo "Using app APK: $APP_APK"
+          echo "Using androidTest APK: $TEST_APK"
 
           gcloud firebase test android run \
             --type instrumentation \
