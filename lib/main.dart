@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/app_theme.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/firebase_options.dart';
