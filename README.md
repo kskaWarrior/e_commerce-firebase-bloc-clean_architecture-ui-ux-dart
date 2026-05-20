@@ -40,7 +40,7 @@ flutter devices
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/main_features_flow_test.dart -d <your-emulator-id>
 ```
 
-### CI/CD with Codemagic + Firebase Test Lab
+### CI/CD with Codemagic + Firebase Test Lab + Firebase App Distribution
 
 Codemagic workflow file:
 
