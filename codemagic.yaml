@@ -279,9 +279,13 @@ workflows:
             exit 1
           fi
 
-          rm -rf ios/Pods ios/Podfile.lock
+          if [ ! -f ios/Flutter/Generated.xcconfig ]; then
+            echo "Missing ios/Flutter/Generated.xcconfig. Running flutter pub get should create it."
+            exit 1
+          fi
+
           cd ios
-          pod deintegrate || true
+          pod repo update
           pod install --repo-update --verbose
           cd ..
 
