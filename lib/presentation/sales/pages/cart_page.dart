@@ -734,7 +734,7 @@ class _PaymentSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: DropdownButtonFormField<int>(
-                initialValue: creditInstallments,
+                value: creditInstallments,
                 decoration: _paymentInputDecoration(
                   context,
                   'Installments number',
