@@ -272,9 +272,28 @@ workflows:
 
       - name: Install iOS pods
         script: |
+          set -euo pipefail
+
+          if [ ! -f ios/Podfile ]; then
+            echo "Missing ios/Podfile. iOS dependencies cannot be resolved without it."
+            exit 1
+          fi
+
+          rm -rf ios/Pods ios/Podfile.lock
           cd ios
-          pod install --repo-update
+          pod deintegrate || true
+          pod install --repo-update --verbose
           cd ..
+
+      - name: Prebuild iOS simulator app
+        script: |
+          set -euo pipefail
+
+          flutter build ios \
+            --simulator \
+            --debug \
+            --no-codesign \
+            --target=$FLUTTER_TARGET
 
       - name: Boot iOS simulator
         script: |
