@@ -148,19 +148,34 @@ workflows:
 
       - name: Run integration tests on iOS simulator
         script: |
+          set -euo pipefail
+
           SIMULATOR_UDID=$(xcrun simctl list devices available | awk -F '[()]' -v device="$IOS_SIMULATOR_NAME" '$0 ~ device { print $2; exit }')
           if [ -z "$SIMULATOR_UDID" ]; then
             echo "Unable to resolve simulator UDID for '$IOS_SIMULATOR_NAME'."
             exit 1
           fi
 
+          LOG_FILE="$CM_BUILD_DIR/flutter_drive_ios.log"
+          echo "Running flutter drive on simulator UDID: $SIMULATOR_UDID"
+
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=$FLUTTER_TARGET \
             -d "$SIMULATOR_UDID" \
-            --verbose
+            --no-dds \
+            --verbose 2>&1 | tee "$LOG_FILE"
+
+          EXIT_CODE=${PIPESTATUS[0]}
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "flutter drive failed with exit code: $EXIT_CODE"
+            echo "Last 200 lines from flutter drive log:"
+            tail -n 200 "$LOG_FILE" || true
+            exit "$EXIT_CODE"
+          fi
 
     artifacts:
       - build/ios/**/*.app
       - build/ios/**/*.xcresult
       - coverage/lcov.info
+      - flutter_drive_ios.log
