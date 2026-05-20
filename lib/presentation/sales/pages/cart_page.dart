@@ -20,7 +20,9 @@ import 'dart:math';
 enum _PaymentMethod { creditCard, debitCard }
 
 class CartPage extends StatefulWidget {
-  const CartPage({super.key});
+  final String? userIdOverride;
+
+  const CartPage({super.key, this.userIdOverride});
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -212,7 +214,8 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<void> _confirmPurchase() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId =
+        widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (userId == null || userId.isEmpty) {
       ScaffoldMessenger.of(context)
@@ -359,7 +362,8 @@ class _CartPageState extends State<CartPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId =
+        widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
     return BlocProvider<UserCubit>.value(
       value: _userCubit,

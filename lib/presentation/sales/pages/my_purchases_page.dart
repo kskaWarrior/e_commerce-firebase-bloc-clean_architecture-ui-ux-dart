@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MyPurchasesPage extends StatelessWidget {
-  const MyPurchasesPage({super.key});
+  final String? userIdOverride;
+
+  const MyPurchasesPage({super.key, this.userIdOverride});
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId = userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
     return BlocProvider(
       create: (_) {

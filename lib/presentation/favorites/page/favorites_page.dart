@@ -17,11 +17,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FavoritesPage extends StatelessWidget {
-	const FavoritesPage({super.key});
+  final String? userIdOverride;
+
+  const FavoritesPage({super.key, this.userIdOverride});
 
 	@override
 	Widget build(BuildContext context) {
-		final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId = userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
 		return MultiBlocProvider(
 			providers: [
