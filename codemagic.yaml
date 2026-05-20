@@ -21,6 +21,8 @@ workflows:
         FIREBASE_PROJECT_ID: "ecommerceapp-auth-db-cleana"
         FIREBASE_ANDROID_APP_ID: "1:502375403738:android:6bfa6cf220acdf4aba15e3"
         FIREBASE_TESTER_GROUPS: "testers"
+        FTL_DEVICE_MODEL: "redfin"
+        FTL_DEVICE_VERSION: "30"
 
     cache:
       cache_paths:
@@ -121,11 +123,40 @@ workflows:
           echo "Using app APK: $APP_APK"
           echo "Using androidTest APK: $TEST_APK"
 
+          SELECTED_MODEL="$FTL_DEVICE_MODEL"
+          SELECTED_VERSION="$FTL_DEVICE_VERSION"
+
+          AVAILABLE_MODELS=$(gcloud firebase test android models list --format='value(MODEL_ID)' 2>/dev/null || true)
+          if [ -z "$AVAILABLE_MODELS" ]; then
+            echo "Unable to list Firebase Test Lab models."
+            exit 1
+          fi
+
+          if ! echo "$AVAILABLE_MODELS" | grep -qx "$SELECTED_MODEL"; then
+            SELECTED_MODEL=$(echo "$AVAILABLE_MODELS" | grep -E '^(redfin|oriole|barbet|sargo)$' | head -n 1)
+          fi
+
+          if [ -z "$SELECTED_MODEL" ]; then
+            SELECTED_MODEL=$(echo "$AVAILABLE_MODELS" | head -n 1)
+          fi
+
+          AVAILABLE_VERSIONS=$(gcloud firebase test android versions list --model="$SELECTED_MODEL" --format='value(VERSION_ID)' 2>/dev/null || true)
+          if [ -z "$AVAILABLE_VERSIONS" ]; then
+            echo "Unable to list Firebase Test Lab versions for model: $SELECTED_MODEL"
+            exit 1
+          fi
+
+          if ! echo "$AVAILABLE_VERSIONS" | grep -qx "$SELECTED_VERSION"; then
+            SELECTED_VERSION=$(echo "$AVAILABLE_VERSIONS" | sort -nr | head -n 1)
+          fi
+
+          echo "Using Firebase Test Lab device: model=$SELECTED_MODEL, version=$SELECTED_VERSION"
+
           gcloud firebase test android run \
             --type instrumentation \
             --app "$APP_APK" \
             --test "$TEST_APK" \
-            --device model=Pixel2,version=30,locale=en,orientation=portrait \
+            --device model=$SELECTED_MODEL,version=$SELECTED_VERSION,locale=en,orientation=portrait \
             --timeout 20m \
             --use-orchestrator
 
