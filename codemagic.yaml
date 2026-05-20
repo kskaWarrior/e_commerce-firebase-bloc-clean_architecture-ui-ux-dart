@@ -4,6 +4,14 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
 
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: master
+          include: true
+          source: true
+
     environment:
       flutter: stable
       vars:
@@ -95,6 +103,14 @@ workflows:
     name: iOS Simulator Integration Tests
     instance_type: mac_mini_m2
     max_build_duration: 60
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: master
+          include: true
+          source: true
 
     environment:
       flutter: stable
