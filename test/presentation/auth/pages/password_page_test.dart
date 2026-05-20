@@ -185,4 +185,65 @@ void main() {
         findsOneWidget);
     expect(find.byType(SigninPage), findsOneWidget);
   });
+
+  testWidgets('shows generic error for non-credential failures',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    when(() => mockSigninUseCase.call(any()))
+        .thenAnswer((_) async => Left(Failure(error: 'service unavailable')));
+
+    await tester.pumpWidget(
+      wrap(
+        PasswordPage(
+          userSigninReq: UserSigninReq(email: 'john@doe.com'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('error: service unavailable'), findsOneWidget);
+  });
+
+  testWidgets('locks email after threshold invalid credentials and navigates',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    SharedPreferences.setMockInitialValues({
+      'signin_failed_attempts_john@doe.com': 4,
+    });
+
+    when(() => mockSigninUseCase.call(any()))
+        .thenAnswer((_) async => Left(Failure(error: 'invalid-credential')));
+
+    await tester.pumpWidget(
+      wrap(
+        PasswordPage(
+          userSigninReq: UserSigninReq(email: 'john@doe.com'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining(
+          'Too many invalid attempts. This email is locked for'),
+      findsOneWidget,
+    );
+    expect(find.byType(SigninPage), findsOneWidget);
+  });
 }

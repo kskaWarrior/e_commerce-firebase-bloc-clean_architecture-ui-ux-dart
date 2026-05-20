@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
@@ -122,5 +123,78 @@ void main() {
     await tester.pump();
 
     expect(find.byIcon(Icons.visibility), findsOneWidget);
+  });
+
+  testWidgets('shows snackbar when loading profile fails', (tester) async {
+    when(() => mockGetUserUseCase.call(null))
+        .thenAnswer((_) async => Left(Failure(error: 'load failed')));
+
+    await tester.pumpWidget(wrap(const MyProfilePage()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('load failed'), findsOneWidget);
+  });
+
+  testWidgets('shows snackbar when update profile fails', (tester) async {
+    when(() => mockUpdateUserUseCase.call(any()))
+        .thenAnswer((_) async => Left(Failure(error: 'update failed')));
+
+    await tester.pumpWidget(wrap(const MyProfilePage()));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), 'John Updated');
+    await tester.enterText(fields.at(2), '123456');
+    await tester.enterText(fields.at(4), 'New Address');
+
+    await tester.dragUntilVisible(
+      find.text('Save changes'),
+      find.byType(SingleChildScrollView),
+      const Offset(0, -300),
+    );
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('update failed'), findsOneWidget);
+  });
+
+  testWidgets('sends selected gender and null password when password is empty',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    UserCreationReq? captured;
+    when(() => mockUpdateUserUseCase.call(any()))
+        .thenAnswer((invocation) async {
+      captured = invocation.positionalArguments.first as UserCreationReq;
+      return const Right('ok');
+    });
+
+    await tester.pumpWidget(wrap(const MyProfilePage()));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Female'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Female'));
+    await tester.pump();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), 'Jane Updated');
+    await tester.enterText(fields.at(2), '123456');
+    await tester.enterText(fields.at(3), '');
+    await tester.enterText(fields.at(4), 'New Address');
+
+    await tester.dragUntilVisible(
+      find.text('Save changes'),
+      find.byType(SingleChildScrollView),
+      const Offset(0, -300),
+    );
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(captured, isNotNull);
+    expect(captured!.email, 'john@doe.com');
+    expect(captured!.gender, 'Female');
+    expect(captured!.password, isNull);
   });
 }

@@ -24,8 +24,8 @@ void main() {
     return MaterialApp(home: child);
   }
 
-  setUp(() {
-    sl.reset();
+  setUp(() async {
+    await sl.reset();
     mockSignupUseCase = MockSignupUseCase();
     sl.registerSingleton<SignupUseCase>(mockSignupUseCase);
   });
@@ -55,6 +55,10 @@ void main() {
   });
 
   testWidgets('shows validation when address is empty', (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
     await tester.pumpWidget(
       wrap(
         GenderAndAgePage(
@@ -123,7 +127,7 @@ void main() {
     await tester.tap(find.text('Sign Up'));
     await tester.pumpAndSettle();
 
-    expect(find.text('signup failed'), findsOneWidget);
+    expect(find.text('error: signup failed'), findsOneWidget);
   });
 
   testWidgets('navigates to signin page when signup succeeds', (tester) async {
