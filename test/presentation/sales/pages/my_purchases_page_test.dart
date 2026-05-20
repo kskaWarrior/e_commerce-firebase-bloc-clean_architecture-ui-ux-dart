@@ -177,8 +177,14 @@ void main() {
 
     final orderFinder = find.textContaining('Order #');
     expect(orderFinder, findsNWidgets(2));
-    expect(orderFinder.at(0), findsOneWidget);
-    expect(find.text('Order #new'), findsOneWidget);
+
+    final orderedTexts = orderFinder
+        .evaluate()
+        .map((element) => (element.widget as Text).data ?? '')
+        .toList(growable: false);
+
+    expect(orderedTexts.first, 'Order #new');
+    expect(orderedTexts.last, 'Order #old');
   });
 
   testWidgets('collapses expanded section when show less is tapped',

@@ -134,6 +134,8 @@ void main() {
 
     expect(find.text('Could not load favorites'), findsOneWidget);
     expect(find.text('unable to load favorites'), findsOneWidget);
+    verify(() => mockFavoritesCubit.loadFavoritesByUserId('u1'))
+        .called(greaterThanOrEqualTo(1));
   });
 
   testWidgets('shows empty favorites state when user has no favorites',
@@ -153,6 +155,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Return to home'), findsOneWidget);
+    verify(() => mockFavoritesCubit.loadFavoritesByUserId('u1'))
+        .called(greaterThanOrEqualTo(1));
   });
 
   testWidgets(
@@ -186,8 +190,10 @@ void main() {
     await tester.pumpWidget(wrap(const FavoritesPage(userIdOverride: 'u1')));
     await tester.pumpAndSettle();
 
-    expect(find.text('My Favorites'), findsWidgets);
+    expect(find.text('My Favorites'), findsNWidgets(2));
     expect(find.text('Favorites count: 1'), findsOneWidget);
     expect(find.text('Runner Pro'), findsOneWidget);
+    verify(() => mockFavoritesCubit.loadFavoritesByUserId('u1'))
+        .called(greaterThanOrEqualTo(1));
   });
 }
