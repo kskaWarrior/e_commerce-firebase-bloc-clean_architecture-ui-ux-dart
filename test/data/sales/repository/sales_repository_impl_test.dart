@@ -91,6 +91,7 @@ void main() {
       (_) => fail('Expected Right but got Left'),
       (sales) {
         expect((sales as List).length, 1);
+        // ignore: non_constant_identifier_names
         final Sale = sales.first as SalesEntity;
         expect(Sale.id, 's1');
         expect(Sale.userId, 'u1');
