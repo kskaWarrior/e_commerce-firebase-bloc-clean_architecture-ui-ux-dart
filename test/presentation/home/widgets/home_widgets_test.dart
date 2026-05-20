@@ -4,6 +4,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/categories.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/category_carousel.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/header.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/new_in_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/product_card.dart';
@@ -75,10 +76,34 @@ void main() {
     expect(find.text('No top selling products found'), findsOneWidget);
   });
 
+  testWidgets('TopSellingCarousel renders products when list is not empty',
+      (tester) async {
+    final products = [
+      buildProduct(id: 'p1', title: 'Sneaker', categoryId: 'c1')
+    ];
+
+    await tester.pumpWidget(wrap(TopSellingCarousel(products: products)));
+    await tester.pump();
+
+    expect(find.text('Sneaker'), findsOneWidget);
+  });
+
   testWidgets('NewInCarousel shows empty message when no products', (tester) async {
     await tester.pumpWidget(wrap(const NewInCarousel(products: [])));
 
     expect(find.text('No new products found'), findsOneWidget);
+  });
+
+  testWidgets('NewInCarousel renders products when list is not empty',
+      (tester) async {
+    final products = [
+      buildProduct(id: 'p1', title: 'Sneaker', categoryId: 'c1')
+    ];
+
+    await tester.pumpWidget(wrap(NewInCarousel(products: products)));
+    await tester.pump();
+
+    expect(find.text('Sneaker'), findsOneWidget);
   });
 
   testWidgets('SearchCarousel filters by query', (tester) async {
@@ -93,12 +118,38 @@ void main() {
     expect(find.text('Hat'), findsNothing);
   });
 
+  testWidgets('SearchCarousel shows empty message when no products match query',
+      (tester) async {
+    final products = [
+      buildProduct(id: 'p1', title: 'Sneaker', categoryId: 'c1'),
+    ];
+
+    await tester
+        .pumpWidget(wrap(SearchCarousel(query: 'zzz', products: products)));
+    await tester.pump();
+
+    expect(find.text('No products match your search'), findsOneWidget);
+  });
+
   testWidgets('CategoryCarousel shows empty message when category has no products', (tester) async {
     final products = [buildProduct(id: 'p1', title: 'Sneaker', categoryId: 'c1')];
 
     await tester.pumpWidget(wrap(CategoryCarousel(categoryId: 'c2', products: products)));
 
     expect(find.text('No products found for this category'), findsOneWidget);
+  });
+
+  testWidgets('CategoryCarousel renders products for selected category',
+      (tester) async {
+    final products = [
+      buildProduct(id: 'p1', title: 'Sneaker', categoryId: 'c1')
+    ];
+
+    await tester.pumpWidget(
+        wrap(CategoryCarousel(categoryId: 'c1', products: products)));
+    await tester.pump();
+
+    expect(find.text('Sneaker'), findsOneWidget);
   });
 
   testWidgets('CategoriesWidget displays titles and handles taps', (tester) async {
@@ -124,5 +175,29 @@ void main() {
     await tester.pump();
 
     expect(tapped?.id, 'c1');
+  });
+
+  testWidgets('HomeHeader triggers menu and cart callbacks', (tester) async {
+    var menuTapped = false;
+    var cartTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          appBar: HomeHeader(
+            onMenuTap: () => menuTapped = true,
+            onCartTap: () => cartTapped = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.shopping_cart));
+    await tester.pump();
+
+    expect(menuTapped, isTrue);
+    expect(cartTapped, isTrue);
   });
 }
