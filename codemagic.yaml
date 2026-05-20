@@ -45,6 +45,8 @@ workflows:
 
       - name: Build Android app and AndroidTest APK for integration_test
         script: |
+          set -euo pipefail
+
           flutter build apk --debug --target=$FLUTTER_TARGET
 
           cd android
@@ -53,6 +55,29 @@ workflows:
 
           echo "APK files after build:"
           find "$CM_BUILD_DIR/build/app/outputs" "$CM_BUILD_DIR/android/app/build/outputs" -type f -name "*.apk" 2>/dev/null || true
+
+          APP_APK=$(find "$CM_BUILD_DIR/build/app/outputs" "$CM_BUILD_DIR/android/app/build/outputs" \
+            -type f \( -name "app-debug.apk" -o -name "app-*-debug.apk" \) \
+            2>/dev/null | grep -Ev 'androidTest' | head -n 1 || true)
+
+          TEST_APK=$(find "$CM_BUILD_DIR/build/app/outputs" "$CM_BUILD_DIR/android/app/build/outputs" \
+            -type f \( -name "*androidTest*.apk" -o -name "*debug-androidTest*.apk" \) \
+            2>/dev/null | head -n 1 || true)
+
+          if [ -z "$APP_APK" ] || [ ! -f "$APP_APK" ]; then
+            echo "Failed to locate app debug APK right after build."
+            exit 1
+          fi
+
+          if [ -z "$TEST_APK" ] || [ ! -f "$TEST_APK" ]; then
+            echo "Failed to locate androidTest APK right after build."
+            exit 1
+          fi
+
+          echo "Resolved app APK: $APP_APK"
+          echo "Resolved androidTest APK: $TEST_APK"
+          echo "FTL_APP_APK=$APP_APK" >> "$CM_ENV"
+          echo "FTL_TEST_APK=$TEST_APK" >> "$CM_ENV"
 
       - name: Install gcloud CLI
         script: |
@@ -91,16 +116,19 @@ workflows:
 
       - name: Run integration test in Firebase Test Lab
         script: |
+          set -euo pipefail
+
           if ! command -v gcloud >/dev/null 2>&1; then
             export PATH="$(brew --prefix)/bin:$PATH"
           fi
 
-          APP_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-debug.apk"
-          TEST_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          APP_APK="${FTL_APP_APK:-$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-debug.apk}"
+          TEST_APK="${FTL_TEST_APK:-$CM_BUILD_DIR/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk}"
 
           if [ ! -f "$APP_APK" ]; then
             APP_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
-              -type f -name "*.apk" 2>/dev/null | grep -E '/(debug|flutter-apk)/' | grep -Ev 'androidTest' | head -n 1 || true)
+              -type f \( -name "app-debug.apk" -o -name "app-*-debug.apk" -o -name "*.apk" \) \
+              2>/dev/null | grep -E '/(debug|flutter-apk)/' | grep -Ev 'androidTest' | head -n 1 || true)
           fi
 
           if [ ! -f "$TEST_APK" ]; then
