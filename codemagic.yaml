@@ -14,6 +14,8 @@ workflows:
 
     environment:
       flutter: stable
+      groups:
+        - firebase_credentials
       vars:
         FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
 
@@ -150,13 +152,31 @@ workflows:
         script: |
           xcrun simctl list devices available
 
-          SIMULATOR_UDID=$(xcrun simctl list devices available | awk -F '[()]' -v device="$IOS_SIMULATOR_NAME" '$0 ~ device { print $2; exit }')
+          PREFERRED_SIMULATOR_LINE=$(xcrun simctl list devices available | awk -v device="$IOS_SIMULATOR_NAME" '
+            /-- iOS / { ios=1; next }
+            /^-- / { ios=0 }
+            ios && $0 ~ /iPhone/ && $0 ~ device { print; exit }
+          ')
+
+          if [ -n "$PREFERRED_SIMULATOR_LINE" ]; then
+            SIMULATOR_LINE="$PREFERRED_SIMULATOR_LINE"
+          else
+            SIMULATOR_LINE=$(xcrun simctl list devices available | awk '
+              /-- iOS / { ios=1; next }
+              /^-- / { ios=0 }
+              ios && $0 ~ /iPhone/ { print; exit }
+            ')
+          fi
+
+          SIMULATOR_UDID=$(echo "$SIMULATOR_LINE" | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+          SIMULATOR_NAME=$(echo "$SIMULATOR_LINE" | sed -E 's/^[[:space:]]*([^()]+)[[:space:]]+\(.*/\1/' | sed -E 's/[[:space:]]+$//')
+
           if [ -z "$SIMULATOR_UDID" ]; then
-            echo "Unable to find an available simulator named '$IOS_SIMULATOR_NAME'."
+            echo "Unable to find an available iPhone simulator."
             exit 1
           fi
 
-          echo "Using simulator: $IOS_SIMULATOR_NAME ($SIMULATOR_UDID)"
+          echo "Using simulator: $SIMULATOR_NAME ($SIMULATOR_UDID)"
           xcrun simctl boot "$SIMULATOR_UDID" || true
           open -a Simulator
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
@@ -166,9 +186,25 @@ workflows:
         script: |
           set -euo pipefail
 
-          SIMULATOR_UDID=$(xcrun simctl list devices available | awk -F '[()]' -v device="$IOS_SIMULATOR_NAME" '$0 ~ device { print $2; exit }')
+          PREFERRED_SIMULATOR_LINE=$(xcrun simctl list devices available | awk -v device="$IOS_SIMULATOR_NAME" '
+            /-- iOS / { ios=1; next }
+            /^-- / { ios=0 }
+            ios && $0 ~ /iPhone/ && $0 ~ device { print; exit }
+          ')
+
+          if [ -n "$PREFERRED_SIMULATOR_LINE" ]; then
+            SIMULATOR_LINE="$PREFERRED_SIMULATOR_LINE"
+          else
+            SIMULATOR_LINE=$(xcrun simctl list devices available | awk '
+              /-- iOS / { ios=1; next }
+              /^-- / { ios=0 }
+              ios && $0 ~ /iPhone/ { print; exit }
+            ')
+          fi
+
+          SIMULATOR_UDID=$(echo "$SIMULATOR_LINE" | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
           if [ -z "$SIMULATOR_UDID" ]; then
-            echo "Unable to resolve simulator UDID for '$IOS_SIMULATOR_NAME'."
+            echo "Unable to resolve simulator UDID from available iPhone simulators."
             exit 1
           fi
 
