@@ -1,0 +1,76 @@
+workflows:
+  android_firebase_test_lab:
+    name: Android Firebase Test Lab
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+      vars:
+        FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
+      groups:
+        - firebase_credentials
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+
+      - name: Static analysis
+        script: |
+          flutter analyze
+
+      - name: Unit and widget tests
+        script: |
+          flutter test --coverage
+
+      - name: Build Android app and AndroidTest APK for integration_test
+        script: |
+          cd android
+          ./gradlew app:assembleDebug
+          ./gradlew app:assembleAndroidTest -Ptarget=$FLUTTER_TARGET
+          cd ..
+
+      - name: Install gcloud CLI
+        script: |
+          brew install --cask google-cloud-sdk
+          source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
+          gcloud --version
+
+      - name: Authenticate gcloud (service account JSON from env var)
+        script: |
+          if [ -z "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" ]; then
+            echo "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS is not set. Add it as a secured variable in Codemagic group 'firebase_credentials'."
+            exit 1
+          fi
+          echo "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" > "$CM_BUILD_DIR/gcloud-service-account.json"
+          gcloud auth activate-service-account --key-file="$CM_BUILD_DIR/gcloud-service-account.json"
+          gcloud config set project "$FIREBASE_PROJECT_ID"
+
+      - name: Run integration test in Firebase Test Lab
+        script: |
+          source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
+          APP_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-debug.apk"
+          TEST_APK="$CM_BUILD_DIR/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+
+          if [ ! -f "$APP_APK" ]; then
+            echo "Missing app APK: $APP_APK"
+            exit 1
+          fi
+
+          if [ ! -f "$TEST_APK" ]; then
+            echo "Missing androidTest APK: $TEST_APK"
+            exit 1
+          fi
+
+          gcloud firebase test android run \
+            --type instrumentation \
+            --app "$APP_APK" \
+            --test "$TEST_APK" \
+            --device model=Pixel2,version=30,locale=en,orientation=portrait \
+            --timeout 20m \
+            --use-orchestrator
+
+    artifacts:
+      - build/app/outputs/**/*.apk
+      - coverage/lcov.info
