@@ -13,7 +13,7 @@ workflows:
           source: true
 
     environment:
-      flutter: stable
+      flutter: 3.24.5
       groups:
         - firebase_credentials
       vars:
@@ -215,7 +215,7 @@ workflows:
           source: true
 
     environment:
-      flutter: stable
+      flutter: 3.24.5
       xcode: latest
       vars:
         FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
