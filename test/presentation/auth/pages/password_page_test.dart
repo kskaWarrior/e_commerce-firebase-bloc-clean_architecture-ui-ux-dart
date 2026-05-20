@@ -1,13 +1,40 @@
+import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class MockSigninUseCase extends Mock implements SigninUseCase {}
+
+class FakeUserSigninReq extends Fake implements UserSigninReq {}
 
 void main() {
+  late MockSigninUseCase mockSigninUseCase;
+
+  setUpAll(() {
+    registerFallbackValue(FakeUserSigninReq());
+  });
+
   Widget wrap(Widget child) {
     return MaterialApp(home: child);
   }
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await sl.reset();
+    mockSigninUseCase = MockSigninUseCase();
+    sl.registerSingleton<SigninUseCase>(mockSigninUseCase);
+  });
+
+  tearDown(() async {
+    await sl.reset();
+  });
 
   testWidgets('renders password page and sign in button', (tester) async {
     await tester.pumpWidget(
@@ -92,5 +119,70 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+  });
+
+  testWidgets('shows forgot password prompt rich text', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        PasswordPage(
+          userSigninReq: UserSigninReq(email: 'john@doe.com'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RichText), findsWidgets);
+  });
+
+  testWidgets('shows attempts left message for invalid credentials',
+      (tester) async {
+    when(() => mockSigninUseCase.call(any()))
+        .thenAnswer((_) async => Left(Failure(error: 'invalid-credential')));
+
+    await tester.pumpWidget(
+      wrap(
+        PasswordPage(
+          userSigninReq: UserSigninReq(email: 'john@doe.com'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.textContaining('Attempts left before lock: 4.'), findsOneWidget);
+  });
+
+  testWidgets('shows lock message and navigates when email is already locked',
+      (tester) async {
+    final lockedUntil =
+        DateTime.now().add(const Duration(minutes: 10)).millisecondsSinceEpoch;
+
+    SharedPreferences.setMockInitialValues({
+      'signin_failed_attempts_john@doe.com': 5,
+      'signin_locked_until_john@doe.com': lockedUntil,
+    });
+
+    await tester.pumpWidget(
+      wrap(
+        PasswordPage(
+          userSigninReq: UserSigninReq(email: 'john@doe.com'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('This email is locked. Try again in'),
+        findsOneWidget);
+    expect(find.byType(SigninPage), findsOneWidget);
   });
 }

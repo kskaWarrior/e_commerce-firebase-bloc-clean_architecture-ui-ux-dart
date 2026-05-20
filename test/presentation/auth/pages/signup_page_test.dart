@@ -1,4 +1,5 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/gender_and_age.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -100,6 +101,26 @@ void main() {
 
     final passwordFieldAfter = tester.widgetList<TextField>(find.byType(TextField)).last;
     expect(passwordFieldAfter.obscureText, isFalse);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('navigates to gender and age page when all fields are valid',
+      (tester) async {
+    await tester.pumpWidget(wrap(const SignUpPage()));
+    await waitTypewriterToFinish(tester);
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'John');
+    await tester.enterText(fields.at(1), '999999');
+    await tester.enterText(fields.at(2), 'john@doe.com');
+    await tester.enterText(fields.at(3), '123456');
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GenderAndAgePage), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
