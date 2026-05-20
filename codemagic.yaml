@@ -1,6 +1,6 @@
 workflows:
   android_firebase_test_lab:
-    name: Android Firebase Test Lab
+    name: Android Firebase Test Lab and App Distribution
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -18,6 +18,9 @@ workflows:
         - firebase_credentials
       vars:
         FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
+        FIREBASE_PROJECT_ID: "ecommerceapp-auth-db-cleana"
+        FIREBASE_ANDROID_APP_ID: "1:502375403738:android:6bfa6cf220acdf4aba15e3"
+        FIREBASE_TESTER_GROUPS: "testers"
 
     cache:
       cache_paths:
@@ -96,6 +99,41 @@ workflows:
             --device model=Pixel2,version=30,locale=en,orientation=portrait \
             --timeout 20m \
             --use-orchestrator
+
+      - name: Build release APK for Firebase App Distribution
+        script: |
+          flutter build apk --release
+
+      - name: Install Firebase CLI
+        script: |
+          curl -sL https://firebase.tools | bash
+          firebase --version
+
+      - name: Distribute Android release to Firebase App Distribution
+        script: |
+          RELEASE_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-release.apk"
+          KEY_FILE="$CM_BUILD_DIR/gcloud-key.json"
+
+          if [ -z "$GCLOUD_KEY_FILE" ]; then
+            echo "GCLOUD_KEY_FILE is not set. It must come from the firebase_credentials group."
+            exit 1
+          fi
+
+          if ! (echo "$GCLOUD_KEY_FILE" | base64 --decode > "$KEY_FILE" 2>/dev/null || echo "$GCLOUD_KEY_FILE" | base64 -D > "$KEY_FILE" 2>/dev/null); then
+            echo "Failed to decode GCLOUD_KEY_FILE as base64 for Firebase CLI auth."
+            exit 1
+          fi
+
+          if [ ! -f "$RELEASE_APK" ]; then
+            echo "Missing release APK: $RELEASE_APK"
+            exit 1
+          fi
+
+          export GOOGLE_APPLICATION_CREDENTIALS="$KEY_FILE"
+          firebase appdistribution:distribute "$RELEASE_APK" \
+            --app "$FIREBASE_ANDROID_APP_ID" \
+            --groups "$FIREBASE_TESTER_GROUPS" \
+            --release-notes "${CM_COMMIT_MESSAGE:-Automated build from Codemagic}"
 
     artifacts:
       - build/app/outputs/**/*.apk
