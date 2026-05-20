@@ -160,8 +160,7 @@ workflows:
             --app "$APP_APK" \
             --test "$TEST_APK" \
             --device model=$SELECTED_MODEL,version=$SELECTED_VERSION,locale=en,orientation=portrait \
-            --timeout 20m \
-            --use-orchestrator
+            --timeout 20m
 
       - name: Build release APK for Firebase App Distribution
         script: |

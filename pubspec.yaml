@@ -47,6 +47,7 @@ dependencies:
   firebase_crashlytics: ^4.3.10
   cached_network_image: ^3.4.1
   firebase_core_platform_interface: ^6.0.3
+  firebase_performance: ^0.10.1+10
 
 dev_dependencies:
   flutter_test:
