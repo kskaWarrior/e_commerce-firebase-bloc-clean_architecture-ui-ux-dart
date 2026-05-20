@@ -43,10 +43,14 @@ workflows:
 
       - name: Build Android app and AndroidTest APK for integration_test
         script: |
+          flutter build apk --debug --target=$FLUTTER_TARGET
+
           cd android
-          ./gradlew app:assembleDebug
           ./gradlew app:assembleAndroidTest -Ptarget=$FLUTTER_TARGET
           cd ..
+
+          echo "APK files after build:"
+          find "$CM_BUILD_DIR/build/app/outputs" "$CM_BUILD_DIR/android/app/build/outputs" -type f -name "*.apk" 2>/dev/null || true
 
       - name: Install gcloud CLI
         script: |
@@ -89,10 +93,18 @@ workflows:
             export PATH="$(brew --prefix)/bin:$PATH"
           fi
 
-          APP_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
-            -type f -name "*.apk" 2>/dev/null | grep -E '/(debug|flutter-apk)/' | grep -Ev 'androidTest' | head -n 1 || true)
-          TEST_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
-            -type f -name "*androidTest*.apk" 2>/dev/null | head -n 1 || true)
+          APP_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-debug.apk"
+          TEST_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+
+          if [ ! -f "$APP_APK" ]; then
+            APP_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
+              -type f -name "*.apk" 2>/dev/null | grep -E '/(debug|flutter-apk)/' | grep -Ev 'androidTest' | head -n 1 || true)
+          fi
+
+          if [ ! -f "$TEST_APK" ]; then
+            TEST_APK=$(find "$CM_BUILD_DIR/android/app/build/outputs" "$CM_BUILD_DIR/build/app/outputs" \
+              -type f -name "*androidTest*.apk" 2>/dev/null | head -n 1 || true)
+          fi
 
           if [ -z "$APP_APK" ] || [ ! -f "$APP_APK" ]; then
             echo "Missing app APK. Checked Android output folders:"
