@@ -51,7 +51,14 @@ workflows:
       - name: Install gcloud CLI
         script: |
           brew install --cask google-cloud-sdk
-          source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
+
+          if ! command -v gcloud >/dev/null 2>&1; then
+            GCLOUD_BIN="$(brew --prefix)/bin/gcloud"
+            if [ -x "$GCLOUD_BIN" ]; then
+              export PATH="$(brew --prefix)/bin:$PATH"
+            fi
+          fi
+
           gcloud --version
 
       - name: Authenticate gcloud (service account JSON from base64 env var)
@@ -78,9 +85,12 @@ workflows:
 
       - name: Run integration test in Firebase Test Lab
         script: |
-          source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
-          APP_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-debug.apk"
-          TEST_APK="$CM_BUILD_DIR/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          if ! command -v gcloud >/dev/null 2>&1; then
+            export PATH="$(brew --prefix)/bin:$PATH"
+          fi
+
+          APP_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
+          TEST_APK="$CM_BUILD_DIR/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
 
           if [ ! -f "$APP_APK" ]; then
             echo "Missing app APK: $APP_APK"

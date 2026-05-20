@@ -75,7 +75,18 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Widget wrap(Widget child) {
-    return MaterialApp(home: child);
+    return MaterialApp(
+      home: MediaQuery(
+        data: const MediaQueryData(
+          textScaler: TextScaler.linear(1.0),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Future<void> configureViewport(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(430, 932));
   }
 
   ProductEntity buildProduct({required String id, required String title}) {
@@ -161,6 +172,7 @@ void main() {
   group('Main feature flows', () {
     testWidgets('Home feature renders key sections and search', (tester) async {
       await commonSetup();
+      await configureViewport(tester);
 
       final mockGetCategoriesUseCase = MockGetCategoriesUseCase();
       final mockGetTopSellingProductsUseCase = MockGetTopSellingProductsUseCase();
@@ -228,6 +240,7 @@ void main() {
     testWidgets('Favorites feature covers unauth and signed-in list',
         (tester) async {
       await commonSetup();
+      await configureViewport(tester);
 
       final mockFavoritesCubit = MockFavoritesCubit();
       final mockProductsDisplayCubit = MockProductsDisplayCubit();
@@ -274,6 +287,7 @@ void main() {
     testWidgets('Cart feature renders auth gate and signed-in empty state',
         (tester) async {
       await commonSetup();
+      await configureViewport(tester);
 
       final mockUserCubit = MockUserCubit();
       when(() => mockUserCubit.state).thenReturn(
@@ -307,6 +321,7 @@ void main() {
     testWidgets('Purchases feature renders loaded state and details',
         (tester) async {
       await commonSetup();
+      await configureViewport(tester);
 
       final mockCubit = MockGetSalesByUserIdCubit();
       when(() => mockCubit.getSalesByUserId(any())).thenAnswer((_) async {});
@@ -331,6 +346,7 @@ void main() {
     testWidgets('Product feature handles interactions and unauth actions',
         (tester) async {
       await commonSetup();
+      await configureViewport(tester);
 
       final mockFavoritesCubit = MockFavoritesCubit();
       when(() => mockFavoritesCubit.state).thenReturn(FavoritesInitial());
@@ -350,8 +366,11 @@ void main() {
 
       expect(find.text('Product details'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.add).last);
-      await tester.pump();
+      final addIconFinder = find.byIcon(Icons.add).last;
+      await tester.ensureVisible(addIconFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(addIconFinder, warnIfMissed: false);
+      await tester.pumpAndSettle();
       expect(find.text('2'), findsOneWidget);
 
       await tester.tap(find.text('Add to cart'));
