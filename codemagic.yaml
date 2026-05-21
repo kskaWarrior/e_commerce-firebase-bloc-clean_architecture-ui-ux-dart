@@ -284,6 +284,7 @@ workflows:
             exit 1
           fi
 
+          rm -rf ios/Pods ios/Podfile.lock
           cd ios
           pod repo update
           pod install --repo-update --verbose
