@@ -1,6 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/color_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -161,6 +166,62 @@ class _PurchaseCard extends StatefulWidget {
 class _PurchaseCardState extends State<_PurchaseCard> {
   bool _expanded = false;
 
+  Future<void> _openProductDetails(Map<String, dynamic> product) async {
+    final productId = (product['id'] ?? '').toString().trim();
+
+    if (productId.isEmpty) {
+      _showNavigationError('Product details are unavailable for this item.');
+      return;
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .where('id', isEqualTo: productId)
+          .limit(1)
+          .get();
+
+      Map<String, dynamic>? productData;
+      if (snapshot.docs.isNotEmpty) {
+        productData = snapshot.docs.first.data();
+      } else {
+        final byDocId = await FirebaseFirestore.instance
+            .collection('products')
+            .doc(productId)
+            .get();
+        productData = byDocId.data();
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      if (productData == null) {
+        _showNavigationError('Product details are unavailable for this item.');
+        return;
+      }
+
+      final mappedProduct = _mapToProductEntity(productData, productId);
+      AppNavigator.push(context, ProductPage(product: mappedProduct));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showNavigationError('Unable to open product details right now.');
+    }
+  }
+
+  void _showNavigationError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sale = widget.sale;
@@ -292,7 +353,10 @@ class _PurchaseCardState extends State<_PurchaseCard> {
                         padding: EdgeInsets.only(
                           bottom: entry.key == products.length - 1 ? 0 : 8,
                         ),
-                        child: _ProductItemCard(product: entry.value),
+                        child: _ProductItemCard(
+                          product: entry.value,
+                          onTap: () => _openProductDetails(entry.value),
+                        ),
                       ),
                     )
                     .toList(),
@@ -306,8 +370,9 @@ class _PurchaseCardState extends State<_PurchaseCard> {
 
 class _ProductItemCard extends StatelessWidget {
   final Map<String, dynamic> product;
+  final VoidCallback onTap;
 
-  const _ProductItemCard({required this.product});
+  const _ProductItemCard({required this.product, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -324,83 +389,116 @@ class _ProductItemCard extends StatelessWidget {
     final colorHex = _productColorHex(product);
     final colorValue = _parseHexColor(colorHex);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.55),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _productName(product),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontFamily: 'CircularStd',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _QuantityBadge(quantity: quantity),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.open_in_new,
+                    size: 14,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .inversePrimary
+                        .withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tap to view details',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: 'CircularStd',
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .inversePrimary
+                              .withOpacity(0.7),
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _MetaPill(
+                    label: 'Size',
+                    value: sizeLabel,
+                  ),
+                  _ColorMetaPill(
+                    colorLabel: colorName,
+                    colorHex: colorHex,
+                    colorValue: colorValue,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PriceMetric(
+                      label: 'Unit discounted',
+                      value: unitDiscounted != null
+                          ? _formatCurrency(unitDiscounted)
+                          : '-',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PriceMetric(
+                      label: 'Unit price',
+                      value:
+                          unitPrice != null ? _formatCurrency(unitPrice) : '-',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _PriceMetric(
+                      label: 'Line total',
+                      value:
+                          lineTotal != null ? _formatCurrency(lineTotal) : '-',
+                      emphasize: true,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  _productName(product),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontFamily: 'CircularStd',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16
-                      ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _QuantityBadge(quantity: quantity),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MetaPill(
-                label: 'Size',
-                value: sizeLabel,
-              ),
-              _ColorMetaPill(
-                colorLabel: colorName,
-                colorHex: colorHex,
-                colorValue: colorValue,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _PriceMetric(
-                  label: 'Unit discounted',
-                  value: unitDiscounted != null
-                      ? _formatCurrency(unitDiscounted)
-                      : '-',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _PriceMetric(
-                  label: 'Unit price',
-                  value: unitPrice != null ? _formatCurrency(unitPrice) : '-',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _PriceMetric(
-                  label: 'Line total',
-                  value: lineTotal != null ? _formatCurrency(lineTotal) : '-',
-                  emphasize: true,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -897,4 +995,48 @@ Color? _parseHexColor(String input) {
     return null;
   }
   return Color(value);
+}
+
+ProductEntity _mapToProductEntity(
+  Map<String, dynamic> raw,
+  String fallbackId,
+) {
+  final colorsRaw = raw['colors'];
+  final colors = colorsRaw is List
+      ? colorsRaw
+          .whereType<Map>()
+          .map(
+            (item) => ProductColorEntity(
+              title: (item['title'] ?? '').toString(),
+              hexCode: (item['hexCode'] ?? '').toString(),
+            ),
+          )
+          .toList(growable: false)
+      : <ProductColorEntity>[];
+
+  final createdDate = raw['createdDate'];
+  final resolvedCreatedDate = createdDate is Timestamp
+      ? createdDate
+      : Timestamp.fromDate(DateTime.now());
+
+  final sizesRaw = raw['sizes'];
+  final imagesRaw = raw['images'];
+
+  return ProductEntity(
+    categoryName: (raw['categoryName'] ?? '').toString(),
+    id: (raw['id'] ?? fallbackId).toString(),
+    currentDiscount: _toDouble(raw['currentDiscount']) ?? 0,
+    categoryId: (raw['categoryId'] ?? '').toString(),
+    colors: colors,
+    createdDate: resolvedCreatedDate,
+    discountedPrice: _toDouble(raw['discountedPrice']) ?? 0,
+    gender: (raw['gender'] ?? '').toString(),
+    images: imagesRaw is List ? List<dynamic>.from(imagesRaw) : <dynamic>[],
+    price: _toDouble(raw['price']) ?? 0,
+    sizes: sizesRaw is List ? List<dynamic>.from(sizesRaw) : <dynamic>[],
+    title: (raw['title'] ?? '').toString(),
+    productId: (raw['productId'] ?? '').toString(),
+    salesNumber: _toDouble(raw['salesNumber'])?.toInt() ?? 0,
+    description: (raw['description'] ?? '').toString(),
+  );
 }
