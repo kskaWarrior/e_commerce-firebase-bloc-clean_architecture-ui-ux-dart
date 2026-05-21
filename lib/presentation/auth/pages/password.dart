@@ -369,45 +369,43 @@ class _PasswordPageState extends State<PasswordPage>
                           }
                         ),
                       ),
-                      SizedBox(height: isKeyboardOpen ? 8 : 20),
-                          if (!isKeyboardOpen)
-                            SizedBox(
-                              width: formWidth,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: 'Forgot your password? ',
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      fontSize: 14.7,
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text: 'Click here!',
-                                        style: TextStyle(
-                                          fontFamily: 'CircularStd',
-                                          fontSize: 14.7,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            AppNavigator.push(
-                                              context,
-                                              const ForgotPasswordPage(),
-                                            );
-                                          },
-                                      ),
-                                    ],
+                          SizedBox(height: isKeyboardOpen ? 8 : 20),
+                          SizedBox(
+                            width: formWidth,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: RichText(
+                                text: TextSpan(
+                                  text: 'Forgot your password? ',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 14.7,
                                   ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Click here!',
+                                      style: TextStyle(
+                                        fontFamily: 'CircularStd',
+                                        fontSize: 14.7,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          AppNavigator.push(
+                                            context,
+                                            const ForgotPasswordPage(),
+                                          );
+                                        },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
+                          ),
                     ],
                   ),
                     ),

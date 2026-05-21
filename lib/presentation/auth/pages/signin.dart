@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/auth/signin_lockout_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
@@ -18,11 +19,12 @@ class SigninPage extends StatefulWidget {
 }
 
 class _SigninPageState extends State<SigninPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   final String _typewriterText = 'Sign in with your email';
   String _displayedText = '';
   int _currentIndex = 0;
   Timer? _timer;
+  ModalRoute<dynamic>? _currentRoute;
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   Timer? _shakeTimer;
@@ -76,7 +78,42 @@ class _SigninPageState extends State<SigninPage>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final route = ModalRoute.of(context);
+    if (_currentRoute == route || route is! PageRoute) {
+      return;
+    }
+
+    if (_currentRoute != null) {
+      appRouteObserver.unsubscribe(this);
+    }
+
+    _currentRoute = route;
+    appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPopNext() {
+    _restartTypewriter();
+  }
+
+  void _restartTypewriter() {
+    _timer?.cancel();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _displayedText = '';
+      _currentIndex = 0;
+    });
+    _startTypewriter();
+  }
+
   void _startTypewriter() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(milliseconds: 90), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -97,6 +134,7 @@ class _SigninPageState extends State<SigninPage>
   void dispose() {
     _timer?.cancel();
     _shakeTimer?.cancel();
+    appRouteObserver.unsubscribe(this);
     _shakeController.dispose();
     _emailController.dispose();
     super.dispose();
