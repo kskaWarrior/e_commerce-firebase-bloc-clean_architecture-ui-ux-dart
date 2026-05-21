@@ -25,6 +25,7 @@ class CategoriesWidget extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final category = categories[index];
+          final hasImage = category.image.trim().isNotEmpty;
           return GestureDetector(
             onTap: () => onTap?.call(category),
             child: Column(
@@ -44,15 +45,20 @@ class CategoriesWidget extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: ImageDisplayHelper.generateCategoryImagePath(
-                        category.image,
-                      ),
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => const Center(
-                        child: Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
+                    child: hasImage
+                        ? CachedNetworkImage(
+                            imageUrl:
+                                ImageDisplayHelper.generateCategoryImagePath(
+                              category.image,
+                            ),
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) => const Center(
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(Icons.image_not_supported_outlined),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 8),

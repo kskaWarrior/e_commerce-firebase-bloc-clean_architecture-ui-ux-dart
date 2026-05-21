@@ -101,7 +101,7 @@ void main() {
       createdDate: Timestamp.fromDate(DateTime(2025, 1, 1)),
       discountedPrice: 80,
       gender: 'unisex',
-      images: const ['image.jpg'],
+      images: const [],
       price: 100,
       sizes: const ['40', '42'],
       title: title,
@@ -185,7 +185,8 @@ void main() {
       final products = [buildProduct(id: 'p1', title: 'Runner Pro')];
 
       when(() => mockGetCategoriesUseCase.call(null)).thenAnswer(
-        (_) async => Right([CategoriesEntity(id: 'c1', title: 'Shoes', image: 'img')]),
+        (_) async =>
+            Right([CategoriesEntity(id: 'c1', title: 'Shoes', image: '')]),
       );
       when(() => mockGetTopSellingProductsUseCase.call(null))
           .thenAnswer((_) async => Right(products));
