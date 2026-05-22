@@ -219,11 +219,16 @@ workflows:
             exit 1
           fi
 
+          RELEASE_NOTES="$(git log -1 --pretty=%B 2>/dev/null | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')"
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="${CM_COMMIT_MESSAGE:-Automated build from Codemagic}"
+          fi
+
           export GOOGLE_APPLICATION_CREDENTIALS="$KEY_FILE"
           firebase appdistribution:distribute "$RELEASE_APK" \
             --app "$FIREBASE_ANDROID_APP_ID" \
             --groups "$FIREBASE_TESTER_GROUPS" \
-            --release-notes "${CM_COMMIT_MESSAGE:-Automated build from Codemagic}"
+            --release-notes "$RELEASE_NOTES"
 
     artifacts:
       - build/app/outputs/**/*.apk
