@@ -104,11 +104,11 @@ class _PurchasesView extends StatelessWidget {
 
         final totalSpent = sales.fold<double>(
           0,
-          (sum, sale) => sum + sale.totalPrice,
+          (total, sale) => total + sale.totalPrice,
         );
         final totalSavings = sales.fold<double>(
           0,
-          (sum, sale) => sum + (sale.price - sale.discountedPrice),
+          (total, sale) => total + (sale.price - sale.discountedPrice),
         );
         final averageTicket = totalSpent / sales.length;
 
