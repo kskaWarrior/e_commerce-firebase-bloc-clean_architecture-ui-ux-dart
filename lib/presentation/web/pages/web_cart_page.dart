@@ -292,12 +292,32 @@ class _WebCartPageState extends State<WebCartPage> {
           subtitle: s.itemsReadyForCheckout(drafts.length),
         ),
         const SizedBox(height: 20),
-        for (var i = 0; i < drafts.length; i++)
-          _CartItemRow(
-            draft: drafts[i],
-            onOpen: () => _openProductDetails(drafts[i]),
-            onRemove: () => CartDraftStore.instance.removeAt(i),
+        const _CartHeaderRow(),
+        const SizedBox(height: 10),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: brand.surfaceBright,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
           ),
+          child: Column(
+            children: [
+              for (var i = 0; i < drafts.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    color: brand.iconStrong.withOpacity(0.07),
+                    height: 1,
+                  ),
+                _CartItemRow(
+                  draft: drafts[i],
+                  onOpen: () => _openProductDetails(drafts[i]),
+                  onRemove: () => CartDraftStore.instance.removeAt(i),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
 
@@ -376,6 +396,71 @@ class _WebCartPageState extends State<WebCartPage> {
   }
 }
 
+// Shared column metrics so the header row and item rows stay aligned.
+const double _kCartColUnitPrice = 92;
+const double _kCartColQuantity = 76;
+const double _kCartColTotal = 104;
+const double _kCartColAction = 44;
+const double _kCartRowHPadding = 18;
+
+class _CartHeaderRow extends StatelessWidget {
+  const _CartHeaderRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.8,
+      color: brand.muted,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _kCartRowHPadding),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(s.productLabel.toUpperCase(), style: labelStyle),
+          ),
+          SizedBox(
+            width: _kCartColUnitPrice,
+            child: Text(
+              s.unitPrice.toUpperCase(),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          SizedBox(
+            width: _kCartColQuantity,
+            child: Text(
+              s.quantity.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          SizedBox(
+            width: _kCartColTotal,
+            child: Text(
+              s.total.toUpperCase(),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          const SizedBox(width: _kCartColAction),
+        ],
+      ),
+    );
+  }
+}
+
 class _CartItemRow extends StatelessWidget {
   const _CartItemRow({
     required this.draft,
@@ -407,19 +492,22 @@ class _CartItemRow extends StatelessWidget {
     final resolvedTitle = title.isEmpty
         ? s.productFallback(code.isEmpty ? '-' : code)
         : title;
+    final metaParts = <String>[
+      if (size.trim().isNotEmpty && size != 'N/A') '${s.size} $size',
+      if (color.trim().isNotEmpty && color != 'N/A') color,
+    ];
+    final meta = metaParts.isEmpty
+        ? s.codeLabel(code.isEmpty ? '-' : code)
+        : metaParts.join(' · ');
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onOpen,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: brand.surfaceBright,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
-          ),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: _kCartRowHPadding, vertical: 16),
           child: Row(
             children: [
               Container(
@@ -446,29 +534,64 @@ class _CartItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      s.itemMeta(size, color, quantity,
-                          '\$${unitDiscounted.toStringAsFixed(2)}'),
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 13, color: brand.muted),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Text(
-                '\$${draft.totalPrice.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w800,
-                  color: brand.iconStrong,
+              SizedBox(
+                width: _kCartColUnitPrice,
+                child: Text(
+                  '\$${unitDiscounted.toStringAsFixed(2)}',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: brand.textPrimary,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: s.remove,
-                onPressed: onRemove,
-                icon: Icon(Icons.delete_outline,
-                    size: 21, color: brand.muted),
-                hoverColor: brand.danger.withOpacity(0.08),
+              SizedBox(
+                width: _kCartColQuantity,
+                child: Text(
+                  quantity,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brand.textPrimary,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _kCartColTotal,
+                child: Text(
+                  '\$${draft.totalPrice.toStringAsFixed(2)}',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: brand.iconStrong,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _kCartColAction,
+                child: Center(
+                  child: IconButton(
+                    tooltip: s.remove,
+                    onPressed: onRemove,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                        minWidth: 36, minHeight: 36),
+                    icon: Icon(Icons.delete_outline,
+                        size: 21, color: brand.muted),
+                    hoverColor: brand.danger.withOpacity(0.08),
+                  ),
+                ),
               ),
             ],
           ),

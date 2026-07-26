@@ -140,6 +140,18 @@ class WebPurchasesPage extends StatelessWidget {
   }
 }
 
+/// Status → accent color mapping shared by the order card accent border
+/// and the status chip.
+Color _statusColor(BrandTokens brand, String status) {
+  return switch (status) {
+    'paid' => brand.info,
+    'shipped' => brand.shipped,
+    'delivered' => brand.successStrong,
+    'cancelled' => brand.dangerStrong,
+    _ => brand.warning,
+  };
+}
+
 class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.sale});
 
@@ -151,112 +163,167 @@ class _OrderCard extends StatelessWidget {
         '${pad(date.hour)}:${pad(date.minute)}';
   }
 
+  Widget _headerBlock(
+    BrandTokens brand, {
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            color: brand.muted,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: brand.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final brand = context.brand;
     final s = S.of(context);
     final date = _formatDate(sale.createdDate.toDate());
     final savings = sale.price - sale.discountedPrice;
+    final statusColor = _statusColor(brand, sale.status);
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: brand.background.withOpacity(0.55),
+          padding: const EdgeInsets.fromLTRB(24, 14, 20, 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 36,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _headerBlock(
+                      brand,
+                      // s.orderPlaced('') yields the localized "order
+                      // placed" label alone (date is interpolated at the
+                      // end in every supported locale).
+                      label: s.orderPlaced('').trim(),
+                      value: date,
+                    ),
+                    _headerBlock(
+                      brand,
+                      label: s.paymentMethod,
+                      value: '${sale.paymentMethod}'
+                          '${sale.installmentsNumber > 1 ? ' · ${sale.installmentsNumber}x' : ''}',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _WebStatusChip(status: sale.status),
+            ],
+          ),
+        ),
+        Divider(color: brand.iconStrong.withOpacity(0.07), height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 20, 12),
+          child: Column(
+            children: [
+              for (final item in sale.productsList)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      Icon(Icons.shopping_bag_outlined,
+                          size: 17, color: brand.muted),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _itemLabel(item, s),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13.5),
+                        ),
+                      ),
+                      Text(
+                        '\$${_toDouble(item['totalPrice']).toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 13.5, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Divider(color: brand.iconStrong.withOpacity(0.07), height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 20, 16),
+          child: Row(
+            children: [
+              if (savings > 0)
+                Text(
+                  s.youSaved('\$${savings.toStringAsFixed(2)}'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: brand.successStrong,
+                  ),
+                ),
+              const Spacer(),
+              Text(
+                s.freightLabel('\$${sale.freight.toStringAsFixed(2)}'),
+                style: TextStyle(fontSize: 13, color: brand.muted),
+              ),
+              const SizedBox(width: 18),
+              Text(
+                s.totalLabel('\$${sale.totalPrice.toStringAsFixed(2)}'),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: brand.iconStrong,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: brand.surfaceBright,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s.orderPlaced(date),
-                        style: const TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${sale.paymentMethod}'
-                        '${sale.installmentsNumber > 1 ? ' · ${sale.installmentsNumber}x' : ''}',
-                        style:
-                            TextStyle(fontSize: 12.5, color: brand.muted),
-                      ),
-                    ],
-                  ),
-                ),
-                _WebStatusChip(status: sale.status),
-              ],
-            ),
-          ),
-          Divider(color: brand.iconStrong.withOpacity(0.07), height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-            child: Column(
-              children: [
-                for (final item in sale.productsList)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      children: [
-                        Icon(Icons.shopping_bag_outlined,
-                            size: 17, color: brand.muted),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _itemLabel(item, s),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 13.5),
-                          ),
-                        ),
-                        Text(
-                          '\$${_toDouble(item['totalPrice']).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              fontSize: 13.5, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Divider(color: brand.iconStrong.withOpacity(0.07), height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Row(
-              children: [
-                if (savings > 0)
-                  Text(
-                    s.youSaved('\$${savings.toStringAsFixed(2)}'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: brand.successStrong,
-                    ),
-                  ),
-                const Spacer(),
-                Text(
-                  s.freightLabel('\$${sale.freight.toStringAsFixed(2)}'),
-                  style: TextStyle(fontSize: 13, color: brand.muted),
-                ),
-                const SizedBox(width: 18),
-                Text(
-                  s.totalLabel('\$${sale.totalPrice.toStringAsFixed(2)}'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: brand.iconStrong,
-                  ),
-                ),
-              ],
-            ),
+          content,
+          // Subtle status-colored accent along the card's left edge.
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(width: 4, color: statusColor),
           ),
         ],
       ),
@@ -300,13 +367,7 @@ class _WebStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brand = context.brand;
-    final color = switch (status) {
-      'paid' => brand.info,
-      'shipped' => brand.shipped,
-      'delivered' => brand.successStrong,
-      'cancelled' => brand.dangerStrong,
-      _ => brand.warning,
-    };
+    final color = _statusColor(brand, status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),

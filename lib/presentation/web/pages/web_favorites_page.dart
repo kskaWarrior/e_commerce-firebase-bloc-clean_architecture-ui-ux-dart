@@ -11,6 +11,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -207,6 +208,22 @@ class _FavoritesBody extends StatelessWidget {
                               style: TextStyle(
                                   fontSize: 14.5, color: brand.muted),
                             ),
+                            const SizedBox(height: 22),
+                            FilledButton.icon(
+                              onPressed: () => Navigator.of(context)
+                                  .popUntil((route) => route.isFirst),
+                              icon: const Icon(Icons.storefront_outlined,
+                                  size: 19),
+                              label: Text(s.continueShopping),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: brand.primary,
+                                foregroundColor: brand.onPrimary,
+                                minimumSize: const Size(0, 48),
+                                textStyle: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -228,12 +245,9 @@ class _FavoritesBody extends StatelessWidget {
                       ),
                     if (newIn.isNotEmpty) ...[
                       const SizedBox(height: 48),
-                      WebSectionTitle(
+                      WebProductRail(
                         title: s.newIn,
                         subtitle: s.youMightAlsoLike,
-                      ),
-                      const SizedBox(height: 20),
-                      WebProductGrid(
                         products: newIn,
                         favoriteProductIds: favoriteProductIds,
                         onTap: (product) {

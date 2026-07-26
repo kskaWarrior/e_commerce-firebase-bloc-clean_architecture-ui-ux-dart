@@ -223,6 +223,13 @@ abstract class AppStrings {
   String get secondaryColor;
   String get backgroundColor;
 
+  // -------------------------------------------------- web storefront chrome
+  String get shopNow;
+  String get allCategories;
+  String get seeAll;
+  String get footerShop;
+  String get footerAccount;
+
   // ----------------------------------------------------- localization tail
   // Auth: sign-in password step
   String get signingIn;
@@ -761,6 +768,18 @@ class AppStringsEn extends AppStrings {
   String get secondaryColor => 'Secondary';
   @override
   String get backgroundColor => 'Background';
+
+  // -------------------------------------------------- web storefront chrome
+  @override
+  String get shopNow => 'Shop now';
+  @override
+  String get allCategories => 'All categories';
+  @override
+  String get seeAll => 'See all';
+  @override
+  String get footerShop => 'Shop';
+  @override
+  String get footerAccount => 'Account';
 
   // ----------------------------------------------------- localization tail
   @override
@@ -1421,6 +1440,18 @@ class AppStringsPtBr extends AppStrings {
   String get secondaryColor => 'Secundária';
   @override
   String get backgroundColor => 'Fundo';
+
+  // -------------------------------------------------- web storefront chrome
+  @override
+  String get shopNow => 'Comprar agora';
+  @override
+  String get allCategories => 'Todas as categorias';
+  @override
+  String get seeAll => 'Ver tudo';
+  @override
+  String get footerShop => 'Loja';
+  @override
+  String get footerAccount => 'Conta';
 
   // ----------------------------------------------------- localization tail
   @override
