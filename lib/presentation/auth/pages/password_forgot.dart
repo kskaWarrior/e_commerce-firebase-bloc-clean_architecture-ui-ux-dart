@@ -5,8 +5,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/basic_reactive_button.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/send_password_reset_email.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +22,7 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final String _typewriterText = 'Please confirm your email here';
+  String get _typewriterText => S.of(context).pleaseConfirmEmailHere;
   String _displayedText = '';
   int _currentIndex = 0;
   Timer? _typewriterTimer;
@@ -58,9 +61,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
-      appBar: const MyAppBar(
-        title: 'Forgot Password',
+      appBar: MyAppBar(
+        title: S.of(context).forgotPassword,
         hideBack: false,
       ),
       resizeToAvoidBottomInset: true,
@@ -72,7 +81,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error),
-                  backgroundColor: Colors.red,
+                  backgroundColor: context.brand.danger,
                 ),
               );
             }
@@ -80,7 +89,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.brand.success,
                   duration: const Duration(seconds: 10),
                 ),
               );
@@ -104,12 +113,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 32.0),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 32.0),
                             child: Text(
-                              'Don\'t worry, we will help you recover your password in a blink of an eye ;)',
-                              style: TextStyle(
-                                fontFamily: 'CircularStd',
+                              S.of(context).forgotPasswordSubtitle,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -138,7 +147,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   hintText: _displayedText,
                                   prefixIcon: const Icon(Icons.email_outlined),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: context.brand.surfaceBright,
                                   contentPadding: const EdgeInsets.symmetric(
                                       vertical: 20, horizontal: 16),
                                   border: OutlineInputBorder(
@@ -148,7 +157,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 ),
                                 keyboardType: TextInputType.emailAddress,
                                 style: const TextStyle(
-                                  fontFamily: 'CircularStd',
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -162,15 +170,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             child: Builder(
                               builder: (context) {
                                 return BasicReactiveButton(
-                                  text: 'Reset Password',
+                                  text: S.of(context).resetPassword,
                                   onPressed: () {
                                     if (_emailController.text.isEmpty) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                              Text('Please enter your email'),
-                                          backgroundColor: Colors.red,
+                                        SnackBar(
+                                          content: Text(S
+                                              .of(context)
+                                              .pleaseEnterEmailShort),
+                                          backgroundColor:
+                                              context.brand.danger,
                                         ),
                                       );
                                     } else {

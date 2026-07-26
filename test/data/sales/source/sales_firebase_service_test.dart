@@ -1,11 +1,12 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/source/sales_firebase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/test_tenant.dart';
 
 void main() {
   late SalesFirebaseServiceImpl service;
 
   setUp(() {
-    service = SalesFirebaseServiceImpl();
+    service = SalesFirebaseServiceImpl(unavailableTenantCollections());
   });
 
   test('getSalesByUserId returns Left when Firestore is unavailable', () async {

@@ -1,0 +1,844 @@
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/cart/cart_draft_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+enum _PaymentMethod { creditCard, debitCard }
+
+/// Desktop-web cart & checkout: line items on the left, order summary and
+/// (mocked) payment on the right. Mirrors the mobile cart's purchase flow.
+class WebCartPage extends StatefulWidget {
+  const WebCartPage({super.key, this.userIdOverride});
+
+  final String? userIdOverride;
+
+  @override
+  State<WebCartPage> createState() => _WebCartPageState();
+}
+
+class _WebCartPageState extends State<WebCartPage> {
+  bool _isConfirmingPurchase = false;
+  _PaymentMethod _selectedPaymentMethod = _PaymentMethod.debitCard;
+  int _creditInstallments = 1;
+  late final UserCubit _userCubit;
+
+  final _cardholderNameController = TextEditingController();
+  final _cardNumberController = TextEditingController();
+  final _cardExpiryController = TextEditingController();
+  final _cardCvvController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _userCubit = sl<UserCubit>();
+    if (_userCubit.state is! UserLoaded) {
+      _userCubit.getUser();
+    }
+  }
+
+  @override
+  void dispose() {
+    _cardholderNameController.dispose();
+    _cardNumberController.dispose();
+    _cardExpiryController.dispose();
+    _cardCvvController.dispose();
+    super.dispose();
+  }
+
+  void _snack(String message, Color color) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: color),
+      );
+  }
+
+  bool _hasValidPaymentData() {
+    final s = S.of(context);
+    final cardholderName = _cardholderNameController.text.trim();
+    final cardDigits =
+        _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
+    final expiry = _cardExpiryController.text.trim();
+    final cvvDigits = _cardCvvController.text.replaceAll(RegExp(r'\D'), '');
+
+    if (cardholderName.isEmpty) {
+      _snack(s.enterCardholderName, context.brand.danger);
+      return false;
+    }
+    if (cardDigits.length < 13 || cardDigits.length > 19) {
+      _snack(s.enterValidCardNumber, context.brand.danger);
+      return false;
+    }
+    final expiryPattern = RegExp(r'^(0[1-9]|1[0-2])\/(\d{2})$');
+    final expiryMatch = expiryPattern.firstMatch(expiry);
+    if (expiryMatch == null) {
+      _snack(s.enterExpiryAsMmYy, context.brand.danger);
+      return false;
+    }
+    final expiryMonth = int.parse(expiryMatch.group(1)!);
+    final expiryYear = 2000 + int.parse(expiryMatch.group(2)!);
+    final now = DateTime.now();
+    final isExpired = expiryYear < now.year ||
+        (expiryYear == now.year && expiryMonth < now.month);
+    if (isExpired) {
+      _snack(s.cardExpired, context.brand.danger);
+      return false;
+    }
+    if (cvvDigits.length < 3 || cvvDigits.length > 4) {
+      _snack(s.enterValidCvv, context.brand.danger);
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _openProductDetails(SalesEntity draft) async {
+    final firstItem =
+        draft.productsList.isNotEmpty ? draft.productsList.first : null;
+    if (firstItem == null) return;
+
+    final productId =
+        ((firstItem['id'] ?? firstItem['productId']) ?? '').toString().trim();
+    if (productId.isEmpty) {
+      _snack(S.of(context).productDetailsUnavailable, context.brand.danger);
+      return;
+    }
+
+    try {
+      final result = await sl<GetProductByIdUseCase>().call(productId);
+      if (!mounted) return;
+      result.fold(
+        (_) => _snack(
+            S.of(context).productDetailsUnavailable, context.brand.danger),
+        (product) => AppNavigator.push(
+          context,
+          ProductPage(product: product as ProductEntity),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _snack(S.of(context).unableToOpenProduct, context.brand.danger);
+    }
+  }
+
+  Future<void> _confirmPurchase() async {
+    final userId =
+        widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null || userId.isEmpty) {
+      _snack(S.of(context).signInToConfirmPurchase, context.brand.danger);
+      return;
+    }
+
+    final drafts = CartDraftStore.instance.drafts;
+    if (drafts.isEmpty) return;
+    if (!_hasValidPaymentData()) return;
+
+    setState(() => _isConfirmingPurchase = true);
+
+    if (_userCubit.state is! UserLoaded) {
+      await _userCubit.getUser();
+    }
+    if (!mounted) return;
+
+    final userState = _userCubit.state;
+    if (userState is! UserLoaded) {
+      final message = userState is UserError
+          ? userState.error
+          : S.of(context).unableToLoadProfile;
+      _snack(message, context.brand.danger);
+      setState(() => _isConfirmingPurchase = false);
+      return;
+    }
+
+    final mergedProducts = <Map<String, dynamic>>[];
+    for (final draft in drafts) {
+      mergedProducts.addAll(draft.productsList);
+    }
+
+    final totalDiscountedPrice = drafts.fold<double>(
+        0, (runningTotal, draft) => runningTotal + draft.discountedPrice);
+    final totalPriceWithoutDiscount = drafts.fold<double>(
+        0, (runningTotal, draft) => runningTotal + draft.price);
+    final totalDiscount = drafts.fold<double>(
+        0,
+        (runningTotal, draft) =>
+            runningTotal + (draft.price - draft.discountedPrice));
+    final freight = _randomFreight();
+
+    final firstItem =
+        mergedProducts.isNotEmpty ? mergedProducts.first : <String, dynamic>{};
+    final productId = (firstItem['id'] ?? '').toString();
+    final installments = _selectedPaymentMethod == _PaymentMethod.creditCard
+        ? _creditInstallments
+        : 1;
+    final paymentMethod = _selectedPaymentMethod == _PaymentMethod.creditCard
+        ? 'Credit card'
+        : 'Debit card';
+
+    final finalSale = SalesEntity(
+      createdDate: Timestamp.now(),
+      discountedPrice: totalDiscountedPrice,
+      freight: freight,
+      id: productId,
+      installmentsNumber: installments,
+      paymentMethod: paymentMethod,
+      price: totalPriceWithoutDiscount,
+      productsList: mergedProducts,
+      totalPrice: totalPriceWithoutDiscount + freight - totalDiscount,
+      userBirthDate: Timestamp.fromDate(userState.user.birthDate),
+      userGender: userState.user.gender.trim(),
+      userId: userId,
+      userName: userState.user.name.trim(),
+    );
+
+    final result = await sl<RegisterSaleUseCase>().call(finalSale);
+    if (!mounted) return;
+    setState(() => _isConfirmingPurchase = false);
+
+    result.fold(
+      (error) => _snack(error.toString(), context.brand.danger),
+      (_) {
+        CartDraftStore.instance.clear();
+        _snack(S.of(context).purchaseConfirmed, context.brand.success);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MyPurchasesPage()),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+    final userId =
+        widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
+
+    return WebScaffold(
+      section: WebSection.cart,
+      body: AnimatedBuilder(
+        animation: CartDraftStore.instance,
+        builder: (context, _) {
+          final drafts = CartDraftStore.instance.drafts;
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: WebScaffold.headerHeight + 28),
+                WebMaxWidth(
+                  child: userId == null || userId.isEmpty
+                      ? _EmptyState(
+                          icon: Icons.lock_outline,
+                          title: s.pleaseSignIn,
+                          body: s.signInToViewCart,
+                        )
+                      : drafts.isEmpty
+                          ? _EmptyState(
+                              icon: Icons.shopping_bag_outlined,
+                              title: s.cartEmptyTitle,
+                              body: s.cartEmptyBody,
+                              action: FilledButton.icon(
+                                onPressed: () => Navigator.of(context)
+                                    .popUntil((route) => route.isFirst),
+                                icon: const Icon(Icons.storefront_outlined,
+                                    size: 19),
+                                label: Text(s.continueShopping),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: brand.primary,
+                                  foregroundColor: brand.onPrimary,
+                                  minimumSize: const Size(0, 48),
+                                ),
+                              ),
+                            )
+                          : _cartContent(brand, drafts),
+                ),
+                const SizedBox(height: 64),
+                const WebFooter(),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _cartContent(BrandTokens brand, List<SalesEntity> drafts) {
+    final s = S.of(context);
+    final totalOriginal = CartDraftStore.instance.totalOriginalPrice;
+    final totalDiscounted = CartDraftStore.instance.totalDiscountedPrice;
+    final totalSavings = totalOriginal - totalDiscounted;
+
+    final items = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        WebSectionTitle(
+          title: s.myCart,
+          subtitle: s.itemsReadyForCheckout(drafts.length),
+        ),
+        const SizedBox(height: 20),
+        for (var i = 0; i < drafts.length; i++)
+          _CartItemRow(
+            draft: drafts[i],
+            onOpen: () => _openProductDetails(drafts[i]),
+            onRemove: () => CartDraftStore.instance.removeAt(i),
+          ),
+      ],
+    );
+
+    final sidebar = Column(
+      children: [
+        _SummaryCard(
+          totalOriginal: totalOriginal,
+          totalDiscounted: totalDiscounted,
+          totalSavings: totalSavings,
+        ),
+        const SizedBox(height: 18),
+        _PaymentCard(
+          selectedPaymentMethod: _selectedPaymentMethod,
+          onPaymentMethodChanged: (value) => setState(() {
+            _selectedPaymentMethod = value;
+            if (value == _PaymentMethod.debitCard) {
+              _creditInstallments = 1;
+            }
+          }),
+          creditInstallments: _creditInstallments,
+          onCreditInstallmentsChanged: (value) =>
+              setState(() => _creditInstallments = value),
+          cardholderNameController: _cardholderNameController,
+          cardNumberController: _cardNumberController,
+          cardExpiryController: _cardExpiryController,
+          cardCvvController: _cardCvvController,
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _isConfirmingPurchase ? null : _confirmPurchase,
+            icon: _isConfirmingPurchase
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_circle_outline, size: 20),
+            label: Text(_isConfirmingPurchase
+                ? s.confirmingPurchase
+                : s.confirmPurchase),
+            style: FilledButton.styleFrom(
+              backgroundColor: brand.primary,
+              foregroundColor: brand.onPrimary,
+              minimumSize: const Size(0, 52),
+              textStyle: const TextStyle(
+                  fontSize: 15.5, fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 900) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [items, const SizedBox(height: 28), sidebar],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 7, child: items),
+            const SizedBox(width: 32),
+            Expanded(flex: 4, child: sidebar),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CartItemRow extends StatelessWidget {
+  const _CartItemRow({
+    required this.draft,
+    required this.onOpen,
+    required this.onRemove,
+  });
+
+  final SalesEntity draft;
+  final VoidCallback onOpen;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+    final productData = draft.productsList.isNotEmpty
+        ? draft.productsList.first
+        : <String, dynamic>{};
+
+    final title = (productData['title'] ?? '').toString();
+    final code = (productData['productId'] ?? '').toString();
+    final size = (productData['size'] ?? 'N/A').toString();
+    final color = (productData['color'] ?? 'N/A').toString();
+    final quantityValue = _toDouble(productData['quantity']);
+    final quantity = quantityValue % 1 == 0
+        ? quantityValue.toInt().toString()
+        : quantityValue.toStringAsFixed(2);
+    final unitDiscounted = _toDouble(productData['unitDiscounted']);
+    final resolvedTitle = title.isEmpty
+        ? s.productFallback(code.isEmpty ? '-' : code)
+        : title;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onOpen,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: brand.surfaceBright,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: brand.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.shopping_bag_outlined,
+                    color: brand.iconStrong, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resolvedTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      s.itemMeta(size, color, quantity,
+                          '\$${unitDiscounted.toStringAsFixed(2)}'),
+                      style: TextStyle(fontSize: 13, color: brand.muted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                '\$${draft.totalPrice.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w800,
+                  color: brand.iconStrong,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: s.remove,
+                onPressed: onRemove,
+                icon: Icon(Icons.delete_outline,
+                    size: 21, color: brand.muted),
+                hoverColor: brand.danger.withOpacity(0.08),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.totalOriginal,
+    required this.totalDiscounted,
+    required this.totalSavings,
+  });
+
+  final double totalOriginal;
+  final double totalDiscounted;
+  final double totalSavings;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: brand.surfaceBright,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            s.orderSummary,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          _line(brand, s.subtotal, totalOriginal),
+          const SizedBox(height: 8),
+          _line(brand, s.savings, -totalSavings, accent: brand.successStrong),
+          const SizedBox(height: 8),
+          Text(
+            s.freightNote,
+            style: TextStyle(fontSize: 12, color: brand.muted),
+          ),
+          const SizedBox(height: 14),
+          Divider(color: brand.iconStrong.withOpacity(0.08), height: 1),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  s.total,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                '\$${totalDiscounted.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: brand.iconStrong,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _line(BrandTokens brand, String label, double value,
+      {Color? accent}) {
+    final sign = value < 0 ? '-' : '';
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 14, color: brand.muted),
+          ),
+        ),
+        Text(
+          '$sign\$${value.abs().toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: accent ?? brand.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({
+    required this.selectedPaymentMethod,
+    required this.onPaymentMethodChanged,
+    required this.creditInstallments,
+    required this.onCreditInstallmentsChanged,
+    required this.cardholderNameController,
+    required this.cardNumberController,
+    required this.cardExpiryController,
+    required this.cardCvvController,
+  });
+
+  final _PaymentMethod selectedPaymentMethod;
+  final ValueChanged<_PaymentMethod> onPaymentMethodChanged;
+  final int creditInstallments;
+  final ValueChanged<int> onCreditInstallmentsChanged;
+  final TextEditingController cardholderNameController;
+  final TextEditingController cardNumberController;
+  final TextEditingController cardExpiryController;
+  final TextEditingController cardCvvController;
+
+  InputDecoration _decoration(
+      BuildContext context, String label, IconData icon) {
+    final brand = context.brand;
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(fontSize: 13.5, color: brand.muted),
+      floatingLabelStyle: TextStyle(color: brand.iconStrong),
+      prefixIcon: Icon(icon, size: 18, color: brand.muted),
+      filled: true,
+      fillColor: brand.background.withOpacity(0.6),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: brand.iconStrong.withOpacity(0.14)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: brand.iconStrong.withOpacity(0.14)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: brand.iconStrong, width: 1.5),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: brand.surfaceBright,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            s.payment,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<_PaymentMethod>(
+            segments: [
+              ButtonSegment<_PaymentMethod>(
+                value: _PaymentMethod.creditCard,
+                icon: const Icon(Icons.credit_card, size: 17),
+                label: Text(s.credit),
+              ),
+              ButtonSegment<_PaymentMethod>(
+                value: _PaymentMethod.debitCard,
+                icon: const Icon(Icons.payments_outlined, size: 17),
+                label: Text(s.debit),
+              ),
+            ],
+            selected: <_PaymentMethod>{selectedPaymentMethod},
+            onSelectionChanged: (selection) {
+              if (selection.isNotEmpty) {
+                onPaymentMethodChanged(selection.first);
+              }
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return brand.iconStrong;
+                }
+                return brand.surfaceBright;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return brand.textInverse;
+                }
+                return brand.textPrimary;
+              }),
+              side: WidgetStateProperty.all(
+                BorderSide(color: brand.iconStrong.withOpacity(0.2)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (selectedPaymentMethod == _PaymentMethod.creditCard) ...[
+            DropdownButtonFormField<int>(
+              value: creditInstallments,
+              decoration: _decoration(
+                  context, s.installments, Icons.calendar_view_week_outlined),
+              items: List.generate(
+                12,
+                (index) => DropdownMenuItem<int>(
+                  value: index + 1,
+                  child: Text('${index + 1}x'),
+                ),
+              ),
+              onChanged: (value) {
+                if (value != null) onCreditInstallmentsChanged(value);
+              },
+            ),
+            const SizedBox(height: 14),
+          ],
+          TextField(
+            controller: cardholderNameController,
+            textInputAction: TextInputAction.next,
+            decoration: _decoration(
+                context, s.cardholderName, Icons.badge_outlined),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: cardNumberController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration:
+                _decoration(context, s.cardNumber, Icons.credit_card),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: cardExpiryController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+                    _ExpiryDateInputFormatter(),
+                  ],
+                  decoration: _decoration(
+                      context, s.expiryMmYy, Icons.date_range_outlined),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: cardCvvController,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                  decoration: _decoration(context, s.cvv, Icons.lock_outline),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 15, color: brand.muted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  s.demoCheckoutNote,
+                  style: TextStyle(fontSize: 12, color: brand.muted),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.body,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: brand.primary.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 38, color: brand.iconStrong),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              body,
+              style: TextStyle(fontSize: 14.5, color: brand.muted),
+            ),
+            if (action != null) ...[
+              const SizedBox(height: 24),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpiryDateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final trimmed =
+        digitsOnly.length > 4 ? digitsOnly.substring(0, 4) : digitsOnly;
+
+    var formatted = trimmed;
+    if (trimmed.length > 2) {
+      formatted = '${trimmed.substring(0, 2)}/${trimmed.substring(2)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+double _randomFreight() {
+  final random = Random();
+  final value = 10 + (random.nextDouble() * 13);
+  return double.parse(value.toStringAsFixed(2));
+}
+
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}

@@ -27,7 +27,6 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         title ?? '',
         style: const TextStyle(
-          fontFamily: 'CircularStd',
           fontSize: 20, // Decreased font size
           fontWeight: FontWeight.w700,
         ),

@@ -1,11 +1,12 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/favorites/source/favorites_firebase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/test_tenant.dart';
 
 void main() {
   late FavoritesFirebaseServiceImpl service;
 
   setUp(() {
-    service = FavoritesFirebaseServiceImpl();
+    service = FavoritesFirebaseServiceImpl(unavailableTenantCollections());
   });
 
   test('getFavoritesByUserId returns Left when Firestore is unavailable', () async {

@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/tenant_collections.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
@@ -21,8 +22,24 @@ abstract class FirebaseService {
 }
 
 class FirebaseServiceImpl implements FirebaseService {
+  FirebaseServiceImpl(this._tenant);
+
+  final TenantCollections _tenant;
+
   DateTime _toUtcDateOnly(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
+  }
+
+  Future<void> _writeProfile(String uid, UserCreationReq userCreationReq) {
+    final DateTime? normalizedBirthDate = userCreationReq.birthDate != null
+        ? _toUtcDateOnly(userCreationReq.birthDate!)
+        : null;
+    return _tenant.users.doc(uid).set({
+      ...userCreationReq.toJson(),
+      'birthDate': normalizedBirthDate != null
+          ? Timestamp.fromDate(normalizedBirthDate)
+          : null,
+    });
   }
 
   @override
@@ -65,18 +82,7 @@ class FirebaseServiceImpl implements FirebaseService {
         password: userCreationReq.password!,
       );
       userCreationReq.id = returnedData.user?.uid;
-      final DateTime? normalizedBirthDate = userCreationReq.birthDate != null
-          ? _toUtcDateOnly(userCreationReq.birthDate!)
-          : null;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(returnedData.user?.uid)
-          .set({
-        ...userCreationReq.toJson(),
-        'birthDate': normalizedBirthDate != null
-            ? Timestamp.fromDate(normalizedBirthDate)
-            : null,
-      });
+      await _writeProfile(returnedData.user!.uid, userCreationReq);
 
       return Future.value(
           const Right('Created user with success!')); // Placeholder for success
@@ -87,7 +93,11 @@ class FirebaseServiceImpl implements FirebaseService {
           case 'weak-password':
             return Future.value(Left(Failure(error: 'Weak password')));
           case 'email-already-in-use':
-            return Future.value(Left(Failure(error: 'Email already in use')));
+            // Shared Auth pool across stores: the account may belong to a
+            // shopper of another store's app. If the credentials are theirs
+            // and they have no profile in THIS store yet, sign them in and
+            // create the per-store profile instead of failing.
+            return _signUpExistingAccount(userCreationReq);
           case 'invalid-email':
             return Future.value(Left(Failure(error: 'Invalid email')));
           default:
@@ -96,6 +106,36 @@ class FirebaseServiceImpl implements FirebaseService {
         }
       }
       return Future.value(Left(Failure(error: e.toString())));
+    }
+  }
+
+  Future<Either<Failure, String>> _signUpExistingAccount(
+      UserCreationReq userCreationReq) async {
+    try {
+      final credential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: userCreationReq.email,
+        password: userCreationReq.password!,
+      );
+      final uid = credential.user?.uid;
+      if (uid == null) {
+        return Left(Failure(error: 'Email already in use'));
+      }
+
+      final existingProfile = await _tenant.users.doc(uid).get();
+      if (existingProfile.exists) {
+        return Left(Failure(error: 'Email already in use'));
+      }
+
+      userCreationReq.id = uid;
+      await _writeProfile(uid, userCreationReq);
+      return const Right('Created user with success!');
+    } on FirebaseAuthException {
+      // Credentials don't match the existing account: report the original
+      // conflict rather than leaking that the email exists elsewhere.
+      return Left(Failure(error: 'Email already in use'));
+    } catch (e) {
+      return Left(Failure(error: e.toString()));
     }
   }
 
@@ -118,7 +158,7 @@ class FirebaseServiceImpl implements FirebaseService {
           ? _toUtcDateOnly(userCreationReq.birthDate!)
           : null;
 
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      await _tenant.users.doc(userId).update({
         'name': userCreationReq.name,
         'phone': userCreationReq.phone,
         'address': userCreationReq.address,
@@ -165,15 +205,15 @@ class FirebaseServiceImpl implements FirebaseService {
       if (userId == null) {
         return Left(Failure(error: 'User not logged in'));
       }
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
+      final userDoc = await _tenant.users.doc(userId).get();
       final data = userDoc.data();
       if (data != null) {
         return Right(UserModel.fromMap(data));
       } else {
-        return Left(Failure(error: 'User not found'));
+        // Auth account exists but has no profile in THIS store (signed up
+        // through another store's app). Distinct code so the UI can offer
+        // per-store registration.
+        return Left(Failure(error: 'profile-not-found'));
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-disabled') {
@@ -230,7 +270,7 @@ class FirebaseServiceImpl implements FirebaseService {
 
       final String downloadUrl = await ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      await _tenant.users.doc(userId).update({
         'profileImageUrl': downloadUrl,
       });
 

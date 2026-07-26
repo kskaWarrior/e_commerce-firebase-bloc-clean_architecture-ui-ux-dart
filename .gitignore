@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.log
+node_modules/
 *.pyc
 *.swp
 .DS_Store
@@ -42,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# White-label brand activation output (buybuy default's assets/brand IS committed;
+# brand.current.json is a materialized pointer, always regenerated)
+/brand.current.json
+
+# Release signing (per-brand keystores + local key config are never committed)
+/android/key.properties
+*.jks
+*.keystore
+
+# Written by tool/activate_brand.dart for the active brand
+/ios/Flutter/Brand.xcconfig

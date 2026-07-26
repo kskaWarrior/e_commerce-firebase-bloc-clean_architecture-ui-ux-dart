@@ -1,3 +1,6 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:flutter/material.dart';
 
 class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -16,27 +19,31 @@ class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(
+        icon: Icon(
           Icons.menu,
           size: 32,
-          color: Color.fromARGB(255, 10, 32, 53),
+          color: context.brand.iconStrong,
         ),
         onPressed: onMenuTap,
         tooltip: 'Menu',
       ),
       title: SizedBox(
         height: 40,
-        child: Image.asset(
-          'assets/images/buy_buy_horizontal_text.png',
-          fit: BoxFit.contain,
-        ),
+        child: BrandConfig.hasWordmark
+            ? Image.asset(
+                AppImages.brandWordmark,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    const _BrandNameTitle(),
+              )
+            : const _BrandNameTitle(),
       ),
       actions: [
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.shopping_cart,
             size: 35,
-            color: Color.fromARGB(255, 10, 32, 53),
+            color: context.brand.iconStrong,
           ),
           onPressed: onCartTap,
           tooltip: 'Cart',
@@ -50,4 +57,22 @@ class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _BrandNameTitle extends StatelessWidget {
+  const _BrandNameTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        BrandConfig.appName,
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
+      ),
+    );
+  }
 }

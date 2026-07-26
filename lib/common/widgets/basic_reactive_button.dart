@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_state.dart';
 
@@ -25,24 +26,24 @@ class BasicReactiveButton extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: context.brand.textInverse,
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               textStyle: const TextStyle(
-                fontFamily: 'CircularStd',
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             onPressed: state is LoadingState ? null : onPressed,
             child: state is LoadingState
-                ? const SizedBox(
+                ? SizedBox(
                     width: 26,
                     height: 26,
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          context.brand.textInverse),
                       strokeWidth: 3,
                     ),
                   )

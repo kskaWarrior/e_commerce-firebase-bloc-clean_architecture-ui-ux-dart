@@ -1,0 +1,75 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "shopper-web-buybuy",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "-t",
+        "lib/main.dart",
+        "--dart-define-from-file=brands/buybuy/brand.json",
+        "--web-port=5230",
+        "--web-hostname=localhost"
+      ],
+      "port": 5230
+    },
+    {
+      "name": "admin-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "-t",
+        "lib/main_admin.dart",
+        "--web-port=5231",
+        "--web-hostname=localhost"
+      ],
+      "port": 5231
+    },
+    {
+      "name": "admin-web-emulators",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "-t",
+        "lib/main_admin.dart",
+        "--dart-define=USE_EMULATORS=true",
+        "--web-port=5232",
+        "--web-hostname=localhost"
+      ],
+      "port": 5232
+    },
+    {
+      "name": "shopper-web-buybuy-emulators",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "-t",
+        "lib/main.dart",
+        "--dart-define-from-file=brands/buybuy/brand.json",
+        "--dart-define=USE_EMULATORS=true",
+        "--web-port=5233",
+        "--web-hostname=localhost"
+      ],
+      "port": 5233
+    },
+    {
+      "name": "firebase-emulators",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "firebase-tools@13.35.1",
+        "emulators:start"
+      ],
+      "port": 4000
+    }
+  ]
+}

@@ -9,8 +9,28 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Per-brand release signing. key.properties (gitignored, see
+// key.properties.template) wins locally; CM_KEYSTORE_* env vars win on
+// Codemagic; otherwise release falls back to debug signing so plain
+// `flutter run --release` keeps working during development.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+def resolvedStoreFile = System.getenv('CM_KEYSTORE_PATH') ?: keystoreProperties['storeFile']
+def resolvedStorePassword = System.getenv('CM_KEYSTORE_PASSWORD') ?: keystoreProperties['storePassword']
+def resolvedKeyAlias = System.getenv('CM_KEY_ALIAS') ?: keystoreProperties['keyAlias']
+def resolvedKeyPassword = System.getenv('CM_KEY_PASSWORD') ?: keystoreProperties['keyPassword']
+def hasReleaseSigning = resolvedStoreFile != null && resolvedStorePassword != null &&
+        resolvedKeyAlias != null && resolvedKeyPassword != null
+
 android {
-    namespace = "com.example.e_commerce_app_with_firebase_bloc_clean_architecture"
+    // Fixed forever: the namespace is internal (Kotlin package, R class) and
+    // deliberately decoupled from the per-brand applicationId below.
+    namespace = "com.wstudios.storefront"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -24,21 +44,48 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.e_commerce_app_with_firebase_bloc_clean_architecture"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdkVersion = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(resolvedStoreFile)
+                storePassword resolvedStorePassword
+                keyAlias resolvedKeyAlias
+                keyPassword resolvedKeyPassword
+            }
+        }
+    }
+
+    // One product flavor per brands/<brand>/ directory — onboarding a new
+    // customer never edits this file. applicationId and app label come from
+    // the brand's brand.json.
+    flavorDimensions "brand"
+    productFlavors {
+        def brandsDir = new File("${rootProject.projectDir}/../brands")
+        if (brandsDir.exists()) {
+            brandsDir.eachDir { dir ->
+                def brandConfigFile = new File(dir, 'brand.json')
+                if (!brandConfigFile.exists()) {
+                    return
+                }
+                def cfg = new groovy.json.JsonSlurper().parse(brandConfigFile)
+                "${dir.name}" {
+                    dimension "brand"
+                    applicationId cfg.ANDROID_APPLICATION_ID
+                    resValue "string", "app_name", cfg.APP_NAME
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig = hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

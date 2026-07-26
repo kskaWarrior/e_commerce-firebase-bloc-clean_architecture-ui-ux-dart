@@ -1,0 +1,6 @@
+flutter_native_splash:
+  color: "#FFF9F0"
+  image: brands/buybuy/assets/splash.png
+  android: true
+  ios: false
+  web: false

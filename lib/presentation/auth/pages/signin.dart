@@ -3,9 +3,13 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/language_menu.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +24,7 @@ class SigninPage extends StatefulWidget {
 
 class _SigninPageState extends State<SigninPage>
     with SingleTickerProviderStateMixin, RouteAware {
-  final String _typewriterText = 'Sign in with your email';
+  String get _typewriterText => S.of(context).signInWithYourEmail;
   String _displayedText = '';
   int _currentIndex = 0;
   Timer? _timer;
@@ -142,6 +146,12 @@ class _SigninPageState extends State<SigninPage>
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: SafeArea(
@@ -186,7 +196,6 @@ class _SigninPageState extends State<SigninPage>
                     child: TextField(
                       controller: _emailController,
                       style: const TextStyle(
-                        fontFamily: 'CircularStd',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -194,7 +203,7 @@ class _SigninPageState extends State<SigninPage>
                         hintText: _displayedText,
                         prefixIcon: const Icon(Icons.email_outlined),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: context.brand.surfaceBright,
                         contentPadding: const EdgeInsets.symmetric(
                             vertical: 20, horizontal: 16),
                         border: OutlineInputBorder(
@@ -214,7 +223,7 @@ class _SigninPageState extends State<SigninPage>
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: context.brand.textInverse,
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -229,8 +238,8 @@ class _SigninPageState extends State<SigninPage>
                           if (email.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Please enter your email.'),
-                            backgroundColor: Colors.red,
+                            content: Text(S.of(context).pleaseEnterEmail),
+                            backgroundColor: context.brand.danger,
                           ),
                         );
                         return;
@@ -238,10 +247,10 @@ class _SigninPageState extends State<SigninPage>
 
                           if (!email.contains('@') || !email.contains('.')) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content:
-                                    Text('Please enter a valid email address.'),
-                                backgroundColor: Colors.red,
+                                    Text(S.of(context).pleaseEnterValidEmail),
+                                backgroundColor: context.brand.danger,
                               ),
                             );
                             return;
@@ -255,10 +264,11 @@ class _SigninPageState extends State<SigninPage>
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'This email is temporarily locked. Try again in '
-                                  '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                                  S.of(context).emailTemporarilyLocked(
+                                      formatLockoutRemaining(
+                                          lockoutStatus.remaining)),
                                 ),
-                                backgroundColor: Colors.red,
+                                backgroundColor: context.brand.danger,
                               ),
                             );
                             return;
@@ -273,7 +283,7 @@ class _SigninPageState extends State<SigninPage>
                         ),
                       );
                     },
-                    child: const Text('Continue'),
+                    child: Text(S.of(context).continueLabel),
                   ),
                 ),
                     if (!isKeyboardOpen)
@@ -298,16 +308,15 @@ class _SigninPageState extends State<SigninPage>
                           },
                           child: RichText(
                             text: TextSpan(
-                              text: 'Don\'t have an account? ',
+                              text: S.of(context).dontHaveAccount,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 14.7,
                               ),
                               children: [
                                 TextSpan(
-                                  text: 'Sign Up!',
+                                  text: S.of(context).signUpExclamation,
                                   style: TextStyle(
-                                    fontFamily: 'CircularStd',
                                     fontSize: 14.7,
                                     color:
                                         Theme.of(context).colorScheme.primary,
@@ -326,6 +335,7 @@ class _SigninPageState extends State<SigninPage>
                           ),
                         ),
                       ),
+                    Positioned(top: 4, right: 4, child: LanguageMenuButton()),
                   ],
                 ),
               ),

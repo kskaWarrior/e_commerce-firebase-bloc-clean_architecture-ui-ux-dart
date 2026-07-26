@@ -33,4 +33,31 @@ class SalesRepositoryImpl extends SalesRepository {
     final model = SalesModel.fromEntity(sale);
     return await sl<SalesFirebaseService>().registerSale(model.toMap());
   }
+
+  @override
+  Future<Either> getSalesByStore() async {
+    final data = await sl<SalesFirebaseService>().getSalesByStore();
+
+    return data.fold(
+      (error) => Left(error),
+      (sales) {
+        try {
+          final parsedSales = List.from(sales)
+              .whereType<Map>()
+              .map((e) =>
+                  SalesModel.fromMap(Map<String, dynamic>.from(e)).toEntity())
+              .toList();
+
+          return Right(parsedSales);
+        } catch (_) {
+          return Left('Failed to parse orders data. Please try again.');
+        }
+      },
+    );
+  }
+
+  @override
+  Future<Either> updateSaleStatus(String saleId, String status) async {
+    return await sl<SalesFirebaseService>().updateSaleStatus(saleId, status);
+  }
 }

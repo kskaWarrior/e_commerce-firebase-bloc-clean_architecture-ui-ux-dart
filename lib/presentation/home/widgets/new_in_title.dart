@@ -1,3 +1,4 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:flutter/material.dart';
 
 class NewInTitle extends StatelessWidget {
@@ -11,7 +12,7 @@ class NewInTitle extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'New In',
+            S.of(context).newIn,
             style:
                 Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.inversePrimary,
@@ -30,7 +31,7 @@ class NewInTitle extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5.0),
             child: Text(
-              'New In',
+              S.of(context).newIn,
               style:
                   Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
@@ -48,7 +49,7 @@ class NewInTitle extends StatelessWidget {
             ),
           ),
           Text(
-            'New In',
+            S.of(context).newIn,
             style:
                 Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Theme.of(context).colorScheme.inversePrimary,
