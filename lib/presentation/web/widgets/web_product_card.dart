@@ -208,6 +208,7 @@ class WebProductGrid extends StatelessWidget {
     this.favoriteProductIds = const <String>{},
     required this.onTap,
     this.onFavoritePressed,
+    this.childAspectRatio = 0.70,
   });
 
   final List<ProductEntity> products;
@@ -215,17 +216,21 @@ class WebProductGrid extends StatelessWidget {
   final ValueChanged<ProductEntity> onTap;
   final ValueChanged<ProductEntity>? onFavoritePressed;
 
+  /// Cell width:height ratio. Lower values give taller cards (used by the
+  /// category-filter gallery); defaults to the standard grid proportion.
+  final double childAspectRatio;
+
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: products.length,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
         mainAxisSpacing: 20,
         crossAxisSpacing: 20,
-        childAspectRatio: 0.70,
+        childAspectRatio: childAspectRatio,
       ),
       itemBuilder: (context, index) {
         final product = products[index];

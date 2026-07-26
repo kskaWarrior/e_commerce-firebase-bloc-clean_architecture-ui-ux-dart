@@ -14,9 +14,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_browse_pages.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/state/web_browse_controller.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_catalog_results.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -116,16 +118,66 @@ class _WebHomePageState extends State<WebHomePage> {
         builder: (context) {
           return WebScaffold(
             section: WebSection.home,
-            body: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            body: WebScrollView(
+              children: [
                   const SizedBox(height: WebScaffold.headerHeight + 26),
-                  WebMaxWidth(
-                    child: _HeroBanner(onShopNow: _scrollToRails),
+                  // Hero slot — a search replaces the banner with results.
+                  AnimatedBuilder(
+                    animation: WebBrowseController.instance,
+                    builder: (context, _) {
+                      final controller = WebBrowseController.instance;
+                      final s = S.of(context);
+                      return WebMaxWidth(
+                        child: controller.hasQuery
+                            ? WebCatalogResults(
+                                title: s.resultsFor(controller.query),
+                                subtitleBuilder: (c, n) =>
+                                    S.of(c).productsFound(n),
+                                emptyMessage: s.nothingMatchedSearch,
+                                filter: (product) {
+                                  final q = controller.query.toLowerCase();
+                                  return product.title
+                                          .toLowerCase()
+                                          .contains(q) ||
+                                      product.categoryName
+                                          .toLowerCase()
+                                          .contains(q);
+                                },
+                                onClear: controller.clearSearch,
+                                clearTooltip: s.clearSearch,
+                              )
+                            : _HeroBanner(onShopNow: _scrollToRails),
+                      );
+                    },
                   ),
                   const SizedBox(height: 44),
                   const _CategoryCardsSection(),
+                  // Category slot — a selected category renders inline here.
+                  AnimatedBuilder(
+                    animation: WebBrowseController.instance,
+                    builder: (context, _) {
+                      final controller = WebBrowseController.instance;
+                      final category = controller.category;
+                      if (category == null) return const SizedBox.shrink();
+                      final s = S.of(context);
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: WebMaxWidth(
+                          child: WebCatalogResults(
+                            title: category.title,
+                            subtitleBuilder: (c, n) =>
+                                S.of(c).productsInCategory(n),
+                            emptyMessage: s.noProductsInCategory,
+                            filter: (product) =>
+                                product.categoryId == category.id,
+                            onClear: controller.clearCategory,
+                            clearTooltip: s.clearCategory,
+                            childAspectRatio: 0.60,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 44),
                   BlocBuilder<FavoritesCubit, FavoritesState>(
                     builder: (context, favoritesState) {
@@ -168,9 +220,7 @@ class _WebHomePageState extends State<WebHomePage> {
                     },
                   ),
                   const SizedBox(height: 64),
-                  const WebFooter(),
-                ],
-              ),
+              ],
             ),
           );
         },
@@ -374,10 +424,8 @@ class _CategoryCardsSection extends StatelessWidget {
                     return _CategoryCard(
                       title: category.title,
                       image: category.image,
-                      onTap: () => AppNavigator.push(
-                        context,
-                        WebCategoryPage(category: category),
-                      ),
+                      onTap: () => WebBrowseController.instance
+                          .selectCategory(category),
                     );
                   },
                 ),

@@ -17,7 +17,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/categories_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_browse_pages.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/state/web_browse_controller.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -112,7 +112,10 @@ class _WebHeaderState extends State<_WebHeader> {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
     _searchController.clear();
-    AppNavigator.push(context, WebSearchPage(query: query));
+    // Results render in place on the home page (in the hero's slot), so set
+    // the shared browse state and return home instead of pushing a page.
+    WebBrowseController.instance.search(query);
+    _goHome(context);
   }
 
   Future<void> _signOut(BuildContext context) async {
@@ -425,10 +428,13 @@ class _CategoryStripState extends State<_CategoryStrip> {
                           for (final category in categories)
                             _StripLink(
                               label: category.title,
-                              onTap: () => AppNavigator.push(
-                                context,
-                                WebCategoryPage(category: category),
-                              ),
+                              onTap: () {
+                                // Show the category inline on the home page.
+                                WebBrowseController.instance
+                                    .selectCategory(category);
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              },
                             ),
                         ],
                       ),

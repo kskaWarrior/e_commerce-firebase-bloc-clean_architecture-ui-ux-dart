@@ -73,6 +73,8 @@ abstract class AppStrings {
   String get nothingMatchedSearch;
   String productsInCategory(int count);
   String get noProductsInCategory;
+  String get clearSearch;
+  String get clearCategory;
   String get youMayAlsoLike;
   String get youMayAlsoLikeSubtitle;
   String get youMightAlsoLike;
@@ -464,6 +466,10 @@ class AppStringsEn extends AppStrings {
       '$count product(s) in this category';
   @override
   String get noProductsInCategory => 'No products in this category yet.';
+  @override
+  String get clearSearch => 'Clear search';
+  @override
+  String get clearCategory => 'Clear category';
   @override
   String get youMayAlsoLike => 'You may also like';
   @override
@@ -1123,6 +1129,10 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get noProductsInCategory =>
       'Ainda não há produtos nesta categoria.';
+  @override
+  String get clearSearch => 'Limpar busca';
+  @override
+  String get clearCategory => 'Limpar categoria';
   @override
   String get youMayAlsoLike => 'Você também pode gostar';
   @override
