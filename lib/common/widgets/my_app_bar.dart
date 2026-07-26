@@ -24,11 +24,20 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
               onPressed: () => Navigator.of(context).maybePop(),
               tooltip: 'Back',
             ),
-      title: Text(
-        title ?? '',
-        style: const TextStyle(
-          fontSize: 20, // Decreased font size
-          fontWeight: FontWeight.w700,
+      // Ellipsize a long (often longer in pt-BR) title instead of letting it
+      // run under the back button or the actions.
+      titleSpacing: 0,
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Text(
+          title ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 20, // Decreased font size
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       actions: actions,

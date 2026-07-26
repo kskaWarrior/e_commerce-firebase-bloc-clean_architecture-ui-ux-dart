@@ -16,7 +16,9 @@ class CategoriesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 100,
+      // 64 avatar + 8 gap + up to two lines of label; 100 clipped the second
+      // line for multi-word category names.
+      height: 118,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(6, 3, 6, 0),
