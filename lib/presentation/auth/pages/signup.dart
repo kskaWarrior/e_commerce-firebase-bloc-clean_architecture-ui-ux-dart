@@ -7,6 +7,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/a
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/gender_and_age.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -101,9 +102,162 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets the storefront-style split layout (asset beside a glass
+    // card); everything else keeps the mobile layout, framed on web.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  /// Validates the profile fields, then advances to the gender/age step.
+  /// Shared by both layouts.
+  void _submitSignup(BuildContext context) {
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterName),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    } else if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterPhone),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    } else if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterEmail),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    } else if (_passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterPasswordPeriod),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+    AppNavigator.push(
+      context,
+      BlocProvider(
+        create: (context) => ButtonCubit(),
+        child: GenderAndAgePage(
+          userCreationReq: UserCreationReq(
+            name: _nameController.text,
+            phone: _phoneController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return WebAuthScaffold(
+      card: WebGoldGlassPanel(
+        width: 480,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              WebAuthCardHeader(
+                title: s.onlyTwoSteps,
+                subtitle: s.fillProfileBelow,
+                onBack: Navigator.of(context).canPop()
+                    ? () => Navigator.of(context).pop()
+                    : null,
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _nameController,
+                keyboardType: TextInputType.name,
+                style:
+                    const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+                decoration: webAuthInputDecoration(
+                  context,
+                  hintText: _displayedTexts[0].isEmpty ? s.name : _displayedTexts[0],
+                  prefixIcon:
+                      Icon(Icons.person_outline, color: brand.iconStrong),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                style:
+                    const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+                decoration: webAuthInputDecoration(
+                  context,
+                  hintText:
+                      _displayedTexts[1].isEmpty ? s.phone : _displayedTexts[1],
+                  prefixIcon:
+                      Icon(Icons.phone_outlined, color: brand.iconStrong),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                style:
+                    const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+                decoration: webAuthInputDecoration(
+                  context,
+                  hintText:
+                      _displayedTexts[2].isEmpty ? s.email : _displayedTexts[2],
+                  prefixIcon:
+                      Icon(Icons.email_outlined, color: brand.iconStrong),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscureText,
+                keyboardType: TextInputType.visiblePassword,
+                onSubmitted: (_) => _submitSignup(context),
+                style:
+                    const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+                decoration: webAuthInputDecoration(
+                  context,
+                  hintText: _displayedTexts[3].isEmpty
+                      ? s.password
+                      : _displayedTexts[3],
+                  prefixIcon:
+                      Icon(Icons.password_outlined, color: brand.iconStrong),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility_off : Icons.visibility,
+                      color: brand.muted,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              WebAuthPrimaryButton(
+                text: s.continueLabel,
+                onPressed: () => _submitSignup(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {

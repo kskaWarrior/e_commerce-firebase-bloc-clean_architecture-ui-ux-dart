@@ -1,8 +1,13 @@
 import 'dart:ui';
 
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Branded full-bleed backdrop (cream base + gold/coral/blue glows) used
 /// behind the web auth surfaces so the liquid-glass panels have something
@@ -164,6 +169,250 @@ class WebAuthFrame extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Desktop shell shared by every web auth page: the branded backdrop with
+/// the splash asset aligned horizontally beside the page's glass [card]
+/// (stacking vertically on narrower windows). Mirrors the sign-in landing so
+/// the whole flow reads as one storefront.
+class WebAuthScaffold extends StatelessWidget {
+  const WebAuthScaffold({super.key, required this.card});
+
+  final Widget card;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final size = MediaQuery.sizeOf(context);
+    final twoColumns = size.width >= 1020;
+    final assetSize = twoColumns
+        ? (size.width * 0.36).clamp(400.0, 600.0).toDouble()
+        : (size.height * 0.4).clamp(260.0, 420.0).toDouble();
+
+    final heroAsset = Image.asset(
+      AppImages.appSplash,
+      width: assetSize,
+      height: assetSize,
+      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
+
+    return Scaffold(
+      backgroundColor: brand.background,
+      body: Stack(
+        children: [
+          const WebBrandBackdrop(),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: twoColumns
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        heroAsset,
+                        const SizedBox(width: 64),
+                        card,
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        heroAsset,
+                        const SizedBox(height: 20),
+                        card,
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Standard header for a web auth card: an optional back affordance, the
+/// centered brand wordmark (falling back to the app name), a bold title and
+/// an optional fixed-height subtitle (so typewriter hints don't shift the
+/// layout as they type).
+class WebAuthCardHeader extends StatelessWidget {
+  const WebAuthCardHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.onBack,
+  });
+
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (onBack != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: onBack,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(Icons.arrow_back, color: brand.iconStrong, size: 22),
+            ),
+          ),
+        Center(
+          child: Image.asset(
+            AppImages.brandWordmark,
+            height: 36,
+            errorBuilder: (_, __, ___) => Text(
+              BrandConfig.appName,
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                color: brand.iconStrong,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 26),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+            color: brand.iconStrong,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 22,
+            child: Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.5,
+                color: brand.textPrimary.withOpacity(0.65),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Consistent field styling for the web auth cards (soft filled pill,
+/// brand-tinted, no visible border).
+InputDecoration webAuthInputDecoration(
+  BuildContext context, {
+  required String hintText,
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+}) {
+  final brand = context.brand;
+  return InputDecoration(
+    hintText: hintText,
+    hintStyle: TextStyle(color: brand.muted),
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+    filled: true,
+    fillColor: brand.surfaceBright.withOpacity(0.9),
+    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
+/// Full-width navy primary button matching the sign-in "Continue" action.
+/// Use for actions that only navigate (no async cubit state).
+class WebAuthPrimaryButton extends StatelessWidget {
+  const WebAuthPrimaryButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+  });
+
+  final String text;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    return SizedBox(
+      height: 52,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: brand.iconStrong,
+          foregroundColor: brand.textInverse,
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Text(text),
+      ),
+    );
+  }
+}
+
+/// Same navy button, but reactive to [ButtonCubit] — shows a spinner and
+/// disables itself while a request is in flight. Must sit under a
+/// [BlocProvider] exposing a [ButtonCubit].
+class WebAuthReactiveButton extends StatelessWidget {
+  const WebAuthReactiveButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+  });
+
+  final String text;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    return BlocBuilder<ButtonCubit, ButtonState>(
+      builder: (context, state) {
+        final isLoading = state is LoadingState;
+        return SizedBox(
+          height: 52,
+          child: FilledButton(
+            onPressed: isLoading ? null : onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: brand.iconStrong,
+              foregroundColor: brand.textInverse,
+              textStyle:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: isLoading
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(brand.textInverse),
+                    ),
+                  )
+                : Text(text),
+          ),
+        );
+      },
     );
   }
 }

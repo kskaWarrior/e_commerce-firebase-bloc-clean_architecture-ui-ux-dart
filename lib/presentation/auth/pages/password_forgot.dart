@@ -11,6 +11,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -78,9 +79,114 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets the storefront-style split layout (asset beside a glass
+    // card); everything else keeps the mobile layout, framed on web.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  /// Shared reaction to the reset-email [ButtonCubit] result.
+  void _handleButtonState(BuildContext context, ButtonState state) {
+    if (state is FailureState) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.error),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+    }
+    if (state is SuccessState) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.message),
+          backgroundColor: context.brand.success,
+          duration: const Duration(seconds: 10),
+        ),
+      );
+      AppNavigator.pushReplacement(context, const SigninPage());
+    }
+  }
+
+  void _submitReset(BuildContext context) {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterEmailShort),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+    context.read<ButtonCubit>().execute(
+          useCase: sl<SendPasswordEmailResetUseCase>(),
+          params: _emailController.text.trim(),
+        );
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return BlocProvider(
+      create: (context) => ButtonCubit(),
+      child: BlocListener<ButtonCubit, ButtonState>(
+        listener: _handleButtonState,
+        child: WebAuthScaffold(
+          card: WebGoldGlassPanel(
+            width: 460,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WebAuthCardHeader(
+                    title: s.forgotPassword,
+                    subtitle: _displayedText,
+                    onBack: Navigator.of(context).canPop()
+                        ? () => Navigator.of(context).pop()
+                        : null,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    s.forgotPasswordSubtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      height: 1.4,
+                      color: brand.textPrimary.withOpacity(0.75),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    onSubmitted: (_) => _submitReset(context),
+                    style: const TextStyle(
+                        fontSize: 15.5, fontWeight: FontWeight.w600),
+                    decoration: webAuthInputDecoration(
+                      context,
+                      hintText: s.email,
+                      prefixIcon:
+                          Icon(Icons.email_outlined, color: brand.iconStrong),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) => WebAuthReactiveButton(
+                      text: s.resetPassword,
+                      onPressed: () => _submitReset(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
@@ -93,26 +199,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: BlocProvider(
         create: (context) => ButtonCubit(),
         child: BlocListener<ButtonCubit, ButtonState>(
-          listener: (context, state) {
-            if (state is FailureState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: context.brand.danger,
-                ),
-              );
-            }
-            if (state is SuccessState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: context.brand.success,
-                  duration: const Duration(seconds: 10),
-                ),
-              );
-              AppNavigator.pushReplacement(context, const SigninPage());
-            }
-          },
+          listener: _handleButtonState,
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
