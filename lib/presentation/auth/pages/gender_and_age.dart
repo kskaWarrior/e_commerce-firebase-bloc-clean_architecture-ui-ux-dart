@@ -100,6 +100,23 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
     return age >= _minimumAge;
   }
 
+  Locale? _typewriterLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Restart the typewriter when the language changes, otherwise the
+    // already-typed text stays in the previous language.
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_typewriterLocale != locale) {
+      final isFirstResolution = _typewriterLocale == null;
+      _typewriterLocale = locale;
+      if (!isFirstResolution) {
+        _startTypewriter();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _typewriterTimer?.cancel();

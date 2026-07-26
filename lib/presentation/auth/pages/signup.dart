@@ -69,6 +69,26 @@ class _SignUpPageState extends State<SignUpPage> {
     });
   }
 
+  Locale? _typewriterLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Restart the typewriter sequence when the language changes, otherwise
+    // the already-typed hints stay in the previous language.
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_typewriterLocale != locale) {
+      final isFirstResolution = _typewriterLocale == null;
+      _typewriterLocale = locale;
+      if (!isFirstResolution) {
+        for (var i = 0; i < _displayedTexts.length; i++) {
+          _displayedTexts[i] = '';
+        }
+        _startTypewriter(0);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _typewriterTimer?.cancel();
