@@ -178,24 +178,48 @@ class WebAuthFrame extends StatelessWidget {
 /// (stacking vertically on narrower windows). Mirrors the sign-in landing so
 /// the whole flow reads as one storefront.
 class WebAuthScaffold extends StatelessWidget {
-  const WebAuthScaffold({super.key, required this.card});
+  const WebAuthScaffold({
+    super.key,
+    required this.card,
+    this.assetPath,
+    this.assetScale = 1.0,
+  });
 
   final Widget card;
+
+  /// Overrides the hero art. When null, the locale-aware splash is used
+  /// (Portuguese variant for pt, the default splash otherwise).
+  final String? assetPath;
+
+  /// Multiplies the computed hero size — lets a page show a larger asset.
+  final double assetScale;
 
   @override
   Widget build(BuildContext context) {
     final brand = context.brand;
     final size = MediaQuery.sizeOf(context);
     final twoColumns = size.width >= 1020;
-    final assetSize = twoColumns
-        ? (size.width * 0.36).clamp(400.0, 600.0).toDouble()
-        : (size.height * 0.4).clamp(260.0, 420.0).toDouble();
+    final assetSize = (twoColumns
+            ? (size.width * 0.36).clamp(400.0, 600.0).toDouble()
+            : (size.height * 0.4).clamp(260.0, 420.0).toDouble()) *
+        assetScale;
+
+    final isPt = Localizations.maybeLocaleOf(context)?.languageCode == 'pt';
+    final resolved =
+        assetPath ?? (isPt ? AppImages.appSplashPt : AppImages.appSplash);
 
     final heroAsset = Image.asset(
-      AppImages.appSplash,
+      resolved,
       width: assetSize,
       height: assetSize,
-      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      // Fall back to the default splash if a localized/custom asset is
+      // missing for this brand.
+      errorBuilder: (_, __, ___) => Image.asset(
+        assetPath ?? AppImages.appSplash,
+        width: assetSize,
+        height: assetSize,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
     );
 
     return Scaffold(
@@ -242,15 +266,47 @@ class WebAuthCardHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onBack,
+    this.titleFirst = false,
   });
 
   final String title;
   final String? subtitle;
   final VoidCallback? onBack;
 
+  /// When true, the title reads above the brand wordmark (e.g. "Welcome back
+  /// to" sitting over the "buy buy" mark). Otherwise the wordmark leads.
+  final bool titleFirst;
+
   @override
   Widget build(BuildContext context) {
     final brand = context.brand;
+
+    final wordmark = Center(
+      child: Image.asset(
+        AppImages.brandWordmark,
+        height: 36,
+        errorBuilder: (_, __, ___) => Text(
+          BrandConfig.appName,
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+            color: brand.iconStrong,
+          ),
+        ),
+      ),
+    );
+
+    final titleWidget = Text(
+      title,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.4,
+        color: brand.iconStrong,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -265,32 +321,15 @@ class WebAuthCardHeader extends StatelessWidget {
               icon: Icon(Icons.arrow_back, color: brand.iconStrong, size: 22),
             ),
           ),
-        Center(
-          child: Image.asset(
-            AppImages.brandWordmark,
-            height: 36,
-            errorBuilder: (_, __, ___) => Text(
-              BrandConfig.appName,
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-                color: brand.iconStrong,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 26),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-            color: brand.iconStrong,
-          ),
-        ),
+        if (titleFirst) ...[
+          titleWidget,
+          const SizedBox(height: 14),
+          wordmark,
+        ] else ...[
+          wordmark,
+          const SizedBox(height: 26),
+          titleWidget,
+        ],
         if (subtitle != null) ...[
           const SizedBox(height: 6),
           SizedBox(

@@ -214,6 +214,10 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
       child: BlocListener<ButtonCubit, ButtonState>(
         listener: _handleButtonState,
         child: WebAuthScaffold(
+          // Restore this step's own illustration (larger than before), rather
+          // than the shared splash art.
+          assetPath: AppImages.oneStep,
+          assetScale: 1.2,
           card: WebGoldGlassPanel(
             width: 480,
             child: Padding(

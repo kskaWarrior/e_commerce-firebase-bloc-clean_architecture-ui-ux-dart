@@ -225,11 +225,19 @@ class _SigninPageState extends State<SigninPage>
         ? (size.width * 0.36).clamp(400.0, 600.0).toDouble()
         : (size.height * 0.4).clamp(260.0, 420.0).toDouble();
 
+    // Portuguese shoppers get the translated splash art; fall back to the
+    // default (and then to nothing) if a brand ships no localized variant.
+    final isPt = Localizations.maybeLocaleOf(context)?.languageCode == 'pt';
     final heroAsset = Image.asset(
-      AppImages.appSplash,
+      isPt ? AppImages.appSplashPt : AppImages.appSplash,
       width: assetSize,
       height: assetSize,
-      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      errorBuilder: (_, __, ___) => Image.asset(
+        AppImages.appSplash,
+        width: assetSize,
+        height: assetSize,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
     );
 
     final card = WebGoldGlassPanel(

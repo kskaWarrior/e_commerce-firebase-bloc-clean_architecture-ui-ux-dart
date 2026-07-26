@@ -296,6 +296,7 @@ class _PasswordPageState extends State<PasswordPage>
                   WebAuthCardHeader(
                     title: s.welcomeBackTo,
                     subtitle: _displayedText,
+                    titleFirst: true,
                     onBack: Navigator.of(context).canPop()
                         ? () => Navigator.of(context).pop()
                         : null,
