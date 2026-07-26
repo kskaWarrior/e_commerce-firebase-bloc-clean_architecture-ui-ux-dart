@@ -6,12 +6,15 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/basic_reactive_button.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/page/home.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password_forgot.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart'
     as auth_pages;
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +37,7 @@ class _PasswordPageState extends State<PasswordPage>
   late Animation<Offset> _slideAnimation;
 
   // Typewriter effect variables
-  final String _typewriterText = 'Type your password';
+  String get _typewriterText => S.of(context).typeYourPassword;
   String _displayedText = '';
   int _currentIndex = 0;
   Timer? _typewriterTimer;
@@ -113,9 +116,15 @@ class _PasswordPageState extends State<PasswordPage>
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
-      appBar: const MyAppBar(
-        title: 'Signing In',
+      appBar: MyAppBar(
+        title: S.of(context).signingIn,
         hideBack: false,
       ),
       resizeToAvoidBottomInset: true,
@@ -141,10 +150,10 @@ class _PasswordPageState extends State<PasswordPage>
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Too many invalid attempts. This email is locked for '
-                        '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                        S.of(context).tooManyAttemptsLocked(
+                            formatLockoutRemaining(lockoutStatus.remaining)),
                       ),
-                      backgroundColor: Colors.red,
+                      backgroundColor: context.brand.danger,
                     ),
                   );
 
@@ -164,9 +173,9 @@ class _PasswordPageState extends State<PasswordPage>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '${state.error} Attempts left before lock: $remainingAttempts.',
+                      '${state.error} ${S.of(context).attemptsLeftBeforeLock(remainingAttempts)}',
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
                 return;
@@ -175,7 +184,7 @@ class _PasswordPageState extends State<PasswordPage>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error),
-                  backgroundColor: Colors.red,
+                  backgroundColor: context.brand.danger,
                 ),
               );
             } else if (state is SuccessState) {
@@ -187,7 +196,7 @@ class _PasswordPageState extends State<PasswordPage>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.brand.success,
                 ),
               );
               AppNavigator.pushAndRemoveUntil(
@@ -221,10 +230,9 @@ class _PasswordPageState extends State<PasswordPage>
                           SizedBox(height: isKeyboardOpen ? 24 : 60),
                       SlideTransition(
                         position: _slideAnimation,
-                        child: const Text(
-                          'Welcome back to',
-                          style: TextStyle(
-                            fontFamily: 'CircularStd',
+                        child: Text(
+                          S.of(context).welcomeBackTo,
+                          style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -250,7 +258,6 @@ class _PasswordPageState extends State<PasswordPage>
                             controller: _passwordController,
                             focusNode: _passwordFocusNode,
                             style: const TextStyle(
-                              fontFamily: 'CircularStd',
                               fontSize: 16,
                             ),
                             decoration: InputDecoration(
@@ -262,7 +269,7 @@ class _PasswordPageState extends State<PasswordPage>
                                   Container(
                                     width: 2,
                                     height: 24,
-                                    color: Colors.grey.shade500,
+                                    color: context.brand.muted,
                                     margin: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
@@ -282,7 +289,7 @@ class _PasswordPageState extends State<PasswordPage>
                                 ],
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: context.brand.surfaceBright,
                               contentPadding: const EdgeInsets.symmetric(
                                   vertical: 20, horizontal: 16),
                               border: OutlineInputBorder(
@@ -302,14 +309,15 @@ class _PasswordPageState extends State<PasswordPage>
                         child: Builder(
                           builder: (context) {
                             return BasicReactiveButton(
-                              text: 'Sign In',
+                              text: S.of(context).signInButton,
                                 onPressed: () async {
                                   final password = _passwordController.text;
                                   if (password.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please enter your password'),
-                                      backgroundColor: Colors.red,
+                                    SnackBar(
+                                      content: Text(
+                                          S.of(context).pleaseEnterPassword),
+                                      backgroundColor: context.brand.danger,
                                     ),
                                   );
                                 } else {
@@ -326,10 +334,11 @@ class _PasswordPageState extends State<PasswordPage>
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              'This email is locked. Try again in '
-                                              '${formatLockoutRemaining(lockoutStatus.remaining)}.',
+                                              S.of(context).emailLockedTryAgainIn(
+                                                  formatLockoutRemaining(
+                                                      lockoutStatus.remaining)),
                                             ),
-                                            backgroundColor: Colors.red,
+                                            backgroundColor: context.brand.danger,
                                           ),
                                         );
                                         AppNavigator.pushAndRemoveUntil(
@@ -345,10 +354,11 @@ class _PasswordPageState extends State<PasswordPage>
                                     if (signInReq == null) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Sign-in session expired. Please try again.'),
-                                          backgroundColor: Colors.red,
+                                        SnackBar(
+                                          content: Text(S
+                                              .of(context)
+                                              .signinSessionExpired),
+                                          backgroundColor: context.brand.danger,
                                         ),
                                       );
                                       AppNavigator.pushAndRemoveUntil(
@@ -376,7 +386,7 @@ class _PasswordPageState extends State<PasswordPage>
                               alignment: Alignment.centerLeft,
                               child: RichText(
                                 text: TextSpan(
-                                  text: 'Forgot your password? ',
+                                  text: S.of(context).forgotYourPassword,
                                   style: TextStyle(
                                     color:
                                         Theme.of(context).colorScheme.onSurface,
@@ -384,9 +394,8 @@ class _PasswordPageState extends State<PasswordPage>
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: 'Click here!',
+                                      text: S.of(context).clickHere,
                                       style: TextStyle(
-                                        fontFamily: 'CircularStd',
                                         fontSize: 14.7,
                                         color: Theme.of(context)
                                             .colorScheme

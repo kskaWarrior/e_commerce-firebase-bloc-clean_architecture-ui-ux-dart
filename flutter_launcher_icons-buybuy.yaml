@@ -1,0 +1,6 @@
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: brands/buybuy/assets/icon.png
+  adaptive_icon_background: "#FFF9F0"
+  adaptive_icon_foreground: brands/buybuy/assets/icon.png

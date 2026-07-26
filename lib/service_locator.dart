@@ -38,22 +38,58 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sale
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/tenant_collections.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/store/repository/store_repository_impl.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/store/source/store_firebase_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/repository/store_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_all_products_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upsert_product_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/delete_product_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upload_product_image_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/upsert_category_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/delete_category_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/upload_category_image_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/get_sales_by_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/update_sale_status.dart';
 import 'package:get_it/get_it.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  //tenant context (shopper builds are pinned to one store at compile time;
+  //the admin app calls StoreContext.set() after owner login instead)
+  final storeContext = StoreContext();
+  if (BrandConfig.isConfigured) {
+    storeContext.set(BrandConfig.storeId);
+  }
+  sl.registerSingleton<StoreContext>(storeContext);
+  sl.registerSingleton<TenantCollections>(
+      TenantCollections(FirebaseFirestore.instance, storeContext));
+
   //services
-  sl.registerSingleton<FirebaseService>(FirebaseServiceImpl());
+  sl.registerSingleton<FirebaseService>(
+      FirebaseServiceImpl(sl<TenantCollections>()));
 
-  sl.registerSingleton<CategoryFirebaseService>(CategoryFirebaseServiceImpl());
+  sl.registerSingleton<CategoryFirebaseService>(
+      CategoryFirebaseServiceImpl(sl<TenantCollections>()));
 
-  sl.registerSingleton<ProductsFirebaseService>(ProductsFirebaseServiceImpl());
+  sl.registerSingleton<ProductsFirebaseService>(
+      ProductsFirebaseServiceImpl(sl<TenantCollections>()));
 
   sl.registerSingleton<FavoritesFirebaseService>(
-      FavoritesFirebaseServiceImpl());
+      FavoritesFirebaseServiceImpl(sl<TenantCollections>()));
 
-  sl.registerSingleton<SalesFirebaseService>(SalesFirebaseServiceImpl());
+  sl.registerSingleton<SalesFirebaseService>(
+      SalesFirebaseServiceImpl(sl<TenantCollections>()));
+
+  sl.registerSingleton<StoreFirebaseService>(
+      StoreFirebaseServiceImpl(sl<TenantCollections>()));
 
   //repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
@@ -65,6 +101,8 @@ Future<void> init() async {
   sl.registerLazySingleton<FavoriteRepository>(() => FavoriteRepositoryImpl());
 
   sl.registerLazySingleton<SalesRepository>(() => SalesRepositoryImpl());
+
+  sl.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl());
 
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
@@ -82,6 +120,8 @@ Future<void> init() async {
       () => GetTopSellingProductsUseCase());
   sl.registerLazySingleton<GetNewInProductsUseCase>(
       () => GetNewInProductsUseCase());
+  sl.registerLazySingleton<GetProductByIdUseCase>(
+      () => GetProductByIdUseCase());
   sl.registerLazySingleton<GetFavoritesByUserIdUseCase>(
       () => GetFavoritesByUserIdUseCase());
   sl.registerLazySingleton<RegisterFavoriteUseCase>(
@@ -91,6 +131,27 @@ Future<void> init() async {
   sl.registerLazySingleton<GetSalesByUserIdUseCase>(
       () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
+
+  //admin usecases
+  sl.registerLazySingleton<GetStoreUseCase>(() => GetStoreUseCase());
+  sl.registerLazySingleton<UpdateStoreBrandingUseCase>(
+      () => UpdateStoreBrandingUseCase());
+  sl.registerLazySingleton<GetAllProductsUseCase>(
+      () => GetAllProductsUseCase());
+  sl.registerLazySingleton<UpsertProductUseCase>(() => UpsertProductUseCase());
+  sl.registerLazySingleton<DeleteProductUseCase>(() => DeleteProductUseCase());
+  sl.registerLazySingleton<UploadProductImageUseCase>(
+      () => UploadProductImageUseCase());
+  sl.registerLazySingleton<UpsertCategoryUseCase>(
+      () => UpsertCategoryUseCase());
+  sl.registerLazySingleton<DeleteCategoryUseCase>(
+      () => DeleteCategoryUseCase());
+  sl.registerLazySingleton<UploadCategoryImageUseCase>(
+      () => UploadCategoryImageUseCase());
+  sl.registerLazySingleton<GetSalesByStoreUseCase>(
+      () => GetSalesByStoreUseCase());
+  sl.registerLazySingleton<UpdateSaleStatusUseCase>(
+      () => UpdateSaleStatusUseCase());
 
   //cubits
   sl.registerLazySingleton<UserCubit>(() => UserCubit());

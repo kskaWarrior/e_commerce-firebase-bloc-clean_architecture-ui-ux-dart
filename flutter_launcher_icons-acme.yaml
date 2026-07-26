@@ -1,0 +1,6 @@
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: brands/acme/assets/icon.png
+  adaptive_icon_background: "#F4F7FB"
+  adaptive_icon_foreground: brands/acme/assets/icon.png

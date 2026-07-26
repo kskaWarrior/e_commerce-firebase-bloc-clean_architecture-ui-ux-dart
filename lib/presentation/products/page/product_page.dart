@@ -1,6 +1,8 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/cart/cart_draft_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/color_entity.dart';
@@ -11,9 +13,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/widgets/top_selling_title.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_product_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -105,6 +109,14 @@ class _ProductPageState extends State<ProductPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Web gets the storefront experience; the mobile layout stays as-is.
+    if (kIsWeb) {
+      return WebProductPage(
+        product: widget.product,
+        relatedProducts: widget.topSellingProducts,
+      );
+    }
+
     final favoritesCubit = _resolvedFavoritesCubit();
     final canUseFavorites = favoritesCubit != null;
     final product = widget.product;
@@ -124,9 +136,8 @@ class _ProductPageState extends State<ProductPage> {
     final scaffold = Scaffold(
       appBar: AppBar(
         title: Text(
-          'Product details',
+          S.of(context).productDetails,
           style: textTheme.titleLarge?.copyWith(
-            fontFamily: 'CircularStd',
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -134,26 +145,26 @@ class _ProductPageState extends State<ProductPage> {
           IconButton(
             onPressed: canUseFavorites ? () => _toggleFavorite(product) : null,
             tooltip: canUseFavorites
-                ? 'Favorite'
-                : 'Favorites unavailable on this screen',
+                ? S.of(context).favoriteTooltip
+                : S.of(context).favoritesUnavailableOnScreen,
             icon: Icon(
               _favoriteProductIds.contains(product.id)
                   ? Icons.favorite
                   : Icons.favorite_border,
               size: 32,
               color: canUseFavorites
-                  ? Colors.red
-                  : Colors.red.withOpacity(0.45),
+                  ? context.brand.danger
+                  : context.brand.danger.withOpacity(0.45),
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.shopping_cart,
               size: 35,
-              color: Color.fromARGB(255, 10, 32, 53),
+              color: context.brand.iconStrong,
             ),
             onPressed: () => AppNavigator.push(context, const CartPage()),
-            tooltip: 'Cart',
+            tooltip: S.of(context).cartTooltip,
           ),
         ],
         centerTitle: true,
@@ -193,7 +204,6 @@ class _ProductPageState extends State<ProductPage> {
                   Text(
                     product.title,
                     style: textTheme.headlineSmall?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,
                       color: colorScheme.inversePrimary,
                     ),
@@ -203,26 +213,27 @@ class _ProductPageState extends State<ProductPage> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _TagPill(label: 'Sales: ${product.salesNumber}'),
-                      _TagPill(label: 'Code: ${product.productId}'),
+                      _TagPill(
+                          label: S.of(context).salesCount(product.salesNumber)),
+                      _TagPill(
+                          label: S.of(context).codeLabel(product.productId)),
                     ],
                   ),
                   const SizedBox(height: 14),
                   _PriceSection(product: product, hasDiscount: hasDiscount),
                   const SizedBox(height: 16),
                   _InfoCard(
-                    title: 'Description',
+                    title: S.of(context).description,
                     child: Text(
                       product.description,
                       style: textTheme.bodyLarge?.copyWith(
-                        fontFamily: 'CircularStd',
                         height: 1.45,
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   _InfoCard(
-                    title: 'Sizes',
+                    title: S.of(context).sizes,
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -231,7 +242,7 @@ class _ProductPageState extends State<ProductPage> {
                   ),
                   const SizedBox(height: 12),
                   _InfoCard(
-                    title: 'Colors',
+                    title: S.of(context).colors,
                     child: Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -240,7 +251,7 @@ class _ProductPageState extends State<ProductPage> {
                   ),
                   const SizedBox(height: 12),
                   _InfoCard(
-                    title: 'Quantity',
+                    title: S.of(context).quantity,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -275,7 +286,6 @@ class _ProductPageState extends State<ProductPage> {
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(
-                                  fontFamily: 'CircularStd',
                                   fontWeight: FontWeight.w700,
                                 ),
                           ),
@@ -302,10 +312,9 @@ class _ProductPageState extends State<ProductPage> {
                       ),
                       icon: const Icon(Icons.shopping_cart_checkout),
                       label: Text(
-                        'Add to cart',
+                        S.of(context).addToCart,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontFamily: 'CircularStd',
                                   fontWeight: FontWeight.w700,
                                 ),
                       ),
@@ -325,10 +334,9 @@ class _ProductPageState extends State<ProductPage> {
                           AppNavigator.push(context, const CartPage()),
                       icon: const Icon(Icons.shopping_cart_outlined),
                       label: Text(
-                        'Go to cart',
+                        S.of(context).goToCart,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontFamily: 'CircularStd',
                                   fontWeight: FontWeight.w700,
                                 ),
                       ),
@@ -403,7 +411,7 @@ class _ProductPageState extends State<ProductPage> {
             ..showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.red,
+                backgroundColor: context.brand.danger,
               ),
             );
           return;
@@ -420,7 +428,7 @@ class _ProductPageState extends State<ProductPage> {
             ..showSnackBar(
               SnackBar(
                 content: Text(message),
-                backgroundColor: Colors.green,
+                backgroundColor: context.brand.success,
               ),
             );
         }
@@ -435,9 +443,9 @@ class _ProductPageState extends State<ProductPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Favorites are unavailable right now.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).favoritesUnavailableNow),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -449,9 +457,9 @@ class _ProductPageState extends State<ProductPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to manage favorites.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).pleaseSignInFavorites),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -495,7 +503,7 @@ class _ProductPageState extends State<ProductPage> {
         .toList(growable: false);
 
     if (normalized.isEmpty) {
-      return [const Text('No sizes available')];
+      return [Text(S.of(context).noSizesAvailable)];
     }
 
     return normalized.map(
@@ -532,7 +540,6 @@ class _ProductPageState extends State<ProductPage> {
               child: Text(
                 size,
                 style: TextStyle(
-                  fontFamily: 'CircularStd',
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   color: colorScheme.inversePrimary,
                 ),
@@ -546,7 +553,7 @@ class _ProductPageState extends State<ProductPage> {
 
   List<Widget> _buildColorItems(List<ProductColorEntity> colors) {
     if (colors.isEmpty) {
-      return [const Text('No colors available')];
+      return [Text(S.of(context).noColorsAvailable)];
     }
 
     return colors.map(
@@ -578,12 +585,12 @@ class _ProductPageState extends State<ProductPage> {
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 10, 32, 53),
+                color: context.brand.iconStrong,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary
-                      : Colors.white.withOpacity(0.1),
+                      : context.brand.textInverse.withOpacity(0.1),
                   width: isSelected ? 1.6 : 1,
                 ),
               ),
@@ -596,15 +603,17 @@ class _ProductPageState extends State<ProductPage> {
                     decoration: BoxDecoration(
                       color: _parseColor(colorOption.hexCode),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.1),
+                      border: Border.all(
+                        color: context.brand.textInverse,
+                        width: 1.1,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     colorOption.title,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'CircularStd',
+                      color: context.brand.textInverse,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w500,
                     ),
@@ -637,9 +646,9 @@ class _ProductPageState extends State<ProductPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to add products to cart.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).pleaseSignInAddToCart),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -649,9 +658,9 @@ class _ProductPageState extends State<ProductPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please select a size.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).pleaseSelectSize),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -661,9 +670,9 @@ class _ProductPageState extends State<ProductPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please select a color.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).pleaseSelectColor),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -720,9 +729,9 @@ class _ProductPageState extends State<ProductPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Item added to cart. Your cart has ${CartDraftStore.instance.itemsCount} items.',
+            S.of(context).addedToCart(CartDraftStore.instance.itemsCount),
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: context.brand.success,
         ),
       );
   }
@@ -744,7 +753,7 @@ class _ProductPageState extends State<ProductPage> {
       }
     }
 
-    return Colors.grey;
+    return Colors.grey; // tripwire-allow: product swatch data
   }
 
   Future<void> _openFullscreenGallery(List<String> imagePaths) async {
@@ -794,7 +803,7 @@ class _ProductGallery extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 10, 32, 53),
+        color: context.brand.iconStrong,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -813,7 +822,7 @@ class _ProductGallery extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: imagePaths.isEmpty
-                      ? _placeholder()
+                      ? _placeholder(context)
                       : PageView.builder(
                           controller: pageController,
                           onPageChanged: onPageChanged,
@@ -825,9 +834,10 @@ class _ProductGallery extends StatelessWidget {
                                 imagePaths[index],
                               ),
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => _placeholder(),
+                              placeholder: (context, url) =>
+                                  _placeholder(context),
                               errorWidget: (context, url, error) {
-                                return _placeholder();
+                                return _placeholder(context);
                               },
                             );
                           },
@@ -847,9 +857,9 @@ class _ProductGallery extends StatelessWidget {
                           color: Colors.black.withOpacity(0.45),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.fullscreen,
-                          color: Colors.white,
+                          color: context.brand.textInverse,
                           size: 30,
                         ),
                       ),
@@ -873,7 +883,7 @@ class _ProductGallery extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: currentImageIndex == index
                         ? Theme.of(context).colorScheme.primary
-                        : Colors.white.withOpacity(0.35),
+                        : context.brand.textInverse.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -884,9 +894,9 @@ class _ProductGallery extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() {
+  Widget _placeholder(BuildContext context) {
     return Container(
-      color: Colors.grey[300],
+      color: context.brand.mutedSoft,
       alignment: Alignment.center,
       child: const Icon(Icons.broken_image_outlined, size: 52),
     );
@@ -917,9 +927,8 @@ class _PriceSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Price',
+            S.of(context).price,
             style: textTheme.titleMedium?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -929,11 +938,10 @@ class _PriceSection extends StatelessWidget {
               Text(
                 '\$${product.price.toStringAsFixed(2)}',
                 style: textTheme.titleLarge?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                   decoration: hasDiscount ? TextDecoration.lineThrough : null,
                   color: hasDiscount
-                      ? const Color.fromARGB(255, 233, 75, 60)
+                      ? context.brand.secondary
                       : Theme.of(context).colorScheme.inversePrimary,
                 ),
               ),
@@ -942,9 +950,8 @@ class _PriceSection extends StatelessWidget {
                 Text(
                   '\$${product.discountedPrice.toStringAsFixed(2)}',
                   style: textTheme.titleLarge?.copyWith(
-                    fontFamily: 'CircularStd',
                     fontWeight: FontWeight.w800,
-                    color: Colors.green,
+                    color: context.brand.success,
                   ),
                 ),
               ],
@@ -952,7 +959,7 @@ class _PriceSection extends StatelessWidget {
           ),
           if (hasDiscount) ...[
             const SizedBox(height: 8),
-            _TagPill(label: '${product.currentDiscount}% OFF'),
+            _TagPill(label: S.of(context).percentOff(product.currentDiscount)),
           ],
         ],
       ),
@@ -972,7 +979,7 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: context.brand.surfaceBright.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -984,7 +991,6 @@ class _InfoCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -1012,7 +1018,6 @@ class _TagPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w600,
             ),
       ),
@@ -1151,9 +1156,9 @@ class _FullscreenProductGalleryPageState
                       fit: BoxFit.contain,
                       placeholder: (context, url) => const SizedBox.shrink(),
                       errorWidget: (context, url, error) {
-                        return const Icon(
+                        return Icon(
                           Icons.broken_image_outlined,
-                          color: Colors.white70,
+                          color: context.brand.textInverse.withOpacity(0.7),
                           size: 56,
                         );
                       },
@@ -1167,7 +1172,11 @@ class _FullscreenProductGalleryPageState
               right: 8,
               child: IconButton(
                 onPressed: () => Navigator.pop(context, _currentIndex),
-                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                icon: Icon(
+                  Icons.close,
+                  color: context.brand.textInverse,
+                  size: 30,
+                ),
               ),
             ),
             if (widget.imagePaths.length > 1)
@@ -1186,8 +1195,8 @@ class _FullscreenProductGalleryPageState
                       height: 8,
                       decoration: BoxDecoration(
                         color: _currentIndex == index
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.35),
+                            ? context.brand.textInverse
+                            : context.brand.textInverse.withOpacity(0.35),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),

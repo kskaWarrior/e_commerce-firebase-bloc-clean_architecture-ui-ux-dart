@@ -1,0 +1,10 @@
+# Copy to android/key.properties (gitignored) and fill in for local release
+# builds. Codemagic uses CM_KEYSTORE_* environment variables instead.
+#
+# Generate a per-brand upload keystore with:
+#   keytool -genkeypair -v -keystore upload-<brand>.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias upload
+storeFile=../upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME

@@ -5,9 +5,12 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/basic_reactive_button.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/signup.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +31,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
   final TextEditingController _addressController = TextEditingController();
 
   // Typewriter state for each field
-  final String _typewriterText = 'Type your Address';
+  String get _typewriterText => S.of(context).typeYourAddress;
 
   int _currentChar = 0;
   Timer? _typewriterTimer;
@@ -106,9 +109,15 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
-      appBar: const MyAppBar(
-        title: 'Signing Up',
+      appBar: MyAppBar(
+        title: S.of(context).signingUp,
         hideBack: false,
       ),
       resizeToAvoidBottomInset: true,
@@ -120,14 +129,14 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error),
-                  backgroundColor: Colors.red,
+                  backgroundColor: context.brand.danger,
                 ),
               );
             } else if (state is SuccessState) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.brand.success,
                 ),
               );
               // Navigate to SigninPage on success
@@ -154,13 +163,13 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 40.0),
+                      Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 40.0),
                         child: Text(
                           textAlign: TextAlign.center,
-                              '2. Just one step away from the best offers!',
-                          style: TextStyle(
-                            fontFamily: 'CircularStd',
+                              S.of(context).oneStepAway,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -176,13 +185,12 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                         ),
                       ),
                       const SizedBox(height: 40),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32.0),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: Text(
                           textAlign: TextAlign.center,
-                          'What gender of products are you most interested in?',
-                          style: TextStyle(
-                            fontFamily: 'CircularStd',
+                          S.of(context).whatGenderInterested,
+                          style: const TextStyle(
                             fontStyle: FontStyle.italic,
                             fontSize: 18,
                             fontWeight: FontWeight.w400,
@@ -206,9 +214,8 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                                 Theme.of(context).colorScheme.primary,
                             labelStyle: TextStyle(
                               color: _selectedGender == 'Male'
-                                  ? Colors.white
+                                  ? context.brand.textInverse
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontFamily: 'CircularStd',
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -224,9 +231,8 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                                 Theme.of(context).colorScheme.primary,
                             labelStyle: TextStyle(
                               color: _selectedGender == 'Female'
-                                  ? Colors.white
+                                  ? context.brand.textInverse
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontFamily: 'CircularStd',
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -242,9 +248,8 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                                 Theme.of(context).colorScheme.primary,
                             labelStyle: TextStyle(
                               color: _selectedGender == 'Both'
-                                  ? Colors.white
+                                  ? context.brand.textInverse
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontFamily: 'CircularStd',
                             ),
                           ),
                         ],
@@ -258,10 +263,10 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 16, horizontal: 20),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.brand.surfaceBright,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.grey.shade300,
+                              color: context.brand.mutedSoft,
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -273,25 +278,24 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.cake_outlined,
-                                  color: Colors.grey),
+                              Icon(Icons.cake_outlined,
+                                  color: context.brand.muted),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _selectedDate == null
-                                      ? 'Select your birth date'
+                                      ? S.of(context).selectYourBirthDate
                                       : '${_selectedDate!.day.toString().padLeft(2, '0')}/'
                                           '${_selectedDate!.month.toString().padLeft(2, '0')}/'
                                           '${_selectedDate!.year}',
                                   style: const TextStyle(
-                                    fontFamily: 'CircularStd',
                                     fontSize: 16,
                                     color: Colors.black87,
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.arrow_drop_down,
-                                  color: Colors.grey),
+                              Icon(Icons.arrow_drop_down,
+                                  color: context.brand.muted),
                             ],
                           ),
                         ),
@@ -307,17 +311,16 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                           child: TextField(
                             controller: _addressController,
                             style: const TextStyle(
-                              fontFamily: 'CircularStd',
                               fontSize: 16,
                             ),
                             decoration: InputDecoration(
                               hintText: _displayedAddress.isEmpty
-                                  ? 'Type your Address'
+                                  ? S.of(context).typeYourAddress
                                   : _displayedAddress,
                               prefixIcon:
                                   const Icon(Icons.location_on_outlined),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: context.brand.surfaceBright,
                               contentPadding: const EdgeInsets.symmetric(
                                   vertical: 20, horizontal: 16),
                               border: OutlineInputBorder(
@@ -334,15 +337,17 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                             return SizedBox(
                               width: formWidth,
                               child: BasicReactiveButton(
-                                  text: 'Sign Up',
+                                  text: S.of(context).signUpButton,
                                   onPressed: () {
                                     if (_addressController.text.isEmpty) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content: Text(
-                                              'Please enter your address.'),
-                                          backgroundColor: Colors.red,
+                                          content: Text(S
+                                              .of(context)
+                                              .pleaseEnterAddress),
+                                          backgroundColor:
+                                              context.brand.danger,
                                         ),
                                       );
                                       return;
@@ -352,11 +357,12 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
                                         !_isAtLeastMinimumAge(_selectedDate!)) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
+                                        SnackBar(
                                           content: Text(
-                                            'You must be at least 12 years old to create an account.',
+                                            S.of(context).mustBeAtLeastTwelve,
                                           ),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor:
+                                              context.brand.danger,
                                         ),
                                       );
                                       return;

@@ -1,11 +1,11 @@
 {
-    "name": "e_commerce_app_with_firebase_bloc_clean_architecture",
-    "short_name": "e_commerce_app_with_firebase_bloc_clean_architecture",
+    "name": "BuyBuy",
+    "short_name": "BuyBuy",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFF9F0",
+    "theme_color": "#FEBD2E",
+    "description": "BuyBuy online store",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

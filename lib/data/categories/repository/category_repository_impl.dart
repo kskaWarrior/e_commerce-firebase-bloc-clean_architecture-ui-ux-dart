@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/models/categories_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/source/category_firebase_service.dart';
@@ -27,5 +29,22 @@ class CategoryRepositoryImpl extends CategoryRepository{
         );
       },
     );
+  }
+
+  @override
+  Future<Either> upsertCategory(Map<String, dynamic> category) async {
+    return await sl<CategoryFirebaseService>().upsertCategory(category);
+  }
+
+  @override
+  Future<Either> deleteCategory(String categoryId) async {
+    return await sl<CategoryFirebaseService>().deleteCategory(categoryId);
+  }
+
+  @override
+  Future<Either> uploadCategoryImage(
+      Uint8List bytes, String contentType, String fileName) async {
+    return await sl<CategoryFirebaseService>()
+        .uploadCategoryImage(bytes, contentType, fileName);
   }
 }

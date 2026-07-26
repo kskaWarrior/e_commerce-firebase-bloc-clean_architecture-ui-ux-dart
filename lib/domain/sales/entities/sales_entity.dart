@@ -15,6 +15,9 @@ class SalesEntity {
   final String userId;
   final String userName;
 
+  /// Order lifecycle: pending | paid | shipped | delivered | cancelled.
+  final String status;
+
   SalesEntity({
     required this.createdDate,
     required this.discountedPrice,
@@ -29,5 +32,6 @@ class SalesEntity {
     required this.userGender,
     required this.userId,
     required this.userName,
+    this.status = 'pending',
   });
 }

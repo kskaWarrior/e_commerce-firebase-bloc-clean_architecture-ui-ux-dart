@@ -19,7 +19,7 @@ workflows:
       vars:
         FLUTTER_TARGET: "integration_test/main_features_flow_test.dart"
         FIREBASE_PROJECT_ID: "ecommerceapp-auth-db-cleana"
-        FIREBASE_ANDROID_APP_ID: "1:502375403738:android:6bfa6cf220acdf4aba15e3"
+        FIREBASE_ANDROID_APP_ID: "1:502375403738:android:516a5cc31d31f9d3ba15e3"
         FIREBASE_TESTER_GROUPS: "testers"
         FTL_DEVICE_MODEL: "redfin"
         FTL_DEVICE_VERSION: "30"
@@ -35,9 +35,23 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Activate brand
+        script: |
+          dart run tool/activate_brand.dart buybuy
+
       - name: Static analysis
         script: |
           flutter analyze
+
+      - name: Brand-token tripwire (no hardcoded colors in presentation)
+        script: |
+          set -euo pipefail
+          MATCHES=$(grep -rnE "Colors\.(red|green|blue|orange|purple|pink|brown|yellow|deepPurple|grey)\b|Color\(0x|Color\.fromARGB" lib/presentation lib/common --include="*.dart" --exclude-dir=admin             | grep -v "// tripwire-allow" || true)
+          if [ -n "$MATCHES" ]; then
+            echo "Hardcoded colors found - use context.brand tokens instead:"
+            echo "$MATCHES"
+            exit 1
+          fi
 
       - name: Unit and widget tests
         script: |
@@ -47,7 +61,9 @@ workflows:
         script: |
           set -euo pipefail
 
-          flutter build apk --debug --target=$FLUTTER_TARGET
+          flutter build apk --debug --target=$FLUTTER_TARGET \
+            --flavor buybuy \
+            --dart-define-from-file=brands/buybuy/brand.json
 
           cd android
           ./gradlew app:assembleAndroidTest -Ptarget=$FLUTTER_TARGET
@@ -192,7 +208,9 @@ workflows:
 
       - name: Build release APK for Firebase App Distribution
         script: |
-          flutter build apk --release
+          flutter build apk --release \
+            --flavor buybuy \
+            --dart-define-from-file=brands/buybuy/brand.json
 
       - name: Install Firebase CLI
         script: |
@@ -201,7 +219,7 @@ workflows:
 
       - name: Distribute Android release to Firebase App Distribution
         script: |
-          RELEASE_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-release.apk"
+          RELEASE_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-buybuy-release.apk"
           KEY_FILE="$CM_BUILD_DIR/gcloud-key.json"
 
           if [ -z "$GCLOUD_KEY_FILE" ]; then
@@ -267,9 +285,23 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Activate brand
+        script: |
+          dart run tool/activate_brand.dart buybuy
+
       - name: Static analysis
         script: |
           flutter analyze
+
+      - name: Brand-token tripwire (no hardcoded colors in presentation)
+        script: |
+          set -euo pipefail
+          MATCHES=$(grep -rnE "Colors\.(red|green|blue|orange|purple|pink|brown|yellow|deepPurple|grey)\b|Color\(0x|Color\.fromARGB" lib/presentation lib/common --include="*.dart" --exclude-dir=admin             | grep -v "// tripwire-allow" || true)
+          if [ -n "$MATCHES" ]; then
+            echo "Hardcoded colors found - use context.brand tokens instead:"
+            echo "$MATCHES"
+            exit 1
+          fi
 
       - name: Unit and widget tests
         script: |
@@ -303,7 +335,8 @@ workflows:
             --simulator \
             --debug \
             --no-codesign \
-            --target=$FLUTTER_TARGET
+            --target=$FLUTTER_TARGET \
+            --dart-define-from-file=brands/buybuy/brand.json
 
       - name: Boot iOS simulator
         script: |
@@ -371,6 +404,7 @@ workflows:
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=$FLUTTER_TARGET \
+            --dart-define-from-file=brands/buybuy/brand.json \
             -d "$SIMULATOR_UDID" \
             --no-dds \
             --verbose 2>&1 | tee "$LOG_FILE"
@@ -388,3 +422,94 @@ workflows:
       - build/ios/**/*.xcresult
       - coverage/lcov.info
       - flutter_drive_ios.log
+
+  android_brand_release:
+    name: Android brand release (parameterized)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    # Run manually from the Codemagic UI: pick this workflow and attach the
+    # customer's env group brand_<brand> (defines BRAND, CM_KEYSTORE,
+    # CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD,
+    # FIREBASE_ANDROID_APP_ID, FIREBASE_TESTER_GROUPS).
+
+    environment:
+      flutter: 3.24.5
+      groups:
+        - firebase_credentials
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
+
+    scripts:
+      - name: Validate brand parameters
+        script: |
+          set -euo pipefail
+          for var in BRAND CM_KEYSTORE CM_KEYSTORE_PASSWORD CM_KEY_ALIAS CM_KEY_PASSWORD FIREBASE_ANDROID_APP_ID; do
+            if [ -z "$(eval echo \${$var:-})" ]; then
+              echo "$var is not set - attach the brand_<brand> env group."
+              exit 1
+            fi
+          done
+          if [ ! -f "brands/$BRAND/brand.json" ]; then
+            echo "Unknown brand: $BRAND (no brands/$BRAND/brand.json)"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        script: |
+          flutter pub get
+
+      - name: Activate brand
+        script: |
+          dart run tool/activate_brand.dart $BRAND
+
+      - name: Decode release keystore
+        script: |
+          set -euo pipefail
+          echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/upload-keystore.jks"
+          echo "CM_KEYSTORE_PATH=$CM_BUILD_DIR/upload-keystore.jks" >> $CM_ENV
+
+      - name: Build signed release APK
+        script: |
+          flutter build apk --release \
+            --flavor $BRAND \
+            --dart-define-from-file=brands/$BRAND/brand.json
+
+      - name: Install Firebase CLI
+        script: |
+          curl -sL https://firebase.tools | bash
+          firebase --version
+
+      - name: Distribute to Firebase App Distribution
+        script: |
+          set -euo pipefail
+          RELEASE_APK="$CM_BUILD_DIR/build/app/outputs/flutter-apk/app-$BRAND-release.apk"
+          KEY_FILE="$CM_BUILD_DIR/gcloud-key.json"
+
+          if [ -z "$GCLOUD_KEY_FILE" ]; then
+            echo "GCLOUD_KEY_FILE is not set. It must come from the firebase_credentials group."
+            exit 1
+          fi
+          echo "$GCLOUD_KEY_FILE" | base64 --decode > "$KEY_FILE" 2>/dev/null || echo "$GCLOUD_KEY_FILE" | base64 -D > "$KEY_FILE"
+
+          if [ ! -f "$RELEASE_APK" ]; then
+            echo "Missing release APK: $RELEASE_APK"
+            exit 1
+          fi
+
+          RELEASE_NOTES="$(git log -1 --pretty=%B 2>/dev/null | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')"
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="${CM_COMMIT_MESSAGE:-Automated build from Codemagic}"
+          fi
+
+          export GOOGLE_APPLICATION_CREDENTIALS="$KEY_FILE"
+          firebase appdistribution:distribute "$RELEASE_APK" \
+            --app "$FIREBASE_ANDROID_APP_ID" \
+            --groups "${FIREBASE_TESTER_GROUPS:-testers}" \
+            --release-notes "$RELEASE_NOTES"
+
+    artifacts:
+      - build/app/outputs/**/*.apk

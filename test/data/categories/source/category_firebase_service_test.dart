@@ -1,11 +1,12 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/categories/source/category_firebase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/test_tenant.dart';
 
 void main() {
   late CategoryFirebaseServiceImpl service;
 
   setUp(() {
-    service = CategoryFirebaseServiceImpl();
+    service = CategoryFirebaseServiceImpl(unavailableTenantCollections());
   });
 
   test('getCategories returns Left when Firestore is unavailable', () async {

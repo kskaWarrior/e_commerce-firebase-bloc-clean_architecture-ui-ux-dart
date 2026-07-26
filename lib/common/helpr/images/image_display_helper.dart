@@ -2,16 +2,25 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/consta
 
 class ImageDisplayHelper {
 
+  /// New docs (admin-managed) store full download URLs; legacy demo docs
+  /// store bare filenames resolved against the old global Storage folders.
+  static bool _isFullUrl(String value) =>
+      value.startsWith('http://') || value.startsWith('https://');
+
   static String generateCategoryImagePath(String title) {
-    return AppUrls.categoryImage + 
-           //Uri.encodeComponent(title) + 
+    if (_isFullUrl(title)) {
+      return title;
+    }
+    return AppUrls.categoryImage +
            title +
            AppUrls.alt;
   }
 
   static String generateProductImagePath(String title) {
-    return AppUrls.productImage + 
-           //Uri.encodeComponent(title) + 
+    if (_isFullUrl(title)) {
+      return title;
+    }
+    return AppUrls.productImage +
            title +
            AppUrls.alt;
   }

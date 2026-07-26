@@ -1,5 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/page/home.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
@@ -23,7 +24,7 @@ class SplashPage extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 55, 45, 30),
+        backgroundColor: context.brand.splashBackground,
         body: Center(
           child: Image.asset(
             AppImages.appLogo,

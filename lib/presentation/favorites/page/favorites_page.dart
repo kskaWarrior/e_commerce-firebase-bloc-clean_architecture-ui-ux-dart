@@ -1,4 +1,6 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
@@ -10,9 +12,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_favorites_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,6 +27,11 @@ class FavoritesPage extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
+    // Web gets the storefront experience; the mobile layout stays as-is.
+    if (kIsWeb) {
+      return WebFavoritesPage(userIdOverride: userIdOverride);
+    }
+
     final userId = userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
 		return MultiBlocProvider(
@@ -46,9 +55,8 @@ class FavoritesPage extends StatelessWidget {
 			child: Scaffold(
 				appBar: AppBar(
 					title: Text(
-						'My Favorites',
+						S.of(context).myFavorites,
 						style: Theme.of(context).textTheme.titleLarge?.copyWith(
-									fontFamily: 'CircularStd',
 									fontWeight: FontWeight.w700,
 								),
 					),
@@ -118,7 +126,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 								..showSnackBar(
 									SnackBar(
 										content: Text(state.message),
-										backgroundColor: Colors.red,
+										backgroundColor: context.brand.danger,
 									),
 								);
 						}
@@ -132,7 +140,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 								..showSnackBar(
 									SnackBar(
 										content: Text(state.message),
-										backgroundColor: Colors.red,
+										backgroundColor: context.brand.danger,
 									),
 								);
 						}
@@ -146,7 +154,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 								..showSnackBar(
 									SnackBar(
 										content: Text(state.message),
-										backgroundColor: Colors.red,
+										backgroundColor: context.brand.danger,
 									),
 								);
 						}
@@ -161,7 +169,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 
 					if (favoritesState is FavoritesError && _cachedFavorites.isEmpty) {
 						return _CenteredStateView(
-							title: 'Could not load favorites',
+							title: S.of(context).couldNotLoadFavorites,
 							body: favoritesState.message,
 							icon: Icons.error_outline,
 						);
@@ -209,10 +217,10 @@ class _FavoritesViewState extends State<_FavoritesView> {
 
 									if (favoriteProducts.isEmpty && favorites.isNotEmpty) {
 										return _CenteredStateView(
-											title: 'Favorites unavailable',
+											title: S.of(context).favoritesUnavailableTitle,
 											body: missingCount > 0
-													? 'We found your favorites, but product details are unavailable right now.'
-													: 'No favorite products available.',
+													? S.of(context).favoritesFoundButUnavailable
+													: S.of(context).noFavoriteProductsAvailable,
 											icon: Icons.hourglass_empty,
 										);
 									}
@@ -229,7 +237,7 @@ class _FavoritesViewState extends State<_FavoritesView> {
 											children: [
 												if (favorites.isEmpty) ...[
 													_InfoCard(
-														title: 'No favorites yet',
+														title: S.of(context).noFavoritesYet,
 														centerContent: true,
 														child: Column(
 															mainAxisSize: MainAxisSize.min,
@@ -240,8 +248,8 @@ class _FavoritesViewState extends State<_FavoritesView> {
 																	color: Theme.of(context).colorScheme.primary,
 																),
 																const SizedBox(height: 8),
-																const Text(
-																	'Tap the heart icon in product lists to save favorites.',
+																Text(
+																	S.of(context).favoritesEmptyHint,
 																	textAlign: TextAlign.center,
 																),
 															],
@@ -253,19 +261,24 @@ class _FavoritesViewState extends State<_FavoritesView> {
 														spacing: 8,
 														runSpacing: 8,
 														children: [
-															_TagPill(label: 'Favorites count: ${favorites.length}'),
+															_TagPill(
+																	label: S
+																			.of(context)
+																			.favoritesCount(favorites.length)),
 															if (missingCount > 0)
-																_TagPill(label: 'Unavailable: $missingCount'),
+																_TagPill(
+																		label: S
+																				.of(context)
+																				.unavailableCount(missingCount)),
 														],
 													),
 													const SizedBox(height: 10),
 													Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: Text(
-                              'My Favorites',
+                              S.of(context).myFavorites,
                               style:
                                   Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontFamily: 'CircularStd',
                                       fontWeight: FontWeight.w700,
                                       color: Theme.of(context)
                                         .colorScheme
@@ -372,12 +385,11 @@ class _FavoritesViewState extends State<_FavoritesView> {
 																	},
 																	icon: const Icon(Icons.home_outlined),
 																	label: Text(
-																		'Return to home',
+																		S.of(context).returnToHome,
 																		style: Theme.of(context)
 																			.textTheme
 																			.titleMedium
 																			?.copyWith(
-																				fontFamily: 'CircularStd',
 																				fontWeight: FontWeight.w700,
 																			),
 																	),
@@ -401,9 +413,11 @@ class _FavoritesViewState extends State<_FavoritesView> {
 												if (missingCount > 0) ...[
 													const SizedBox(height: 12),
 													_InfoCard(
-														title: 'Note',
+														title: S.of(context).note,
 														child: Text(
-															'$missingCount favorite item(s) could not be shown because full product data is currently unavailable.',
+															S
+																	.of(context)
+																	.favoritesCouldNotBeShown(missingCount),
 															style: Theme.of(context).textTheme.bodyMedium,
 														),
 													),
@@ -426,9 +440,9 @@ class _AuthRequiredView extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		return const _CenteredStateView(
-			title: 'Please sign in',
-			body: 'Sign in to view your favorite products.',
+		return _CenteredStateView(
+			title: S.of(context).pleaseSignIn,
+			body: S.of(context).signInToViewFavorites,
 			icon: Icons.lock_outline,
 		);
 	}
@@ -497,9 +511,7 @@ class _CenteredInfoCard extends StatelessWidget {
 								Text(
 									body,
 									textAlign: TextAlign.center,
-									style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-												fontFamily: 'CircularStd',
-											),
+									style: Theme.of(context).textTheme.bodyLarge,
 								),
 							],
 						),
@@ -532,7 +544,7 @@ class _InfoCard extends StatelessWidget {
 			margin: margin,
 			padding: const EdgeInsets.all(14),
 			decoration: BoxDecoration(
-				color: Colors.white.withOpacity(0.6),
+				color: context.brand.surfaceBright.withOpacity(0.6),
 				borderRadius: BorderRadius.circular(18),
 				border: Border.all(
 					color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -549,7 +561,6 @@ class _InfoCard extends StatelessWidget {
 							textAlign:
 									centerContent ? TextAlign.center : TextAlign.start,
 							style: Theme.of(context).textTheme.titleMedium?.copyWith(
-										fontFamily: 'CircularStd',
 										fontWeight: FontWeight.w700,
 									),
 						),
@@ -577,7 +588,6 @@ class _TagPill extends StatelessWidget {
 			child: Text(
 				label,
 				style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-							fontFamily: 'CircularStd',
 							fontWeight: FontWeight.w600,
 						),
 			),

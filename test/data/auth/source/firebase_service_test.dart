@@ -5,12 +5,13 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/m
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/source/firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/test_tenant.dart';
 
 void main() {
   late FirebaseServiceImpl service;
 
   setUp(() {
-    service = FirebaseServiceImpl();
+    service = FirebaseServiceImpl(unavailableTenantCollections());
   });
 
   test('signIn returns Left when Firebase is unavailable in tests', () async {

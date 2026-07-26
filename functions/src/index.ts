@@ -9,9 +9,13 @@
 
 import {setGlobalOptions} from "firebase-functions";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {HttpsError, onCall} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {BigQuery} from "@google-cloud/bigquery";
-import { randomUUID } from "crypto";
+import {randomUUID} from "crypto";
+import * as admin from "firebase-admin";
+
+admin.initializeApp();
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -141,50 +145,52 @@ const salesProductsBigQueryTarget = parseBigQueryTarget(
 const bigQueryClient = new BigQuery({projectId: bigQueryTarget.projectId});
 
 const salesSchema: BigQuerySchemaField[] = [
-  { name: "id", type: "STRING" },
-  { name: "userId", type: "STRING" },
-  { name: "userName", type: "STRING" },
-  { name: "userGender", type: "STRING" },
-  { name: "products", type: "JSON" },
-  { name: "createdDate", type: "TIMESTAMP" },
-  { name: "price", type: "FLOAT" },
-  { name: "discountedPrice", type: "FLOAT" },
-  { name: "paymentMethod", type: "STRING" },
-  { name: "installmentsNumber", type: "INTEGER" },
-  { name: "freight", type: "FLOAT" },
-  { name: "totalPrice", type: "FLOAT" },
-  { name: "discount", type: "FLOAT" },
-  { name: "userBirthDate", type: "TIMESTAMP" },
-  { name: "exportEventId", type: "STRING" },
-  { name: "saleDocumentId", type: "STRING" },
-  { name: "exportedAt", type: "STRING" },
-  { name: "firestoreCollection", type: "STRING" },
-  { name: "payload", type: "JSON" },
+  {name: "id", type: "STRING"},
+  {name: "storeId", type: "STRING"},
+  {name: "userId", type: "STRING"},
+  {name: "userName", type: "STRING"},
+  {name: "userGender", type: "STRING"},
+  {name: "products", type: "JSON"},
+  {name: "createdDate", type: "TIMESTAMP"},
+  {name: "price", type: "FLOAT"},
+  {name: "discountedPrice", type: "FLOAT"},
+  {name: "paymentMethod", type: "STRING"},
+  {name: "installmentsNumber", type: "INTEGER"},
+  {name: "freight", type: "FLOAT"},
+  {name: "totalPrice", type: "FLOAT"},
+  {name: "discount", type: "FLOAT"},
+  {name: "userBirthDate", type: "TIMESTAMP"},
+  {name: "exportEventId", type: "STRING"},
+  {name: "saleDocumentId", type: "STRING"},
+  {name: "exportedAt", type: "STRING"},
+  {name: "firestoreCollection", type: "STRING"},
+  {name: "payload", type: "JSON"},
 ];
 
 const salesProductsSchema: BigQuerySchemaField[] = [
-  { name: "id", type: "STRING" },
-  { name: "orderId", type: "STRING" },
-  { name: "salesId", type: "STRING" },
-  { name: "saleDocumentId", type: "STRING" },
-  { name: "productId", type: "STRING" },
-  { name: "title", type: "STRING" },
-  { name: "categoryName", type: "STRING" },
-  { name: "color", type: "STRING" },
-  { name: "colorHex", type: "STRING" },
-  { name: "size", type: "STRING" },
-  { name: "quantity", type: "FLOAT" },
-  { name: "unitPrice", type: "FLOAT" },
-  { name: "unitDiscounted", type: "FLOAT" },
-  { name: "totalPrice", type: "FLOAT" },
-  { name: "productIndex", type: "INTEGER" },
-  { name: "createdDate", type: "TIMESTAMP" },
-  { name: "userId", type: "STRING" },
-  { name: "userName", type: "STRING" },
-  { name: "exportedAt", type: "STRING" },
-  { name: "exportEventId", type: "STRING" },
-  { name: "firestoreCollection", type: "STRING" },
-  { name: "payload", type: "JSON" },
+  {name: "id", type: "STRING"},
+  {name: "storeId", type: "STRING"},
+  {name: "orderId", type: "STRING"},
+  {name: "salesId", type: "STRING"},
+  {name: "saleDocumentId", type: "STRING"},
+  {name: "productId", type: "STRING"},
+  {name: "title", type: "STRING"},
+  {name: "categoryName", type: "STRING"},
+  {name: "color", type: "STRING"},
+  {name: "colorHex", type: "STRING"},
+  {name: "size", type: "STRING"},
+  {name: "quantity", type: "FLOAT"},
+  {name: "unitPrice", type: "FLOAT"},
+  {name: "unitDiscounted", type: "FLOAT"},
+  {name: "totalPrice", type: "FLOAT"},
+  {name: "productIndex", type: "INTEGER"},
+  {name: "createdDate", type: "TIMESTAMP"},
+  {name: "userId", type: "STRING"},
+  {name: "userName", type: "STRING"},
+  {name: "exportedAt", type: "STRING"},
+  {name: "exportEventId", type: "STRING"},
+  {name: "firestoreCollection", type: "STRING"},
+  {name: "payload", type: "JSON"},
 ];
 
 /**
@@ -223,7 +229,7 @@ async function ensureBigQueryTableExists(
     return;
   }
 
-  await dataset.createTable(target.tableId, { schema });
+  await dataset.createTable(target.tableId, {schema});
   logger.warn("BigQuery table was missing and has been created", {
     datasetId: target.datasetId,
     tableId: target.tableId,
@@ -246,7 +252,7 @@ async function insertRowsWithAutoCreate(
     await bigQueryClient
       .dataset(target.datasetId)
       .table(target.tableId)
-      .insert(rows, { ignoreUnknownValues: true });
+      .insert(rows, {ignoreUnknownValues: true});
   };
 
   try {
@@ -263,7 +269,7 @@ async function insertRowsWithAutoCreate(
 
 export const exportSaleToBigQuery = onDocumentCreated(
   {
-    document: "sales/{saleId}",
+    document: "stores/{storeId}/sales/{saleId}",
     region: REGION,
   },
   async (event) => {
@@ -286,8 +292,9 @@ export const exportSaleToBigQuery = onDocumentCreated(
     const saleRow = {
       exportEventId: event.id,
       saleDocumentId: event.params.saleId,
+      storeId: event.params.storeId,
       exportedAt: new Date().toISOString(),
-      firestoreCollection: "sales",
+      firestoreCollection: `stores/${event.params.storeId}/sales`,
       createdDate: saleFields.createdDate,
       discountedPrice,
       freight: toNumberOrNull(saleFields.freight),
@@ -311,6 +318,7 @@ export const exportSaleToBigQuery = onDocumentCreated(
 
       logger.info("Sale exported to BigQuery", {
         saleDocumentId: event.params.saleId,
+        storeId: event.params.storeId,
         datasetId: bigQueryTarget.datasetId,
         tableId: bigQueryTarget.tableId,
         region: REGION,
@@ -329,7 +337,7 @@ export const exportSaleToBigQuery = onDocumentCreated(
 
 export const exportSaleProductsToBigQuery = onDocumentCreated(
   {
-    document: "sales/{saleId}",
+    document: "stores/{storeId}/sales/{saleId}",
     region: REGION,
   },
   async (event) => {
@@ -362,6 +370,7 @@ export const exportSaleProductsToBigQuery = onDocumentCreated(
 
       return {
         id: randomUUID(),
+        storeId: event.params.storeId,
         orderId,
         salesId: orderId,
         saleDocumentId: event.params.saleId,
@@ -381,7 +390,7 @@ export const exportSaleProductsToBigQuery = onDocumentCreated(
         userName: saleFields.userName,
         exportedAt: new Date().toISOString(),
         exportEventId: event.id,
-        firestoreCollection: "sales",
+        firestoreCollection: `stores/${event.params.storeId}/sales`,
         payload: product,
       };
     });
@@ -411,6 +420,51 @@ export const exportSaleProductsToBigQuery = onDocumentCreated(
       throw error;
     }
   }
+);
+
+type SetStoreOwnerRequest = {
+  uid?: string;
+  storeId?: string;
+};
+
+/**
+ * Grants a user the store-owner role for one store.
+ *
+ * Callable only by the platform owner (custom claim role: 'super', which is
+ * bootstrapped once via functions/scripts/bootstrapSuperAdmin.ts). Sets the
+ * custom claims {role: 'owner', storeId} on the target user and stamps
+ * ownerUid on the store document.
+ */
+export const setStoreOwner = onCall(
+  {region: REGION},
+  async (request) => {
+    if (request.auth?.token?.role !== "super") {
+      throw new HttpsError(
+        "permission-denied",
+        "Only the platform owner can assign store owners.",
+      );
+    }
+
+    const {uid, storeId} = (request.data ?? {}) as SetStoreOwnerRequest;
+    if (!uid || !storeId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Both uid and storeId are required.",
+      );
+    }
+
+    const storeRef = admin.firestore().doc(`stores/${storeId}`);
+    const storeDoc = await storeRef.get();
+    if (!storeDoc.exists) {
+      throw new HttpsError("not-found", `Store ${storeId} does not exist.`);
+    }
+
+    await admin.auth().setCustomUserClaims(uid, {role: "owner", storeId});
+    await storeRef.set({ownerUid: uid}, {merge: true});
+
+    logger.info("Store owner assigned", {uid, storeId});
+    return {ok: true, uid, storeId};
+  },
 );
 
 // export const helloWorld = onRequest((request, response) => {

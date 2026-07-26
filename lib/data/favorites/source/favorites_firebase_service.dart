@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/tenant_collections.dart';
 
 abstract class FavoritesFirebaseService {
   Future<Either> getFavoritesByUserId(String userId);
@@ -8,11 +8,14 @@ abstract class FavoritesFirebaseService {
 }
 
 class FavoritesFirebaseServiceImpl implements FavoritesFirebaseService {
+  FavoritesFirebaseServiceImpl(this._tenant);
+
+  final TenantCollections _tenant;
+
   @override
   Future<Either> getFavoritesByUserId(String userId) async {
     try {
-      final data = await FirebaseFirestore.instance
-          .collection('favorites')
+      final data = await _tenant.favorites
           .where('userId', isEqualTo: userId)
           .get();
 
@@ -25,7 +28,7 @@ class FavoritesFirebaseServiceImpl implements FavoritesFirebaseService {
   @override
   Future<Either> registerFavorite(Map<String, dynamic> favorite) async {
     try {
-      final collection = FirebaseFirestore.instance.collection('favorites');
+      final collection = _tenant.favorites;
       final favoriteId = (favorite['id'] as String?)?.trim();
 
       if (favoriteId == null || favoriteId.isEmpty) {
@@ -44,8 +47,7 @@ class FavoritesFirebaseServiceImpl implements FavoritesFirebaseService {
   @override
   Future<Either> deleteFavorite(String userId, String productId) async {
     try {
-      final query = await FirebaseFirestore.instance
-          .collection('favorites')
+      final query = await _tenant.favorites
           .where('userId', isEqualTo: userId)
           .where('productId', isEqualTo: productId)
           .get();

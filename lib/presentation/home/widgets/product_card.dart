@@ -1,4 +1,5 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class ProductCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        color: const Color.fromARGB(255, 10, 32, 53),
+        color: context.brand.iconStrong,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
@@ -57,12 +58,13 @@ class ProductCard extends StatelessWidget {
                             height: 232,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => _imagePlaceholder(),
+                            placeholder: (context, url) =>
+                                _imagePlaceholder(context),
                             errorWidget: (context, url, error) {
-                              return _imagePlaceholder();
+                              return _imagePlaceholder(context);
                             },
                           )
-                        : _imagePlaceholder(),
+                        : _imagePlaceholder(context),
                   ),
                   Positioned(
                     right: 2,
@@ -83,7 +85,7 @@ class ProductCard extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Icon(
                             isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: Colors.red,
+                            color: context.brand.danger,
                             size: 22,
                           ),
                         ),
@@ -119,8 +121,9 @@ class ProductCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.4),
                                   shape: BoxShape.circle,
-                                  border:
-                                      Border.all(color: Colors.white, width: 1),
+                                  border: Border.all(
+                                      color: context.brand.textInverse,
+                                      width: 1),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -129,7 +132,7 @@ class ProductCard extends StatelessWidget {
                                       .textTheme
                                       .labelSmall
                                       ?.copyWith(
-                                        color: Colors.white,
+                                        color: context.brand.textInverse,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 10,
                                       ),
@@ -171,9 +174,9 @@ class ProductCard extends StatelessWidget {
                           decoration:
                               hasDiscount ? TextDecoration.lineThrough : null,
                           color: hasDiscount
-                              ? const Color.fromARGB(255, 255, 139, 139)
+                              ? context.brand.dangerSoft
                               : Theme.of(context).colorScheme.primary,
-                          decorationColor: Colors.white,
+                          decorationColor: context.brand.textInverse,
                           fontSize: infoFontSize,
                           fontWeight: FontWeight.w600,
                         ),
@@ -195,7 +198,7 @@ class ProductCard extends StatelessWidget {
                     Text(
                       '\$${product.discountedPrice.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.green,
+                            color: context.brand.success,
                             fontWeight: FontWeight.bold,
                             fontSize: infoFontSize,
                           ),
@@ -209,11 +212,11 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _imagePlaceholder(BuildContext context) {
     return Container(
       height: 232,
       width: double.infinity,
-      color: Colors.grey[300],
+      color: context.brand.mutedSoft,
       alignment: Alignment.center,
       child: const Icon(Icons.broken_image_outlined, size: 48),
     );
@@ -236,6 +239,6 @@ class ProductCard extends StatelessWidget {
       }
     }
 
-    return Colors.grey;
+    return Colors.grey; // tripwire-allow: product swatch data
   }
 }

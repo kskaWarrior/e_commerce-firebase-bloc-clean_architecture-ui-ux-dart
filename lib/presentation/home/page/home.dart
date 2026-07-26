@@ -26,9 +26,15 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/language_menu.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_home_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -106,10 +112,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
     }
 
     try {
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      final String fetchedImageUrl =
-          (userDoc.data()?['profileImageUrl'] as String? ?? '').trim();
+      final result = await sl<GetUserUseCase>().call(null);
+      final String fetchedImageUrl = result.fold(
+        (_) => '',
+        (user) => user.profileImageUrl.trim(),
+      );
 
       if (!mounted) {
         return;
@@ -149,9 +156,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
   }) async {
     if (userId == null || userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to add favorites.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: Text(S.of(context).pleaseSignInAddFavorites),
+          backgroundColor: context.brand.danger,
         ),
       );
       return;
@@ -210,9 +217,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Confirm logout',
+                  S.of(dialogContext).confirmLogoutTitle,
                   style: textTheme.titleMedium?.copyWith(
-                    fontFamily: 'CircularStd',
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -220,21 +226,20 @@ class _HomePageState extends State<HomePage> with RouteAware {
             ],
           ),
           content: Text(
-            'Are you sure you want to log out of your account?',
+            S.of(dialogContext).confirmLogoutBody,
             style: textTheme.bodyMedium?.copyWith(
-              fontFamily: 'CircularStd',
               height: 1.3,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
+              child: Text(S.of(dialogContext).cancel),
             ),
             FilledButton.icon(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               icon: const Icon(Icons.logout, size: 18),
-              label: const Text('Logout'),
+              label: Text(S.of(dialogContext).logout),
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.inversePrimary,
@@ -255,6 +260,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    // Web gets the storefront experience; the mobile layout stays as-is.
+    if (kIsWeb) {
+      return const WebHomePage();
+    }
+
     final userId = FirebaseAuth.instance.currentUser?.uid;
 
     return MultiBlocProvider(
@@ -289,7 +299,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
               }
@@ -301,7 +311,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
               }
@@ -313,7 +323,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
               }
@@ -325,7 +335,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.error),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
               } else if (state is SignOutSuccess) {
@@ -339,7 +349,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.brand.danger,
                   ),
                 );
               } else if (state is FavoritesRegisterSuccess) {
@@ -348,7 +358,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                   ..showSnackBar(
                     SnackBar(
                       content: Text(state.message),
-                      backgroundColor: Colors.green,
+                      backgroundColor: context.brand.success,
                     ),
                   );
               } else if (state is FavoritesDeleteSuccess) {
@@ -357,7 +367,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                   ..showSnackBar(
                     SnackBar(
                       content: Text(state.message),
-                      backgroundColor: Colors.green,
+                      backgroundColor: context.brand.success,
                     ),
                   );
               }
@@ -371,7 +381,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 .select((SignOutCubit cubit) => cubit.state is SignOutLoading);
             final currentUser = FirebaseAuth.instance.currentUser;
             final userDisplayName = (currentUser?.displayName ?? '').trim();
-            final userEmail = (currentUser?.email ?? 'Signed in user').trim();
+            final userEmail =
+                (currentUser?.email ?? S.of(context).signedInUser).trim();
 
             return Scaffold(
               key: _scaffoldKey,
@@ -451,7 +462,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                       .bodyLarge
                                       ?.copyWith(
                                         fontSize: 13,
-                                        fontFamily: 'CircularStd',
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
@@ -472,7 +482,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                     .textTheme
                                     .titleSmall
                                     ?.copyWith(
-                                      fontFamily: 'CircularStd',
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
@@ -487,7 +496,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                             children: [
                               _DrawerNavTile(
                                 icon: Icons.account_circle_outlined,
-                                label: 'My Profile',
+                                label: S.of(context).myProfile,
                                 onTap: () {
                                   Navigator.pop(context);
                                   AppNavigator.push(
@@ -496,7 +505,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                               ),
                               _DrawerNavTile(
                                 icon: Icons.favorite_border,
-                                label: 'Favorites',
+                                label: S.of(context).favorites,
                                 onTap: () {
                                   Navigator.pop(context);
                                   AppNavigator.push(
@@ -505,11 +514,19 @@ class _HomePageState extends State<HomePage> with RouteAware {
                               ),
                               _DrawerNavTile(
                                 icon: Icons.shopping_bag_outlined,
-                                label: 'My Purchases',
+                                label: S.of(context).myPurchases,
                                 onTap: () {
                                   Navigator.pop(context);
                                   AppNavigator.push(
                                       context, const MyPurchasesPage());
+                                },
+                              ),
+                              _DrawerNavTile(
+                                icon: Icons.language,
+                                label: S.of(context).language,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  showLanguagePicker(context);
                                 },
                               ),
                             ],
@@ -528,7 +545,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                         ),
                         _DrawerNavTile(
                           icon: Icons.logout,
-                          label: 'Logout',
+                          label: S.of(context).logout,
                           enabled: !isLoggingOut,
                           trailing: isLoggingOut
                               ? const SizedBox(
@@ -575,7 +592,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                 Padding(
                                   padding: const EdgeInsets.only(left: 6.0),
                                   child: Text(
-                                    'Search results',
+                                    S.of(context).searchResults,
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -618,8 +635,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                           return Center(
                                             child: Text(
                                               state.message,
-                                              style: const TextStyle(
-                                                  color: Colors.red),
+                                              style: TextStyle(
+                                                  color: context.brand.danger),
                                             ),
                                           );
                                         } else if (state
@@ -663,7 +680,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                 padding: const EdgeInsets.only(
                                     top: 5, left: 6.0, bottom: 10),
                                 child: Text(
-                                  'Categories',
+                                  S.of(context).categories,
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleMedium
@@ -694,13 +711,16 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                       child: Text(
                                         state.message,
                                         style:
-                                            const TextStyle(color: Colors.red),
+                                            TextStyle(
+                                                color: context.brand.danger),
                                       ),
                                     );
                                   } else if (state is CategoriesLoaded) {
                                     if (state.categories.isEmpty) {
-                                      return const Center(
-                                          child: Text('No categories found'));
+                                      return Center(
+                                          child: Text(S
+                                              .of(context)
+                                              .noCategoriesFound));
                                     }
                                     return CategoriesWidget(
                                       categories: state.categories,
@@ -725,7 +745,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          _selectedCategoryTitle ?? 'Category',
+                                          _selectedCategoryTitle ??
+                                              S.of(context).categoryFallback,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleMedium
@@ -758,7 +779,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                               .colorScheme
                                               .inversePrimary,
                                         ),
-                                        tooltip: 'Hide category',
+                                        tooltip: S.of(context).hideCategory,
                                         onPressed: () {
                                           setState(() {
                                             _selectedCategoryId = null;
@@ -791,8 +812,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                           return Center(
                                             child: Text(
                                               state.message,
-                                              style: const TextStyle(
-                                                  color: Colors.red),
+                                              style: TextStyle(
+                                                  color: context.brand.danger),
                                             ),
                                           );
                                         } else if (state
@@ -854,15 +875,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                         return Center(
                                           child: Text(
                                             state.message,
-                                            style: const TextStyle(
-                                                color: Colors.red),
+                                            style: TextStyle(
+                                                color: context.brand.danger),
                                           ),
                                         );
                                       } else if (state
                                           is ProductsDisplayLoaded) {
                                         if (state.products.isEmpty) {
-                                          return const Center(
-                                              child: Text('No products found'));
+                                          return Center(
+                                              child: Text(S
+                                                  .of(context)
+                                                  .noProductsFound));
                                         }
                                         return TopSellingCarousel(
                                           products: state.products,
@@ -919,16 +942,17 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                         return Center(
                                           child: Text(
                                             state.message,
-                                            style: const TextStyle(
-                                                color: Colors.red),
+                                            style: TextStyle(
+                                                color: context.brand.danger),
                                           ),
                                         );
                                       } else if (state
                                           is ProductsDisplayLoaded) {
                                         if (state.products.isEmpty) {
-                                          return const Center(
-                                              child: Text(
-                                                  'No new products found'));
+                                          return Center(
+                                              child: Text(S
+                                                  .of(context)
+                                                  .noNewProductsFound));
                                         }
                                         return NewInCarousel(
                                           products: state.products,
@@ -984,12 +1008,11 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                       },
                                       icon: const Icon(Icons.favorite_border),
                                       label: Text(
-                                        'Go to favorites',
+                                        S.of(context).goToFavorites,
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
                                             ?.copyWith(
-                                              fontFamily: 'CircularStd',
                                               fontWeight: FontWeight.w700,
                                             ),
                                       ),
@@ -1089,7 +1112,6 @@ class _DrawerNavTile extends StatelessWidget {
         title: Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontFamily: 'CircularStd',
                 fontWeight: FontWeight.w700,
               ),
         ),

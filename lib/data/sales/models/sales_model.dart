@@ -15,6 +15,7 @@ class SalesModel {
   final String userGender;
   final String userId;
   final String userName;
+  final String status;
 
   SalesModel({
     required this.createdDate,
@@ -30,6 +31,7 @@ class SalesModel {
     required this.userGender,
     required this.userId,
     required this.userName,
+    this.status = 'pending',
   });
 
   static double _toDouble(dynamic value, {double fallback = 0.0}) {
@@ -84,6 +86,7 @@ class SalesModel {
       userGender: (map['userGender'] ?? '').toString(),
       userId: (map['userId'] ?? '').toString(),
       userName: (map['userName'] ?? '').toString(),
+      status: (map['status'] ?? 'pending').toString(),
     );
   }
 
@@ -102,6 +105,7 @@ class SalesModel {
       userGender: entity.userGender,
       userId: entity.userId,
       userName: entity.userName,
+      status: entity.status,
     );
   }
 
@@ -120,6 +124,7 @@ class SalesModel {
       'userGender': userGender,
       'userId': userId,
       'userName': userName,
+      'status': status,
     };
   }
 }
@@ -140,6 +145,7 @@ extension SalesXModel on SalesModel {
       userGender: userGender,
       userId: userId,
       userName: userName,
+      status: status,
     );
   }
 }

@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuper() {
+      return signedIn() && request.auth.token.get('role', '') == 'super';
+    }
+
+    function isOwner(storeId) {
+      return signedIn()
+        && request.auth.token.get('role', '') == 'owner'
+        && request.auth.token.get('storeId', '') == storeId;
+    }
+
+    // Shopper profile images: only the account owner writes; any signed-in
+    // user may read (avatars).
+    match /profile/images/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Store assets (product/category images, branding): public read so the
+    // catalog renders pre-login; writes are owner/platform only.
+    match /stores/{storeId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(storeId) || isSuper();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

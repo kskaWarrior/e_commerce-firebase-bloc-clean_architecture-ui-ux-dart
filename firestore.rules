@@ -1,0 +1,103 @@
+rules_version = '2';
+
+// Multi-tenant isolation: all data lives under stores/{storeId}/... and
+// access is decided by path + custom claims.
+//   - shoppers: no claims; may only touch their own docs inside a store
+//   - store owner: token {role: 'owner', storeId: '<their store>'}
+//   - platform owner: token {role: 'super'}
+// Claims are set exclusively by Cloud Functions / Admin SDK (never client-side).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuper() {
+      return signedIn() && request.auth.token.get('role', '') == 'super';
+    }
+
+    function isOwner(storeId) {
+      return signedIn()
+        && request.auth.token.get('role', '') == 'owner'
+        && request.auth.token.get('storeId', '') == storeId;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /stores/{storeId} {
+      // Branding must be readable before login (splash/theming).
+      allow get: if true;
+      allow list: if isSuper();
+      allow create, delete: if isSuper();
+      // Owners may edit their branding/name; everything else is platform-managed.
+      allow update: if isSuper()
+        || (isOwner(storeId) && onlyChanges(['branding', 'name']));
+
+      match /products/{productId} {
+        allow read: if signedIn();
+        allow write: if isOwner(storeId) || isSuper();
+      }
+
+      match /categories/{categoryId} {
+        allow read: if signedIn();
+        allow write: if isOwner(storeId) || isSuper();
+      }
+
+      match /users/{uid} {
+        allow read, write: if isSelf(uid) || isOwner(storeId) || isSuper();
+      }
+
+      match /favorites/{favoriteId} {
+        allow read, delete: if signedIn()
+          && (resource.data.userId == request.auth.uid
+              || isOwner(storeId) || isSuper());
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid;
+        allow update: if signedIn()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid;
+      }
+
+      match /sales/{saleId} {
+        // Shoppers create their own orders, always starting as 'pending'
+        // and pinned to this store's path.
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.storeId == storeId;
+        allow read: if signedIn()
+          && (resource.data.userId == request.auth.uid
+              || isOwner(storeId) || isSuper());
+        // Order lifecycle is owner/platform-managed, and only the status
+        // field may change.
+        allow update: if (isOwner(storeId) || isSuper())
+          && onlyChanges(['status'])
+          && request.resource.data.status in
+              ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+        allow delete: if isSuper();
+      }
+
+      match /sales_products/{lineItemId} {
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.storeId == storeId;
+        allow read: if signedIn()
+          && (resource.data.userId == request.auth.uid
+              || isOwner(storeId) || isSuper());
+        allow update, delete: if isSuper();
+      }
+    }
+
+    // Default deny — including the legacy pre-migration global collections.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

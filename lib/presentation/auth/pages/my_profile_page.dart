@@ -2,12 +2,15 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart' show Either;
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -71,7 +74,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(failure.error),
-            backgroundColor: Colors.red,
+            backgroundColor: context.brand.danger,
           ),
         );
       },
@@ -115,11 +118,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Selected image is larger than 10 MB. Please choose a smaller file.',
+            S.of(context).imageTooLarge,
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.brand.danger,
         ),
       );
       return;
@@ -142,7 +145,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(failure.error),
-            backgroundColor: Colors.red,
+            backgroundColor: context.brand.danger,
           ),
         );
       },
@@ -152,9 +155,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile image updated successfully.'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(S.of(context).profileImageUpdated),
+            backgroundColor: context.brand.success,
           ),
         );
       },
@@ -201,9 +204,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         _phoneController.text.trim().isEmpty ||
         _addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all editable fields.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: Text(S.of(context).fillAllEditableFields),
+          backgroundColor: context.brand.danger,
         ),
       );
       return;
@@ -237,7 +240,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(failure.error),
-            backgroundColor: Colors.red,
+            backgroundColor: context.brand.danger,
           ),
         );
       },
@@ -245,7 +248,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.green,
+            backgroundColor: context.brand.success,
           ),
         );
       },
@@ -258,12 +261,18 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     final double formWidth =
         (MediaQuery.sizeOf(context).width - 32).clamp(280.0, 420.0).toDouble();
 
     return Scaffold(
-      appBar: const MyAppBar(
-        title: 'My Profile',
+      appBar: MyAppBar(
+        title: S.of(context).myProfile,
         hideBack: false,
       ),
       body: SafeArea(
@@ -295,10 +304,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                       ? NetworkImage(_profileImageUrl)
                                       : null,
                                   child: _profileImageUrl.isEmpty
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.person,
                                           size: 52,
-                                          color: Colors.white,
+                                          color: context.brand.textInverse,
                                         )
                                       : null,
                                 ),
@@ -313,19 +322,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                           Theme.of(context).colorScheme.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: Colors.white, width: 2),
+                                          color: context.brand.textInverse,
+                                          width: 2),
                                     ),
                                     child: _isUploadingImage
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(8),
+                                        ? Padding(
+                                            padding: const EdgeInsets.all(8),
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: Colors.white,
+                                              color: context.brand.textInverse,
                                             ),
                                           )
-                                        : const Icon(
+                                        : Icon(
                                             Icons.camera_alt_outlined,
-                                            color: Colors.white,
+                                            color: context.brand.textInverse,
                                             size: 18,
                                           ),
                                   ),
@@ -335,20 +345,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          'Tap to change photo',
+                        Text(
+                          S.of(context).tapToChangePhoto,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'CircularStd',
                             fontSize: 13,
-                            color: Colors.grey,
+                            color: context.brand.muted,
                           ),
                         ),
                         const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _emailController,
-                          labelText: 'Email',
-                          hintText: 'Registered email (locked)',
+                          labelText: S.of(context).email,
+                          hintText: S.of(context).registeredEmailLocked,
                           icon: Icons.email_outlined,
                           suffixIcon: const Icon(Icons.lock_outline),
                           enabled: false,
@@ -357,22 +366,22 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _nameController,
-                          labelText: 'Name',
+                          labelText: S.of(context).name,
                           icon: Icons.person_outline,
                           keyboardType: TextInputType.name,
                         ),
                         const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _phoneController,
-                          labelText: 'Phone',
+                          labelText: S.of(context).phone,
                           icon: Icons.phone_outlined,
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _passwordController,
-                          labelText: 'Password',
-                          hintText: 'New password (optional)',
+                          labelText: S.of(context).password,
+                          hintText: S.of(context).newPasswordOptional,
                           icon: Icons.password_outlined,
                           keyboardType: TextInputType.visiblePassword,
                           obscureText: _obscurePassword,
@@ -392,17 +401,16 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         const SizedBox(height: 22),
                         _ProfileInputField(
                           controller: _addressController,
-                          labelText: 'Address',
+                          labelText: S.of(context).address,
                           icon: Icons.location_on_outlined,
                           keyboardType: TextInputType.streetAddress,
                         ),
                         const SizedBox(height: 24),
                         const _ProfileSectionSeparator(),
                         const SizedBox(height: 24),
-                        const Text(
-                          'Most interested in products for:',
-                          style: TextStyle(
-                            fontFamily: 'CircularStd',
+                        Text(
+                          S.of(context).mostInterestedIn,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -425,9 +433,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                   Theme.of(context).colorScheme.primary,
                               labelStyle: TextStyle(
                                 color: selected
-                                    ? Colors.white
+                                    ? context.brand.textInverse
                                     : Theme.of(context).colorScheme.onSurface,
-                                fontFamily: 'CircularStd',
                               ),
                             );
                           }).toList(),
@@ -436,7 +443,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         const _ProfileSectionSeparator(),
                         const SizedBox(height: 24),
                         Text(
-                          'Birth Date',
+                          S.of(context).birthDate,
                           style: _profileSectionLabelStyle(context),
                         ),
                         const SizedBox(height: 12),
@@ -448,9 +455,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
                               horizontal: 16,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.brand.surfaceBright,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border:
+                                  Border.all(color: context.brand.mutedSoft),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.03),
@@ -461,8 +469,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.cake_outlined,
-                                    color: Colors.grey),
+                                Icon(Icons.cake_outlined,
+                                    color: context.brand.muted),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -470,13 +478,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                     '${_selectedDate.month.toString().padLeft(2, '0')}/'
                                     '${_selectedDate.year}',
                                     style: const TextStyle(
-                                      fontFamily: 'CircularStd',
                                       fontSize: 16,
                                     ),
                                   ),
                                 ),
-                                const Icon(Icons.arrow_drop_down,
-                                    color: Colors.grey),
+                                Icon(Icons.arrow_drop_down,
+                                    color: context.brand.muted),
                               ],
                             ),
                           ),
@@ -491,27 +498,26 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
                                   Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
+                              foregroundColor: context.brand.textInverse,
                               elevation: 4,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               textStyle: const TextStyle(
-                                fontFamily: 'CircularStd',
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             child: _isSaving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: context.brand.textInverse,
                                     ),
                                   )
-                                : const Text('Save changes'),
+                                : Text(S.of(context).saveChanges),
                           ),
                         ),
                       ],
@@ -526,7 +532,6 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
 TextStyle? _profileSectionLabelStyle(BuildContext context) {
   return Theme.of(context).textTheme.bodySmall?.copyWith(
-        fontFamily: 'CircularStd',
         fontSize: 17,
         fontWeight: FontWeight.w600,
       );
@@ -593,7 +598,6 @@ class _ProfileInputField extends StatelessWidget {
           enabled: enabled,
           obscureText: obscureText,
           style: const TextStyle(
-            fontFamily: 'CircularStd',
             fontSize: 16,
           ),
           decoration: InputDecoration(
@@ -607,7 +611,9 @@ class _ProfileInputField extends StatelessWidget {
             prefixIcon: Icon(icon),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: enabled ? Colors.white : Colors.grey.shade200,
+            fillColor: enabled
+                ? context.brand.surfaceBright
+                : context.brand.mutedSoft,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             border: OutlineInputBorder(

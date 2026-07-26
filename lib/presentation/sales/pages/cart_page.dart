@@ -1,17 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/cart/cart_draft_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/color_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_cart_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
@@ -65,24 +69,24 @@ class _CartPageState extends State<CartPage> {
     final cvvDigits = _cardCvvController.text.replaceAll(RegExp(r'\D'), '');
 
     if (cardholderName.isEmpty) {
-      _showPaymentError('Please enter the cardholder name.');
+      _showPaymentError(S.of(context).enterCardholderName);
       return false;
     }
 
     if (cardDigits.length < 13 || cardDigits.length > 19) {
-      _showPaymentError('Please enter a valid card number.');
+      _showPaymentError(S.of(context).enterValidCardNumber);
       return false;
     }
 
     final expiryPattern = RegExp(r'^(0[1-9]|1[0-2])\/(\d{2})$');
     if (!expiryPattern.hasMatch(expiry)) {
-      _showPaymentError('Please enter the expiry date as MM/YY.');
+      _showPaymentError(S.of(context).enterExpiryAsMmYy);
       return false;
     }
 
     final expiryMatch = expiryPattern.firstMatch(expiry);
     if (expiryMatch == null) {
-      _showPaymentError('Please enter the expiry date as MM/YY.');
+      _showPaymentError(S.of(context).enterExpiryAsMmYy);
       return false;
     }
     final expiryMonth = int.parse(expiryMatch.group(1)!);
@@ -91,12 +95,12 @@ class _CartPageState extends State<CartPage> {
     final isExpired = expiryYear < now.year ||
         (expiryYear == now.year && expiryMonth < now.month);
     if (isExpired) {
-      _showPaymentError('This card appears to be expired.');
+      _showPaymentError(S.of(context).cardExpired);
       return false;
     }
 
     if (cvvDigits.length < 3 || cvvDigits.length > 4) {
-      _showPaymentError('Please enter a valid CVV.');
+      _showPaymentError(S.of(context).enterValidCvv);
       return false;
     }
 
@@ -109,7 +113,7 @@ class _CartPageState extends State<CartPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red,
+          backgroundColor: context.brand.danger,
         ),
       );
   }
@@ -124,93 +128,30 @@ class _CartPageState extends State<CartPage> {
     final productId =
         ((firstItem['id'] ?? firstItem['productId']) ?? '').toString().trim();
     if (productId.isEmpty) {
-      _showPaymentError('Product details are unavailable for this item.');
+      _showPaymentError(S.of(context).productDetailsUnavailable);
       return;
     }
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('products')
-          .where('id', isEqualTo: productId)
-          .limit(1)
-          .get();
-      Map<String, dynamic>? productData;
-      if (snapshot.docs.isNotEmpty) {
-        productData = snapshot.docs.first.data();
-      } else {
-        final byDocId = await FirebaseFirestore.instance
-            .collection('products')
-            .doc(productId)
-            .get();
-        productData = byDocId.data();
-      }
+      final result = await sl<GetProductByIdUseCase>().call(productId);
 
       if (!mounted) {
         return;
       }
 
-      if (productData == null) {
-        _showPaymentError('Product details are unavailable for this item.');
-        return;
-      }
-
-      final product = _mapToProductEntity(productData, productId);
-      AppNavigator.push(
-        context,
-        ProductPage(product: product),
+      result.fold(
+        (_) => _showPaymentError(S.of(context).productDetailsUnavailable),
+        (product) => AppNavigator.push(
+          context,
+          ProductPage(product: product as ProductEntity),
+        ),
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
-      _showPaymentError('Unable to open product details right now.');
+      _showPaymentError(S.of(context).unableToOpenProduct);
     }
-  }
-
-  ProductEntity _mapToProductEntity(
-    Map<String, dynamic> raw,
-    String fallbackId,
-  ) {
-    final colorsRaw = raw['colors'];
-    final colors = colorsRaw is List
-        ? colorsRaw
-            .whereType<Map>()
-            .map(
-              (item) => ProductColorEntity(
-                title: (item['title'] ?? '').toString(),
-                hexCode: (item['hexCode'] ?? '').toString(),
-              ),
-            )
-            .toList(growable: false)
-        : <ProductColorEntity>[];
-
-    final createdDate = raw['createdDate'];
-    final resolvedCreatedDate = createdDate is Timestamp
-        ? createdDate
-        : Timestamp.fromDate(DateTime.now());
-
-    final sizesRaw = raw['sizes'];
-    final imagesRaw = raw['images'];
-
-    return ProductEntity(
-      categoryName: (raw['categoryName'] ?? '').toString(),
-      id: (raw['id'] ?? fallbackId).toString(),
-      currentDiscount: _toDouble(raw['currentDiscount']),
-      categoryId: (raw['categoryId'] ?? '').toString(),
-      colors: colors,
-      createdDate: resolvedCreatedDate,
-      discountedPrice: _toDouble(raw['discountedPrice']),
-      gender: (raw['gender'] ?? '').toString(),
-      images: imagesRaw is List ? List<dynamic>.from(imagesRaw) : <dynamic>[],
-      price: _toDouble(raw['price']),
-      sizes: sizesRaw is List ? List<dynamic>.from(sizesRaw) : <dynamic>[],
-      title: (raw['title'] ?? '').toString(),
-      productId: (raw['productId'] ?? '').toString(),
-      salesNumber: raw['salesNumber'] is int
-          ? raw['salesNumber'] as int
-          : _toDouble(raw['salesNumber']).toInt(),
-      description: (raw['description'] ?? '').toString(),
-    );
   }
 
   Future<void> _confirmPurchase() async {
@@ -221,9 +162,9 @@ class _CartPageState extends State<CartPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to confirm your purchase.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(S.of(context).signInToConfirmPurchase),
+            backgroundColor: context.brand.danger,
           ),
         );
       return;
@@ -254,13 +195,13 @@ class _CartPageState extends State<CartPage> {
     if (userState is! UserLoaded) {
       final message = userState is UserError
           ? userState.error
-          : 'Unable to load your profile data. Please try again.';
+          : S.of(context).unableToLoadProfile;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.red,
+            backgroundColor: context.brand.danger,
           ),
         );
       setState(() {
@@ -336,7 +277,7 @@ class _CartPageState extends State<CartPage> {
           ..showSnackBar(
             SnackBar(
               content: Text(error.toString()),
-              backgroundColor: Colors.red,
+              backgroundColor: context.brand.danger,
             ),
           );
       },
@@ -345,9 +286,9 @@ class _CartPageState extends State<CartPage> {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              content: Text('Purchase confirmed successfully!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: Text(S.of(context).purchaseConfirmed),
+              backgroundColor: context.brand.success,
             ),
           );
 
@@ -362,6 +303,11 @@ class _CartPageState extends State<CartPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Web gets the storefront experience; the mobile layout stays as-is.
+    if (kIsWeb) {
+      return WebCartPage(userIdOverride: widget.userIdOverride);
+    }
+
     final userId =
         widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
@@ -370,9 +316,8 @@ class _CartPageState extends State<CartPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'My Cart',
+            S.of(context).myCart,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -476,9 +421,9 @@ class _CartView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const _CenteredInfoCard(
-                    title: 'Your cart is empty',
-                    body: 'Items you add to cart will appear here.',
+                  _CenteredInfoCard(
+                    title: S.of(context).cartEmptyTitle,
+                    body: S.of(context).cartEmptyBody,
                     icon: Icons.shopping_bag_outlined,
                   ),
                   const SizedBox(height: 30),
@@ -494,12 +439,11 @@ class _CartView extends StatelessWidget {
                               onPressed: onGoToFavorites,
                               icon: const Icon(Icons.favorite_border),
                               label: Text(
-                                'Go to favorites',
+                                S.of(context).goToFavorites,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
                                     ?.copyWith(
-                                      fontFamily: 'CircularStd',
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
@@ -521,12 +465,11 @@ class _CartView extends StatelessWidget {
                               onPressed: onReturnHome,
                               icon: const Icon(Icons.home_outlined),
                               label: Text(
-                                'Return to home',
+                                S.of(context).returnToHome,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
                                     ?.copyWith(
-                                      fontFamily: 'CircularStd',
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
@@ -569,16 +512,21 @@ class _CartView extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _TagPill(label: 'Items: ${drafts.length}'),
-                  _TagPill(label: 'Saved: ${_formatCurrency(totalSavings)}'),
-                  _TagPill(label: 'Total: ${_formatCurrency(totalDiscounted)}'),
+                  _TagPill(label: S.of(context).itemsCount(drafts.length)),
+                  _TagPill(
+                      label: S
+                          .of(context)
+                          .savedAmount(_formatCurrency(totalSavings))),
+                  _TagPill(
+                      label: S
+                          .of(context)
+                          .totalAmount(_formatCurrency(totalDiscounted))),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                'Draft items',
+                S.of(context).draftItems,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
@@ -604,9 +552,8 @@ class _CartView extends StatelessWidget {
               const _SectionSeparator(),
               const SizedBox(height: 14),
               Text(
-                'Payment method',
+                S.of(context).paymentMethod,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
@@ -636,10 +583,9 @@ class _CartView extends StatelessWidget {
                       : const Icon(Icons.check_circle_outline),
                   label: Text(
                     isConfirmingPurchase
-                        ? 'Confirming purchase...'
-                        : 'Confirm purchase',
+                        ? S.of(context).confirmingPurchase
+                        : S.of(context).confirmPurchase,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontFamily: 'CircularStd',
                           fontWeight: FontWeight.w700,
                         ),
                   ),
@@ -688,16 +634,16 @@ class _PaymentSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SegmentedButton<_PaymentMethod>(
-            segments: const [
+            segments: [
               ButtonSegment<_PaymentMethod>(
                 value: _PaymentMethod.creditCard,
-                icon: Icon(Icons.credit_card),
-                label: Text('Credit card'),
+                icon: const Icon(Icons.credit_card),
+                label: Text(S.of(context).creditCard),
               ),
               ButtonSegment<_PaymentMethod>(
                 value: _PaymentMethod.debitCard,
-                icon: Icon(Icons.payments_outlined),
-                label: Text('Debit card'),
+                icon: const Icon(Icons.payments_outlined),
+                label: Text(S.of(context).debitCard),
               ),
             ],
             selected: <_PaymentMethod>{selectedPaymentMethod},
@@ -711,7 +657,7 @@ class _PaymentSection extends StatelessWidget {
                 if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).colorScheme.primary;
                 }
-                return Colors.white.withOpacity(0.85);
+                return context.brand.surfaceBright.withOpacity(0.85);
               }),
               foregroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
@@ -737,17 +683,15 @@ class _PaymentSection extends StatelessWidget {
                 value: creditInstallments,
                 decoration: _paymentInputDecoration(
                   context,
-                  'Installments number',
+                  S.of(context).installmentsNumber,
                   Icons.calendar_view_week_outlined,
                 ).copyWith(
                   labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'CircularStd',
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
                   floatingLabelStyle:
                       Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'CircularStd',
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.primary,
@@ -775,7 +719,7 @@ class _PaymentSection extends StatelessWidget {
             textInputAction: TextInputAction.next,
             decoration: _paymentInputDecoration(
               context,
-              'Cardholder name',
+              S.of(context).cardholderName,
               Icons.badge_outlined,
             ),
           ),
@@ -787,7 +731,7 @@ class _PaymentSection extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: _paymentInputDecoration(
               context,
-              'Card number',
+              S.of(context).cardNumber,
               Icons.credit_card,
             ),
           ),
@@ -805,7 +749,7 @@ class _PaymentSection extends StatelessWidget {
                   ],
                   decoration: _paymentInputDecoration(
                     context,
-                    'Expiry (MM/YY)',
+                    S.of(context).expiryMmYy,
                     Icons.date_range_outlined,
                   ),
                 ),
@@ -823,7 +767,7 @@ class _PaymentSection extends StatelessWidget {
                   ],
                   decoration: _paymentInputDecoration(
                     context,
-                    'CVV',
+                    S.of(context).cvv,
                     Icons.lock_outline,
                   ),
                 ),
@@ -842,7 +786,6 @@ InputDecoration _paymentInputDecoration(
   IconData icon,
 ) {
   final labelTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-        fontFamily: 'CircularStd',
         fontSize: 17,
         fontWeight: FontWeight.w600,
       );
@@ -856,7 +799,7 @@ InputDecoration _paymentInputDecoration(
     floatingLabelBehavior: FloatingLabelBehavior.always,
     prefixIcon: Icon(icon, size: 18),
     filled: true,
-    fillColor: Colors.white.withOpacity(0.8),
+    fillColor: context.brand.surfaceBright.withOpacity(0.8),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
@@ -930,7 +873,9 @@ class _CartItemCard extends StatelessWidget {
         : quantityValue.toStringAsFixed(2);
 
     final resolvedTitle = productTitle.isEmpty
-        ? 'Product ${productCode.isEmpty ? '-' : productCode}'
+        ? S
+            .of(context)
+            .productFallback(productCode.isEmpty ? '-' : productCode)
         : productTitle;
 
     return Material(
@@ -952,7 +897,6 @@ class _CartItemCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontFamily: 'CircularStd',
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -960,7 +904,7 @@ class _CartItemCard extends StatelessWidget {
                   TextButton.icon(
                     onPressed: onRemove,
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remove'),
+                    label: Text(S.of(context).remove),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 6),
@@ -971,17 +915,16 @@ class _CartItemCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              _LineItem(label: 'Quantity', value: quantity),
+              _LineItem(label: S.of(context).quantity, value: quantity),
               const SizedBox(height: 6),
-              _LineItem(label: 'Size', value: size),
+              _LineItem(label: S.of(context).size, value: size),
               const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'Color',
+                      S.of(context).color,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'CircularStd',
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -992,24 +935,28 @@ class _CartItemCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: _parseHexColor(colorHex) ?? _parseColorName(color),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black26, width: 0.8),
+                      border: Border.all(
+                        color: context.brand.textPrimary.withOpacity(0.26),
+                        width: 0.8,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     color,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontFamily: 'CircularStd',
                           fontWeight: FontWeight.w700,
                         ),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              _LineItem(label: 'Unit price', value: _formatCurrency(unitPrice)),
+              _LineItem(
+                  label: S.of(context).unitPrice,
+                  value: _formatCurrency(unitPrice)),
               const SizedBox(height: 6),
               _LineItem(
-                label: 'Unit discounted',
+                label: S.of(context).unitDiscounted,
                 value: _formatCurrency(unitDiscounted),
               ),
               const SizedBox(height: 12),
@@ -1017,9 +964,8 @@ class _CartItemCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Total',
+                      S.of(context).total,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontFamily: 'CircularStd',
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -1027,9 +973,8 @@ class _CartItemCard extends StatelessWidget {
                   Text(
                     _formatCurrency(saleDraft.totalPrice),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontFamily: 'CircularStd',
                           fontWeight: FontWeight.w800,
-                          color: Colors.green.shade700,
+                          color: context.brand.successStrong,
                         ),
                   ),
                 ],
@@ -1070,21 +1015,23 @@ class _StatsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Cart summary',
+            S.of(context).cartSummary,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontFamily: 'CircularStd',
                 fontWeight: FontWeight.w700,
                 fontSize: 20),
           ),
           const SizedBox(height: 10),
           _LineItem(
-              label: 'Original total', value: _formatCurrency(totalOriginal)),
+              label: S.of(context).originalTotal,
+              value: _formatCurrency(totalOriginal)),
           const SizedBox(height: 6),
           _LineItem(
-              label: 'Discounted total',
+              label: S.of(context).discountedTotal,
               value: _formatCurrency(totalDiscounted)),
           const SizedBox(height: 6),
-          _LineItem(label: 'Total saved', value: _formatCurrency(totalSavings)),
+          _LineItem(
+              label: S.of(context).totalSaved,
+              value: _formatCurrency(totalSavings)),
         ],
       ),
     );
@@ -1096,10 +1043,10 @@ class _AuthRequiredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.expand(
+    return SizedBox.expand(
       child: _CenteredInfoCard(
-        title: 'Please sign in',
-        body: 'Sign in to view and confirm your cart.',
+        title: S.of(context).pleaseSignIn,
+        body: S.of(context).signInToViewCart,
         icon: Icons.lock_outline,
       ),
     );
@@ -1138,9 +1085,7 @@ class _CenteredInfoCard extends StatelessWidget {
                 Text(
                   body,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontFamily: 'CircularStd',
-                      ),
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ],
             ),
@@ -1165,7 +1110,6 @@ class _LineItem extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -1173,7 +1117,6 @@ class _LineItem extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFamily: 'CircularStd',
                 fontWeight: FontWeight.w700,
               ),
         ),
@@ -1204,7 +1147,7 @@ class _InfoCard extends StatelessWidget {
       margin: margin,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: context.brand.surfaceBright.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -1220,7 +1163,6 @@ class _InfoCard extends StatelessWidget {
               title,
               textAlign: centerContent ? TextAlign.center : TextAlign.start,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontFamily: 'CircularStd',
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -1248,7 +1190,6 @@ class _TagPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w600,
             ),
       ),
@@ -1314,26 +1255,26 @@ Color _parseColorName(String colorName) {
     case 'white':
       return Colors.white;
     case 'red':
-      return Colors.red;
+      return Colors.red; // tripwire-allow: product swatch data
     case 'blue':
-      return Colors.blue;
+      return Colors.blue; // tripwire-allow: product swatch data
     case 'green':
-      return Colors.green;
+      return Colors.green; // tripwire-allow: product swatch data
     case 'yellow':
-      return Colors.yellow;
+      return Colors.yellow; // tripwire-allow: product swatch data
     case 'orange':
-      return Colors.orange;
+      return Colors.orange; // tripwire-allow: product swatch data
     case 'purple':
-      return Colors.purple;
+      return Colors.purple; // tripwire-allow: product swatch data
     case 'pink':
-      return Colors.pink;
+      return Colors.pink; // tripwire-allow: product swatch data
     case 'brown':
-      return Colors.brown;
+      return Colors.brown; // tripwire-allow: product swatch data
     case 'grey':
     case 'gray':
-      return Colors.grey;
+      return Colors.grey; // tripwire-allow: product swatch data
     default:
-      return Colors.grey;
+      return Colors.grey; // tripwire-allow: product swatch data
   }
 }
 

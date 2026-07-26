@@ -1,3 +1,5 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:flutter/material.dart';
 
 class SearchBox extends StatelessWidget {
@@ -15,7 +17,7 @@ class SearchBox extends StatelessWidget {
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(24),
-        color: Color.fromARGB(255, 10, 32, 53),
+        color: context.brand.iconStrong,
         child: TextField(
           onChanged: onChanged,
           style: TextStyle(
@@ -23,14 +25,14 @@ class SearchBox extends StatelessWidget {
             fontSize: 16,
           ),
           decoration: InputDecoration(
-            hintText: 'Search for your next buy buy here ;)',
+            hintText: S.of(context).searchProductsHint,
             hintStyle: TextStyle(
               color: colorScheme.primary.withOpacity(0.8),
             ),
             prefixIcon:
                 Icon(Icons.search, color: colorScheme.primary),
             filled: true,
-            fillColor: Color.fromARGB(255, 10, 32, 53),
+            fillColor: context.brand.iconStrong,
             contentPadding: const EdgeInsets.symmetric(
                 vertical: 0, horizontal: 16),
             border: OutlineInputBorder(

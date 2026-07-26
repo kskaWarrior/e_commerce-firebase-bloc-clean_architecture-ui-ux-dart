@@ -1,15 +1,60 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/color_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_purchases_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final String status;
+
+  Color _color(BuildContext context) {
+    switch (status) {
+      case 'paid':
+        return context.brand.info;
+      case 'shipped':
+        return context.brand.shipped;
+      case 'delivered':
+        return context.brand.successStrong;
+      case 'cancelled':
+        return context.brand.dangerStrong;
+      case 'pending':
+      default:
+        return context.brand.warning;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: _color(context).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _color(context)),
+      ),
+      child: Text(
+        S.of(context).statusLabel(status),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              color: _color(context),
+            ),
+      ),
+    );
+  }
+}
 
 class MyPurchasesPage extends StatelessWidget {
   final String? userIdOverride;
@@ -18,6 +63,11 @@ class MyPurchasesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Web gets the storefront experience; the mobile layout stays as-is.
+    if (kIsWeb) {
+      return WebPurchasesPage(userIdOverride: userIdOverride);
+    }
+
     final userId = userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
 
     return BlocProvider(
@@ -31,9 +81,8 @@ class MyPurchasesPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'My Purchases',
+            S.of(context).myPurchases,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -54,9 +103,9 @@ class MyPurchasesPage extends StatelessWidget {
               ),
             ),
             child: userId == null || userId.isEmpty
-                ? const _CenteredInfoCard(
-                    title: 'Please sign in',
-                    body: 'Sign in to view your purchases.',
+                ? _CenteredInfoCard(
+                    title: S.of(context).pleaseSignIn,
+                    body: S.of(context).signInToViewPurchases,
                     icon: Icons.lock_outline,
                   )
                 : const _PurchasesView(),
@@ -80,10 +129,10 @@ class _PurchasesView extends StatelessWidget {
 
         if (state is GetSalesByUserIdError) {
           return _CenteredInfoCard(
-            title: 'Could not load purchases',
+            title: S.of(context).couldNotLoadPurchases,
             body: state.message,
             icon: Icons.error_outline,
-            iconColor: Colors.red,
+            iconColor: context.brand.danger,
           );
         }
 
@@ -95,9 +144,9 @@ class _PurchasesView extends StatelessWidget {
           ..sort((a, b) => b.createdDate.compareTo(a.createdDate));
 
         if (sales.isEmpty) {
-          return const _CenteredInfoCard(
-            title: 'No purchases yet',
-            body: 'Confirmed purchases will appear here.',
+          return _CenteredInfoCard(
+            title: S.of(context).noPurchasesYet,
+            body: S.of(context).confirmedPurchasesHere,
             icon: Icons.shopping_bag_outlined,
           );
         }
@@ -121,10 +170,16 @@ class _PurchasesView extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _TagPill(label: 'Orders: ${sales.length}'),
-                  _TagPill(label: 'Saved: ${_formatCurrency(totalSavings)}'),
                   _TagPill(
-                      label: 'Avg ticket: ${_formatCurrency(averageTicket)}'),
+                      label: S.of(context).ordersLabelCount(sales.length)),
+                  _TagPill(
+                      label: S
+                          .of(context)
+                          .savedAmount(_formatCurrency(totalSavings))),
+                  _TagPill(
+                      label: S
+                          .of(context)
+                          .avgTicketLabel(_formatCurrency(averageTicket))),
                 ],
               ),
               const SizedBox(height: 14),
@@ -137,9 +192,8 @@ class _PurchasesView extends StatelessWidget {
               const _SectionSeparator(),
               const SizedBox(height: 8),
               Text(
-                'Recent Purchases',
+                S.of(context).recentPurchases,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.inversePrimary,
                     ),
@@ -170,44 +224,29 @@ class _PurchaseCardState extends State<_PurchaseCard> {
     final productId = (product['id'] ?? '').toString().trim();
 
     if (productId.isEmpty) {
-      _showNavigationError('Product details are unavailable for this item.');
+      _showNavigationError(S.of(context).productDetailsUnavailable);
       return;
     }
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('products')
-          .where('id', isEqualTo: productId)
-          .limit(1)
-          .get();
-
-      Map<String, dynamic>? productData;
-      if (snapshot.docs.isNotEmpty) {
-        productData = snapshot.docs.first.data();
-      } else {
-        final byDocId = await FirebaseFirestore.instance
-            .collection('products')
-            .doc(productId)
-            .get();
-        productData = byDocId.data();
-      }
+      final result = await sl<GetProductByIdUseCase>().call(productId);
 
       if (!mounted) {
         return;
       }
 
-      if (productData == null) {
-        _showNavigationError('Product details are unavailable for this item.');
-        return;
-      }
-
-      final mappedProduct = _mapToProductEntity(productData, productId);
-      AppNavigator.push(context, ProductPage(product: mappedProduct));
+      result.fold(
+        (_) => _showNavigationError(S.of(context).productDetailsUnavailable),
+        (product) => AppNavigator.push(
+          context,
+          ProductPage(product: product as ProductEntity),
+        ),
+      );
     } catch (_) {
       if (!mounted) {
         return;
       }
-      _showNavigationError('Unable to open product details right now.');
+      _showNavigationError(S.of(context).unableToOpenProduct);
     }
   }
 
@@ -217,7 +256,7 @@ class _PurchaseCardState extends State<_PurchaseCard> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red,
+          backgroundColor: context.brand.danger,
         ),
       );
   }
@@ -233,29 +272,33 @@ class _PurchaseCardState extends State<_PurchaseCard> {
     final products = sale.productsList;
 
     return _InfoCard(
-      title: 'Order #${sale.id.isEmpty ? 'N/A' : sale.id}',
+      title: S.of(context).orderNumber(sale.id.isEmpty ? 'N/A' : sale.id),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _StatusChip(status: sale.status),
+          ),
+          const SizedBox(height: 8),
           _LineItem(
-            label: 'Created',
+            label: S.of(context).created,
             value: _formatDate(sale.createdDate.toDate()),
           ),
           const SizedBox(height: 6),
-          _LineItem(label: 'Payment', value: sale.paymentMethod),
+          _LineItem(label: S.of(context).payment, value: sale.paymentMethod),
           const SizedBox(height: 6),
           _LineItem(
-            label: 'Products',
-            value: '${products.length} item(s)',
+            label: S.of(context).products,
+            value: S.of(context).itemCountLabel(products.length),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Total',
+                  S.of(context).total,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontFamily: 'CircularStd',
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -263,9 +306,8 @@ class _PurchaseCardState extends State<_PurchaseCard> {
               Text(
                 _formatCurrency(sale.totalPrice),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w800,
-                      color: Colors.green.shade700,
+                      color: context.brand.successStrong,
                     ),
               ),
             ],
@@ -276,7 +318,6 @@ class _PurchaseCardState extends State<_PurchaseCard> {
             child: TextButton.icon(
               style: TextButton.styleFrom(
                 textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -290,46 +331,47 @@ class _PurchaseCardState extends State<_PurchaseCard> {
                 _expanded ? Icons.expand_less : Icons.expand_more,
                 size: 28,
               ),
-              label: Text(_expanded ? 'Show less' : 'Show more'),
+              label: Text(_expanded
+                  ? S.of(context).showLess
+                  : S.of(context).showMore),
             ),
           ),
           if (_expanded) ...[
             const SizedBox(height: 2),
             _LineItem(
-              label: 'Subtotal',
+              label: S.of(context).subtotal,
               value: _formatCurrency(sale.price),
             ),
             const SizedBox(height: 6),
             _LineItem(
-              label: 'Subtotal after discount',
+              label: S.of(context).subtotalAfterDiscount,
               value: _formatCurrency(sale.discountedPrice),
             ),
             const SizedBox(height: 6),
             _LineItem(
-              label: 'Freight',
+              label: S.of(context).freight,
               value: _formatCurrency(sale.freight),
             ),
             const SizedBox(height: 6),
             _LineItem(
-              label: 'Savings',
+              label: S.of(context).savings,
               value: _formatCurrency(savings),
             ),
             const SizedBox(height: 6),
             _LineItem(
-              label: 'Installments',
+              label: S.of(context).installments,
               value: sale.installmentsNumber.toString(),
             ),
             const SizedBox(height: 6),
             _LineItem(
-              label: 'Installment value',
+              label: S.of(context).installmentValue,
               value: _formatCurrency(installmentValue),
             ),
             const SizedBox(height: 10),
             Center(
               child: Text(
-                'Products details:',
+                S.of(context).productsDetails,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontFamily: 'CircularStd',
                       fontWeight: FontWeight.w800,
                       fontSize: 15
                     ),
@@ -338,10 +380,8 @@ class _PurchaseCardState extends State<_PurchaseCard> {
             const SizedBox(height: 8),
             if (products.isEmpty)
               Text(
-                'No product details available.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontFamily: 'CircularStd',
-                    ),
+                S.of(context).noProductDetails,
+                style: Theme.of(context).textTheme.bodyMedium,
               )
             else
               Column(
@@ -412,11 +452,10 @@ class _ProductItemCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _productName(product),
+                      _productName(product, S.of(context).productLabel),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontFamily: 'CircularStd',
                           fontWeight: FontWeight.w800,
                           fontSize: 16),
                     ),
@@ -438,9 +477,8 @@ class _ProductItemCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Tap to view details',
+                    S.of(context).tapToViewDetails,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'CircularStd',
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context)
                               .colorScheme
@@ -456,7 +494,7 @@ class _ProductItemCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   _MetaPill(
-                    label: 'Size',
+                    label: S.of(context).size,
                     value: sizeLabel,
                   ),
                   _ColorMetaPill(
@@ -471,7 +509,7 @@ class _ProductItemCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _PriceMetric(
-                      label: 'Unit discounted',
+                      label: S.of(context).unitDiscounted,
                       value: unitDiscounted != null
                           ? _formatCurrency(unitDiscounted)
                           : '-',
@@ -480,7 +518,7 @@ class _ProductItemCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _PriceMetric(
-                      label: 'Unit price',
+                      label: S.of(context).unitPrice,
                       value:
                           unitPrice != null ? _formatCurrency(unitPrice) : '-',
                     ),
@@ -488,7 +526,7 @@ class _ProductItemCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _PriceMetric(
-                      label: 'Line total',
+                      label: S.of(context).lineTotal,
                       value:
                           lineTotal != null ? _formatCurrency(lineTotal) : '-',
                       emphasize: true,
@@ -520,7 +558,6 @@ class _QuantityBadge extends StatelessWidget {
       child: Text(
         'x$quantity',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w700,
             ),
       ),
@@ -554,7 +591,6 @@ class _PriceMetric extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -562,9 +598,8 @@ class _PriceMetric extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w800,
-                  color: emphasize ? Colors.green.shade700 : null,
+                  color: emphasize ? context.brand.successStrong : null,
                 ),
           ),
         ],
@@ -590,7 +625,6 @@ class _MetaPill extends StatelessWidget {
       child: Text(
         '$label: $value',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w700,
             ),
       ),
@@ -636,9 +670,8 @@ class _ColorMetaPill extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            'Color: $label ($hexLabel)',
+            S.of(context).colorMeta(label, hexLabel),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -675,19 +708,22 @@ class _StatsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Purchase summary',
+            S.of(context).purchaseSummary,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
           const SizedBox(height: 10),
-          _LineItem(label: 'Total spent', value: _formatCurrency(totalSpent)),
-          const SizedBox(height: 6),
-          _LineItem(label: 'Total saved', value: _formatCurrency(totalSavings)),
+          _LineItem(
+              label: S.of(context).totalSpent,
+              value: _formatCurrency(totalSpent)),
           const SizedBox(height: 6),
           _LineItem(
-            label: 'Average ticket',
+              label: S.of(context).totalSaved,
+              value: _formatCurrency(totalSavings)),
+          const SizedBox(height: 6),
+          _LineItem(
+            label: S.of(context).averageTicket,
             value: _formatCurrency(averageTicket),
           ),
         ],
@@ -725,9 +761,7 @@ class _CenteredInfoCard extends StatelessWidget {
               Text(
                 body,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontFamily: 'CircularStd',
-                    ),
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
           ),
@@ -751,7 +785,6 @@ class _LineItem extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -759,7 +792,6 @@ class _LineItem extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFamily: 'CircularStd',
                 fontWeight: FontWeight.w700,
               ),
         ),
@@ -781,7 +813,7 @@ class _InfoCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: context.brand.surfaceBright.withOpacity(0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -793,7 +825,6 @@ class _InfoCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontFamily: 'CircularStd',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -821,7 +852,6 @@ class _TagPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontFamily: 'CircularStd',
               fontWeight: FontWeight.w600,
             ),
       ),
@@ -873,14 +903,14 @@ String _formatDate(DateTime dateTime) {
   return '$day/$month/$year  $hour:$minute';
 }
 
-String _productName(Map<String, dynamic> product) {
+String _productName(Map<String, dynamic> product, String fallback) {
   final value = product['title'] ??
       product['name'] ??
       product['productName'] ??
       product['productId'] ??
       product['id'];
   final text = value?.toString().trim() ?? '';
-  return text.isEmpty ? 'Product' : text;
+  return text.isEmpty ? fallback : text;
 }
 
 int _productQuantity(Map<String, dynamic> product) {
@@ -997,46 +1027,3 @@ Color? _parseHexColor(String input) {
   return Color(value);
 }
 
-ProductEntity _mapToProductEntity(
-  Map<String, dynamic> raw,
-  String fallbackId,
-) {
-  final colorsRaw = raw['colors'];
-  final colors = colorsRaw is List
-      ? colorsRaw
-          .whereType<Map>()
-          .map(
-            (item) => ProductColorEntity(
-              title: (item['title'] ?? '').toString(),
-              hexCode: (item['hexCode'] ?? '').toString(),
-            ),
-          )
-          .toList(growable: false)
-      : <ProductColorEntity>[];
-
-  final createdDate = raw['createdDate'];
-  final resolvedCreatedDate = createdDate is Timestamp
-      ? createdDate
-      : Timestamp.fromDate(DateTime.now());
-
-  final sizesRaw = raw['sizes'];
-  final imagesRaw = raw['images'];
-
-  return ProductEntity(
-    categoryName: (raw['categoryName'] ?? '').toString(),
-    id: (raw['id'] ?? fallbackId).toString(),
-    currentDiscount: _toDouble(raw['currentDiscount']) ?? 0,
-    categoryId: (raw['categoryId'] ?? '').toString(),
-    colors: colors,
-    createdDate: resolvedCreatedDate,
-    discountedPrice: _toDouble(raw['discountedPrice']) ?? 0,
-    gender: (raw['gender'] ?? '').toString(),
-    images: imagesRaw is List ? List<dynamic>.from(imagesRaw) : <dynamic>[],
-    price: _toDouble(raw['price']) ?? 0,
-    sizes: sizesRaw is List ? List<dynamic>.from(sizesRaw) : <dynamic>[],
-    title: (raw['title'] ?? '').toString(),
-    productId: (raw['productId'] ?? '').toString(),
-    salesNumber: _toDouble(raw['salesNumber'])?.toInt() ?? 0,
-    description: (raw['description'] ?? '').toString(),
-  );
-}

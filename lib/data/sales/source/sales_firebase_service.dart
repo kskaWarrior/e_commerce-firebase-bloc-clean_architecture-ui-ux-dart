@@ -1,17 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/tenant_collections.dart';
 
 abstract class SalesFirebaseService {
   Future<Either> getSalesByUserId(String userId);
   Future<Either> registerSale(Map<String, dynamic> sale);
+
+  // Admin operations
+  Future<Either> getSalesByStore();
+  Future<Either> updateSaleStatus(String saleId, String status);
 }
 
 class SalesFirebaseServiceImpl implements SalesFirebaseService {
+  SalesFirebaseServiceImpl(this._tenant);
+
+  final TenantCollections _tenant;
+
   @override
   Future<Either> getSalesByUserId(String userId) async {
     try {
-      final data = await FirebaseFirestore.instance
-          .collection('sales')
+      final data = await _tenant.sales
           .where('userId', isEqualTo: userId)
           .get();
 
@@ -22,15 +30,44 @@ class SalesFirebaseServiceImpl implements SalesFirebaseService {
   }
 
   @override
+  Future<Either> getSalesByStore() async {
+    try {
+      final data = await _tenant.sales
+          .orderBy('createdDate', descending: true)
+          .get();
+      return Right(data.docs.map((doc) => doc.data()).toList());
+    } catch (e) {
+      return Left('Failed to load orders. Please try again.');
+    }
+  }
+
+  @override
+  Future<Either> updateSaleStatus(String saleId, String status) async {
+    try {
+      // Rules restrict this write to owners/super and to the status field.
+      await _tenant.sales.doc(saleId).update({'status': status});
+      return const Right('Order status updated.');
+    } catch (e) {
+      return Left('Failed to update order status: $e');
+    }
+  }
+
+  @override
   Future<Either> registerSale(Map<String, dynamic> sale) async {
     try {
-      final firestore = FirebaseFirestore.instance;
-      final salesCollection = firestore.collection('sales');
-      final salesProductsCollection = firestore.collection('sales_products');
+      final salesCollection = _tenant.sales;
+      final salesProductsCollection = _tenant.salesProducts;
 
       final saleRef = salesCollection.doc();
       final saleId = saleRef.id;
-      final saleData = <String, dynamic>{...sale, 'id': saleId};
+      final saleData = <String, dynamic>{
+        ...sale,
+        'id': saleId,
+        // Path already carries the tenant; denormalized for BigQuery and
+        // cross-store queries.
+        'storeId': _tenant.storeId,
+        'status': sale['status'] ?? 'pending',
+      };
 
       final rawProducts = sale['productsList'];
       final products = rawProducts is List
@@ -40,7 +77,7 @@ class SalesFirebaseServiceImpl implements SalesFirebaseService {
               .toList()
           : <Map<String, dynamic>>[];
 
-      final batch = firestore.batch();
+      final batch = _tenant.batch();
       batch.set(saleRef, saleData);
 
       for (var index = 0; index < products.length; index++) {
@@ -66,6 +103,7 @@ class SalesFirebaseServiceImpl implements SalesFirebaseService {
           'createdDate': sale['createdDate'] ?? FieldValue.serverTimestamp(),
           'userId': (sale['userId'] ?? '').toString(),
           'userName': (sale['userName'] ?? '').toString(),
+          'storeId': _tenant.storeId,
           'sourceCollection': 'sales',
           'payload': product,
         });

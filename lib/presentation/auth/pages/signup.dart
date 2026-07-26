@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/button_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/gender_and_age.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,12 +27,12 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   // Typewriter state for each field
-  final List<String> _typewriterTexts = [
-    'Name',
-    'Phone',
-    'Email',
-    'Password',
-  ];
+  List<String> get _typewriterTexts => [
+        S.of(context).name,
+        S.of(context).phone,
+        S.of(context).email,
+        S.of(context).password,
+      ];
   final List<String> _displayedTexts = ['', '', '', ''];
   // ignore: unused_field
   int _currentField = 0;
@@ -78,9 +81,15 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
+    // On web, the untouched mobile layout renders inside a centered glass
+    // panel over a branded backdrop (see WebAuthFrame).
+    return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
-      appBar: const MyAppBar(
-        title: 'Signing Up',
+      appBar: MyAppBar(
+        title: S.of(context).signingUp,
         hideBack: false,
       ),
       resizeToAvoidBottomInset: true,
@@ -98,23 +107,21 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                          'Only two steps!',
-                      style: TextStyle(
-                        fontFamily: 'CircularStd',
+                          S.of(context).onlyTwoSteps,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
-                          '1. Please fill in your profile below:',
-                      style: TextStyle(
-                        fontFamily: 'CircularStd',
+                          S.of(context).fillProfileBelow,
+                      style: const TextStyle(
                         fontStyle: FontStyle.italic,
                         fontSize: 20,
                         fontWeight: FontWeight.w400,
@@ -132,14 +139,13 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: TextField(
                         controller: _nameController,
                         style: const TextStyle(
-                          fontFamily: 'CircularStd',
                           fontSize: 16,
                         ),
                         decoration: InputDecoration(
                           hintText: _displayedTexts[0],
                           prefixIcon: const Icon(Icons.person_outline),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.brand.surfaceBright,
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
@@ -162,14 +168,13 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: TextField(
                         controller: _phoneController,
                         style: const TextStyle(
-                          fontFamily: 'CircularStd',
                           fontSize: 16,
                         ),
                         decoration: InputDecoration(
                           hintText: _displayedTexts[1],
                           prefixIcon: const Icon(Icons.phone_outlined),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.brand.surfaceBright,
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
@@ -192,14 +197,13 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: TextField(
                         controller: _emailController,
                         style: const TextStyle(
-                          fontFamily: 'CircularStd',
                           fontSize: 16,
                         ),
                         decoration: InputDecoration(
                           hintText: _displayedTexts[2],
                           prefixIcon: const Icon(Icons.email_outlined),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.brand.surfaceBright,
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
@@ -222,7 +226,6 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: TextField(
                         controller: _passwordController,
                         style: const TextStyle(
-                          fontFamily: 'CircularStd',
                           fontSize: 16,
                         ),
                         decoration: InputDecoration(
@@ -234,7 +237,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               Container(
                                 width: 2,
                                 height: 24,
-                                color: Colors.grey.shade500,
+                                color: context.brand.muted,
                                 margin: const EdgeInsets.symmetric(
                                   vertical: 10,
                                 ),
@@ -254,7 +257,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             ],
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.brand.surfaceBright,
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 16),
                           border: OutlineInputBorder(
@@ -274,13 +277,12 @@ class _SignUpPageState extends State<SignUpPage> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: context.brand.textInverse,
                         elevation: 4,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         textStyle: const TextStyle(
-                          fontFamily: 'CircularStd',
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -289,32 +291,33 @@ class _SignUpPageState extends State<SignUpPage> {
                         if (_nameController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Please enter your name.'),
-                              backgroundColor: Colors.red,
+                              content: Text(S.of(context).pleaseEnterName),
+                              backgroundColor: context.brand.danger,
                             ),
                           );
                           return;
                         } else if (_phoneController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Please enter your phone number.'),
-                              backgroundColor: Colors.red,
+                              content: Text(S.of(context).pleaseEnterPhone),
+                              backgroundColor: context.brand.danger,
                             ),
                           );
                           return;
                         } else if (_emailController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Please enter your email.'),
-                              backgroundColor: Colors.red,
+                              content: Text(S.of(context).pleaseEnterEmail),
+                              backgroundColor: context.brand.danger,
                             ),
                           );
                           return;
                         } else if (_passwordController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Please enter your password.'),
-                              backgroundColor: Colors.red,
+                              content: Text(
+                                  S.of(context).pleaseEnterPasswordPeriod),
+                              backgroundColor: context.brand.danger,
                             ),
                           );
                           return;
@@ -334,7 +337,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         );
                       },
-                      child: const Text('Continue'),
+                      child: Text(S.of(context).continueLabel),
                     ),
                   ),
                 ],

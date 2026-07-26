@@ -1,3 +1,4 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:flutter/material.dart';
 
 class TopSellingTitle extends StatelessWidget {
@@ -12,7 +13,7 @@ class TopSellingTitle extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Top Selling',
+            S.of(context).topSelling,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.inversePrimary,
               fontSize: 20,
@@ -30,7 +31,7 @@ class TopSellingTitle extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5.0),
             child: Text(
-              'Top Selling',
+              S.of(context).topSelling,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                 fontSize: 20,
@@ -47,7 +48,7 @@ class TopSellingTitle extends StatelessWidget {
             ),
           ),
           Text(
-            'Top Selling',
+            S.of(context).topSelling,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.inversePrimary,
               fontSize: 20,
