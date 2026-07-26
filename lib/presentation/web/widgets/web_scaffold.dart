@@ -179,8 +179,9 @@ class _WebHeader extends StatelessWidget {
                           AppNavigator.push(context, const MyPurchasesPage()),
                 ),
                 const Spacer(),
-                LanguageMenuButton(iconColor: brand.iconStrong),
-                const SizedBox(width: 4),
+                LanguageMenuButton(
+                    iconColor: brand.iconStrong, showLabel: true),
+                const SizedBox(width: 10),
                 _CartButton(
                   active: section == WebSection.cart,
                   onTap: section == WebSection.cart
