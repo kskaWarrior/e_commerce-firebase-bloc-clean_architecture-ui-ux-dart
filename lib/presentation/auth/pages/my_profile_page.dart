@@ -12,6 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -261,9 +262,273 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets the storefront-style split layout (asset beside a glass
+    // card); everything else keeps the mobile layout, framed on web.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return WebAuthScaffold(
+      card: WebGoldGlassPanel(
+        width: 480,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+          child: _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 80),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    WebAuthCardHeader(
+                      title: s.myProfile,
+                      onBack: Navigator.of(context).canPop()
+                          ? () => Navigator.of(context).pop()
+                          : null,
+                    ),
+                    const SizedBox(height: 22),
+                    Center(
+                      child: GestureDetector(
+                        onTap: (_isSaving || _isUploadingImage)
+                            ? null
+                            : _pickAndUploadProfileImage,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            CircleAvatar(
+                              radius: 48,
+                              backgroundColor: brand.primary.withOpacity(0.15),
+                              backgroundImage: _profileImageUrl.isNotEmpty
+                                  ? NetworkImage(_profileImageUrl)
+                                  : null,
+                              child: _profileImageUrl.isEmpty
+                                  ? Icon(Icons.person,
+                                      size: 48, color: brand.iconStrong)
+                                  : null,
+                            ),
+                            Positioned(
+                              right: -2,
+                              bottom: -2,
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: brand.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: brand.surfaceBright, width: 2),
+                                ),
+                                child: _isUploadingImage
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: brand.onPrimary,
+                                        ),
+                                      )
+                                    : Icon(Icons.camera_alt_outlined,
+                                        color: brand.onPrimary, size: 17),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      s.tapToChangePhoto,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: brand.muted),
+                    ),
+                    const SizedBox(height: 22),
+                    TextField(
+                      controller: _emailController,
+                      enabled: false,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w600),
+                      decoration: webAuthInputDecoration(
+                        context,
+                        hintText: s.email,
+                        prefixIcon:
+                            Icon(Icons.email_outlined, color: brand.iconStrong),
+                        suffixIcon:
+                            Icon(Icons.lock_outline, color: brand.muted),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _nameController,
+                      keyboardType: TextInputType.name,
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w600),
+                      decoration: webAuthInputDecoration(
+                        context,
+                        hintText: s.name,
+                        prefixIcon:
+                            Icon(Icons.person_outline, color: brand.iconStrong),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w600),
+                      decoration: webAuthInputDecoration(
+                        context,
+                        hintText: s.phone,
+                        prefixIcon:
+                            Icon(Icons.phone_outlined, color: brand.iconStrong),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      keyboardType: TextInputType.visiblePassword,
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w600),
+                      decoration: webAuthInputDecoration(
+                        context,
+                        hintText: s.newPasswordOptional,
+                        prefixIcon: Icon(Icons.password_outlined,
+                            color: brand.iconStrong),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: brand.muted,
+                          ),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _addressController,
+                      keyboardType: TextInputType.streetAddress,
+                      style: const TextStyle(
+                          fontSize: 15.5, fontWeight: FontWeight.w600),
+                      decoration: webAuthInputDecoration(
+                        context,
+                        hintText: s.address,
+                        prefixIcon: Icon(Icons.location_on_outlined,
+                            color: brand.iconStrong),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        s.mostInterestedIn,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: ['Male', 'Female', 'Both'].map((gender) {
+                        final selected = _selectedGender == gender;
+                        return ChoiceChip(
+                          label: Text(gender),
+                          selected: selected,
+                          onSelected: (_) =>
+                              setState(() => _selectedGender = gender),
+                          selectedColor: brand.primary,
+                          labelStyle: TextStyle(
+                            color: selected
+                                ? brand.onPrimary
+                                : brand.textPrimary,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        s.birthDate,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: _pickDate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: brand.surfaceBright.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: brand.mutedSoft),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.cake_outlined, color: brand.muted),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${_selectedDate.day.toString().padLeft(2, '0')}/'
+                                '${_selectedDate.month.toString().padLeft(2, '0')}/'
+                                '${_selectedDate.year}',
+                                style: TextStyle(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: brand.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(Icons.arrow_drop_down, color: brand.muted),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 52,
+                      child: FilledButton(
+                        onPressed: _isSaving ? null : _saveProfile,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: brand.iconStrong,
+                          foregroundColor: brand.textInverse,
+                          textStyle: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w800),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: _isSaving
+                            ? SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      brand.textInverse),
+                                ),
+                              )
+                            : Text(s.saveChanges),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
