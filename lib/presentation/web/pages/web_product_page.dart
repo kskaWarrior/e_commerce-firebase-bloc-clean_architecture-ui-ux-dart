@@ -14,6 +14,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -205,9 +206,8 @@ class _WebProductPageState extends State<WebProductPage> {
       },
       child: WebScaffold(
         section: WebSection.none,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
+        body: WebScrollView(
+          children: [
               const SizedBox(height: WebScaffold.headerHeight + 28),
               WebMaxWidth(
                 child: Column(
@@ -298,9 +298,7 @@ class _WebProductPageState extends State<WebProductPage> {
                 ),
               ),
               const SizedBox(height: 64),
-              const WebFooter(),
-            ],
-          ),
+          ],
         ),
       ),
     );

@@ -13,6 +13,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -49,19 +50,16 @@ class WebFavoritesPage extends StatelessWidget {
       ],
       child: WebScaffold(
         section: WebSection.favorites,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: WebScaffold.headerHeight + 28),
-              WebMaxWidth(
-                child: userId == null || userId.isEmpty
-                    ? const _SignedOutState()
-                    : _FavoritesBody(userId: userId),
-              ),
-              const SizedBox(height: 64),
-              const WebFooter(),
-            ],
-          ),
+        body: WebScrollView(
+          children: [
+            const SizedBox(height: WebScaffold.headerHeight + 28),
+            WebMaxWidth(
+              child: userId == null || userId.isEmpty
+                  ? const _SignedOutState()
+                  : _FavoritesBody(userId: userId),
+            ),
+            const SizedBox(height: 64),
+          ],
         ),
       ),
     );

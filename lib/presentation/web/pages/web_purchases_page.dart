@@ -4,6 +4,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sale
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,9 +31,8 @@ class WebPurchasesPage extends StatelessWidget {
       },
       child: WebScaffold(
         section: WebSection.orders,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
+        body: WebScrollView(
+          children: [
               const SizedBox(height: WebScaffold.headerHeight + 28),
               WebMaxWidth(
                 child: Column(
@@ -101,9 +101,7 @@ class WebPurchasesPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 64),
-              const WebFooter(),
-            ],
-          ),
+          ],
         ),
       ),
     );
