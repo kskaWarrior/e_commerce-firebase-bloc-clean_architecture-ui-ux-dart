@@ -5,19 +5,29 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum _PaymentMethod { creditCard, debitCard }
 
@@ -237,9 +247,8 @@ class _WebCartPageState extends State<WebCartPage> {
         builder: (context, _) {
           final drafts = CartDraftStore.instance.drafts;
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
+          return WebScrollView(
+            children: [
                 const SizedBox(height: WebScaffold.headerHeight + 28),
                 WebMaxWidth(
                   child: userId == null || userId.isEmpty
@@ -249,29 +258,33 @@ class _WebCartPageState extends State<WebCartPage> {
                           body: s.signInToViewCart,
                         )
                       : drafts.isEmpty
-                          ? _EmptyState(
-                              icon: Icons.shopping_bag_outlined,
-                              title: s.cartEmptyTitle,
-                              body: s.cartEmptyBody,
-                              action: FilledButton.icon(
-                                onPressed: () => Navigator.of(context)
-                                    .popUntil((route) => route.isFirst),
-                                icon: const Icon(Icons.storefront_outlined,
-                                    size: 19),
-                                label: Text(s.continueShopping),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: brand.primary,
-                                  foregroundColor: brand.onPrimary,
-                                  minimumSize: const Size(0, 48),
+                          ? Column(
+                              children: [
+                                _EmptyState(
+                                  icon: Icons.shopping_bag_outlined,
+                                  title: s.cartEmptyTitle,
+                                  body: s.cartEmptyBody,
+                                  action: FilledButton.icon(
+                                    onPressed: () => Navigator.of(context)
+                                        .popUntil((route) => route.isFirst),
+                                    icon: const Icon(
+                                        Icons.storefront_outlined, size: 19),
+                                    label: Text(s.continueShopping),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: brand.primary,
+                                      foregroundColor: brand.onPrimary,
+                                      minimumSize: const Size(0, 48),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 48),
+                                _EmptyCartSuggestions(userId: userId),
+                              ],
                             )
                           : _cartContent(brand, drafts),
                 ),
                 const SizedBox(height: 64),
-                const WebFooter(),
-              ],
-            ),
+            ],
           );
         },
       ),
@@ -927,6 +940,130 @@ class _EmptyState extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Below the empty cart: the shopper's own favorites plus a "New In" rail —
+/// mirrors the Favorites page's Novidades section. Owns its own cubits scoped
+/// to this subtree so they close automatically once the cart is filled.
+class _EmptyCartSuggestions extends StatelessWidget {
+  const _EmptyCartSuggestions({required this.userId});
+
+  final String userId;
+
+  Future<void> _toggle(
+    BuildContext context,
+    ProductEntity product,
+    Set<String> favoriteProductIds,
+  ) async {
+    final cubit = context.read<FavoritesCubit>();
+    if (favoriteProductIds.contains(product.id)) {
+      await cubit.deleteFavorite(userId, product.id);
+    } else {
+      await cubit.registerFavorite(FavoriteEntity(
+        createdDate: Timestamp.now(),
+        id: '',
+        productId: product.id,
+        userId: userId,
+      ));
+    }
+    if (!context.mounted) return;
+    await cubit.loadFavoritesByUserId(userId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<FavoritesCubit>()..loadFavoritesByUserId(userId),
+        ),
+        BlocProvider(
+          create: (_) => sl<ProductsDisplayCubit>()..displayProducts(),
+        ),
+        BlocProvider(
+          create: (_) => sl<NewInDisplayCubit>()..displayProducts(),
+        ),
+      ],
+      child: BlocBuilder<FavoritesCubit, FavoritesState>(
+        builder: (context, favoritesState) {
+          final favoriteProductIds = favoritesState is FavoritesLoaded
+              ? favoritesState.favorites.map((f) => f.productId).toSet()
+              : <String>{};
+
+          return BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
+            builder: (context, topState) {
+              return BlocBuilder<NewInDisplayCubit, ProductsDisplayState>(
+                builder: (context, newState) {
+                  final s = S.of(context);
+
+                  final catalogById = <String, ProductEntity>{};
+                  if (topState is ProductsDisplayLoaded) {
+                    for (final product in topState.products) {
+                      catalogById[product.id] = product;
+                    }
+                  }
+                  final newIn = newState is ProductsDisplayLoaded
+                      ? newState.products
+                      : const <ProductEntity>[];
+                  for (final product in newIn) {
+                    catalogById[product.id] = product;
+                  }
+
+                  final favoriteProducts = favoriteProductIds
+                      .map((id) => catalogById[id])
+                      .whereType<ProductEntity>()
+                      .toList(growable: false);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (favoriteProducts.isNotEmpty) ...[
+                        WebSectionTitle(
+                          title: s.myFavorites,
+                          subtitle: s.savedProducts(favoriteProducts.length),
+                        ),
+                        const SizedBox(height: 20),
+                        WebProductGrid(
+                          products: favoriteProducts,
+                          favoriteProductIds: favoriteProductIds,
+                          onTap: (product) => AppNavigator.push(
+                            context,
+                            ProductPage(
+                              product: product,
+                              topSellingProducts: favoriteProducts,
+                            ),
+                          ),
+                          onFavoritePressed: (product) =>
+                              _toggle(context, product, favoriteProductIds),
+                        ),
+                        const SizedBox(height: 48),
+                      ],
+                      if (newIn.isNotEmpty)
+                        WebProductRail(
+                          title: s.newIn,
+                          subtitle: s.youMightAlsoLike,
+                          products: newIn,
+                          favoriteProductIds: favoriteProductIds,
+                          onTap: (product) => AppNavigator.push(
+                            context,
+                            ProductPage(
+                              product: product,
+                              topSellingProducts: newIn,
+                            ),
+                          ),
+                          onFavoritePressed: (product) =>
+                              _toggle(context, product, favoriteProductIds),
+                        ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
