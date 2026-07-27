@@ -158,7 +158,11 @@ class FirebaseServiceImpl implements FirebaseService {
           ? _toUtcDateOnly(userCreationReq.birthDate!)
           : null;
 
-      await _tenant.users.doc(userId).update({
+      // set+merge (not update) so a first-time profile in this store is
+      // created rather than throwing not-found; the email is stamped from
+      // the Auth account so a freshly created doc is self-consistent.
+      await _tenant.users.doc(userId).set({
+        'email': currentUser.email,
         'name': userCreationReq.name,
         'phone': userCreationReq.phone,
         'address': userCreationReq.address,
@@ -166,7 +170,7 @@ class FirebaseServiceImpl implements FirebaseService {
             ? Timestamp.fromDate(normalizedBirthDate)
             : null,
         'gender': userCreationReq.gender,
-      });
+      }, SetOptions(merge: true));
 
       return const Right('Profile updated with success!');
     } on FirebaseException catch (e) {
@@ -270,9 +274,11 @@ class FirebaseServiceImpl implements FirebaseService {
 
       final String downloadUrl = await ref.getDownloadURL();
 
-      await _tenant.users.doc(userId).update({
+      // Merge so uploading a photo works even before the rest of the
+      // profile doc exists (first-time profile in this store).
+      await _tenant.users.doc(userId).set({
         'profileImageUrl': downloadUrl,
-      });
+      }, SetOptions(merge: true));
 
       return Right(downloadUrl);
     } on FirebaseException catch (e) {
