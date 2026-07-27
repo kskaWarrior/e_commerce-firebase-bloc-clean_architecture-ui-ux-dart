@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/delete_product_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_all_products_usecase.dart';
@@ -173,29 +174,42 @@ class _ProductRowState extends State<_ProductRow> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: widget.image == null
-                    ? Container(
-                        width: 52,
-                        height: 52,
-                        color: AdminColors.surfaceTintStrong,
-                        child: const Icon(Icons.image_outlined,
-                            color: AdminColors.textSecondary, size: 22),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: widget.image!,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(
-                          width: 52,
-                          height: 52,
-                          color: AdminColors.surfaceTintStrong,
-                          child: const Icon(Icons.broken_image_outlined,
-                              color: AdminColors.textSecondary, size: 22),
-                        ),
-                      ),
+              MouseRegion(
+                cursor: widget.image == null
+                    ? MouseCursor.defer
+                    : SystemMouseCursors.zoomIn,
+                child: GestureDetector(
+                  onTap: widget.image == null
+                      ? null
+                      : () => showWebImageViewer(
+                            context,
+                            imagePaths: [widget.image!],
+                          ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: widget.image == null
+                        ? Container(
+                            width: 52,
+                            height: 52,
+                            color: AdminColors.surfaceTintStrong,
+                            child: const Icon(Icons.image_outlined,
+                                color: AdminColors.textSecondary, size: 22),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: widget.image!,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              width: 52,
+                              height: 52,
+                              color: AdminColors.surfaceTintStrong,
+                              child: const Icon(Icons.broken_image_outlined,
+                                  color: AdminColors.textSecondary, size: 22),
+                            ),
+                          ),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(

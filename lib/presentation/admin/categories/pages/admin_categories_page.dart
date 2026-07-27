@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/delete_category_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
@@ -179,28 +180,41 @@ class _CategoryCardState extends State<_CategoryCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(13)),
-                child: SizedBox(
-                  height: 110,
-                  width: double.infinity,
-                  child: widget.image == null
-                      ? Container(
-                          color: AdminColors.surfaceTintStrong,
-                          child: const Icon(Icons.category_outlined,
-                              color: AdminColors.textSecondary, size: 30),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: widget.image!,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
-                            color: AdminColors.surfaceTintStrong,
-                            child: const Icon(Icons.broken_image_outlined,
-                                color: AdminColors.textSecondary,
-                                size: 30),
+              MouseRegion(
+                cursor: widget.image == null
+                    ? MouseCursor.defer
+                    : SystemMouseCursors.zoomIn,
+                child: GestureDetector(
+                  onTap: widget.image == null
+                      ? null
+                      : () => showWebImageViewer(
+                            context,
+                            imagePaths: [widget.image!],
                           ),
-                        ),
+                  child: ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(13)),
+                    child: SizedBox(
+                      height: 110,
+                      width: double.infinity,
+                      child: widget.image == null
+                          ? Container(
+                              color: AdminColors.surfaceTintStrong,
+                              child: const Icon(Icons.category_outlined,
+                                  color: AdminColors.textSecondary, size: 30),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: widget.image!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                color: AdminColors.surfaceTintStrong,
+                                child: const Icon(Icons.broken_image_outlined,
+                                    color: AdminColors.textSecondary,
+                                    size: 30),
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
               ),
               Padding(

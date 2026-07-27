@@ -1,3 +1,4 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/entities/categories_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/usecases/get_categories.dart';
@@ -135,13 +136,22 @@ class _AdminCategoryFormPageState extends State<AdminCategoryFormPage> {
                               _imageUrl.startsWith('http'))
                             Padding(
                               padding: const EdgeInsets.only(right: 12),
-                              child: Image.network(
-                                _imageUrl,
-                                width: 72,
-                                height: 72,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.broken_image),
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.zoomIn,
+                                child: GestureDetector(
+                                  onTap: () => showWebImageViewer(
+                                    context,
+                                    imagePaths: [_imageUrl],
+                                  ),
+                                  child: Image.network(
+                                    _imageUrl,
+                                    width: 72,
+                                    height: 72,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const Icon(Icons.broken_image),
+                                  ),
+                                ),
                               ),
                             ),
                           OutlinedButton.icon(
