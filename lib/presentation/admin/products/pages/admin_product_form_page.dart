@@ -507,15 +507,17 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _hexController;
-  int _r = 28, _g = 28, _b = 28;
+  // HSV is the source of truth so the hue/map interactions preserve hue
+  // even at zero saturation/value (grey/black); RGB + hex derive from it.
+  late HSVColor _hsv;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initial?.title ?? '');
     final hex = widget.initial?.hex ?? '1C1C1C';
-    _hexController = TextEditingController(text: hex);
-    _applyHex(hex, updateField: false);
+    _hsv = HSVColor.fromColor(_hexToColor(hex));
+    _hexController = TextEditingController(text: hex.toUpperCase());
   }
 
   @override
@@ -525,48 +527,47 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
     super.dispose();
   }
 
+  Color get _color => _hsv.toColor();
+  int get _r => _color.red;
+  int get _g => _color.green;
+  int get _b => _color.blue;
+
   String get _hex =>
       _r.toRadixString(16).padLeft(2, '0').toUpperCase() +
       _g.toRadixString(16).padLeft(2, '0').toUpperCase() +
       _b.toRadixString(16).padLeft(2, '0').toUpperCase();
 
-  /// Parse a 6-digit hex into the R/G/B channels. Only rewrites the text
-  /// field when [updateField] is set (avoids fighting the user's cursor).
+  void _setHsv(HSVColor hsv, {bool updateHexField = true}) {
+    setState(() => _hsv = hsv);
+    if (updateHexField) _hexController.text = _hex;
+  }
+
+  /// Parse a 6-digit hex. Skips rewriting the field when [updateField] is
+  /// false (avoids fighting the user's cursor while typing).
   void _applyHex(String raw, {bool updateField = true}) {
     final cleaned = raw.replaceAll('#', '').trim();
     if (cleaned.length != 6) return;
     final value = int.tryParse(cleaned, radix: 16);
     if (value == null) return;
-    setState(() {
-      _r = (value >> 16) & 0xFF;
-      _g = (value >> 8) & 0xFF;
-      _b = value & 0xFF;
-    });
-    if (updateField) {
-      final upper = cleaned.toUpperCase();
-      _hexController.value = TextEditingValue(
-        text: upper,
-        selection: TextSelection.collapsed(offset: upper.length),
-      );
-    }
+    _setHsv(HSVColor.fromColor(Color(0xFF000000 | value)),
+        updateHexField: updateField);
   }
 
-  void _setChannel(VoidCallback apply) {
-    setState(apply);
-    _hexController.text = _hex;
+  void _setChannel({int? r, int? g, int? b}) {
+    _setHsv(HSVColor.fromColor(
+        Color.fromARGB(255, r ?? _r, g ?? _g, b ?? _b)));
   }
 
   void _selectPreset(String name, String hex) {
     if (_nameController.text.trim().isEmpty) {
       _nameController.text = name;
     }
-    _applyHex(hex);
+    _setHsv(HSVColor.fromColor(_hexToColor(hex)));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final preview = Color(0xFF000000 | (_r << 16) | (_g << 8) | _b);
 
     return AlertDialog(
       title: Text(widget.initial == null ? s.addColor : s.editColor),
@@ -577,13 +578,32 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 2D saturation/value map — drag the ring (dropper) to pick.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 168,
+                  width: double.infinity,
+                  child: _SvMap(
+                    hsv: _hsv,
+                    onChanged: (sat, val) =>
+                        _setHsv(_hsv.withSaturation(sat).withValue(val)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _HueBar(
+                hue: _hsv.hue,
+                onChanged: (hue) => _setHsv(_hsv.withHue(hue)),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: preview,
+                      color: _color,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AdminColors.border),
                     ),
@@ -611,11 +631,11 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
               ),
               const SizedBox(height: 14),
               _channelSlider(
-                  'R', _r, AdminColors.cancelled, (v) => _setChannel(() => _r = v)),
+                  'R', _r, AdminColors.cancelled, (v) => _setChannel(r: v)),
               _channelSlider(
-                  'G', _g, AdminColors.delivered, (v) => _setChannel(() => _g = v)),
+                  'G', _g, AdminColors.delivered, (v) => _setChannel(g: v)),
               _channelSlider(
-                  'B', _b, AdminColors.paid, (v) => _setChannel(() => _b = v)),
+                  'B', _b, AdminColors.paid, (v) => _setChannel(b: v)),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -672,6 +692,141 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
           child: Text('$value', textAlign: TextAlign.right),
         ),
       ],
+    );
+  }
+}
+
+/// The 2D saturation (x) / value (y) map for the current hue. Drag anywhere
+/// — the ring acts as the color dropper.
+class _SvMap extends StatelessWidget {
+  const _SvMap({required this.hsv, required this.onChanged});
+
+  final HSVColor hsv;
+  final void Function(double sat, double val) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final h = c.maxHeight;
+        void handle(Offset p) {
+          final sat = (p.dx / w).clamp(0.0, 1.0);
+          final val = 1 - (p.dy / h).clamp(0.0, 1.0);
+          onChanged(sat, val);
+        }
+
+        final hueColor = HSVColor.fromAHSV(1, hsv.hue, 1, 1).toColor();
+        return GestureDetector(
+          onPanDown: (d) => handle(d.localPosition),
+          onPanUpdate: (d) => handle(d.localPosition),
+          child: Stack(
+            children: [
+              Positioned.fill(child: ColoredBox(color: hueColor)),
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.white, Color(0x00FFFFFF)],
+                    ),
+                  ),
+                ),
+              ),
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x00000000), Colors.black],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: (hsv.saturation * w).clamp(0.0, w) - 9,
+                top: ((1 - hsv.value) * h).clamp(0.0, h) - 9,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.45), blurRadius: 3),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Horizontal hue spectrum; drag the thumb to rotate the hue.
+class _HueBar extends StatelessWidget {
+  const _HueBar({required this.hue, required this.onChanged});
+
+  final double hue;
+  final ValueChanged<double> onChanged;
+
+  static const List<Color> _spectrum = [
+    Color(0xFFFF0000),
+    Color(0xFFFFFF00),
+    Color(0xFF00FF00),
+    Color(0xFF00FFFF),
+    Color(0xFF0000FF),
+    Color(0xFFFF00FF),
+    Color(0xFFFF0000),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final width = c.maxWidth;
+        void handle(double dx) =>
+            onChanged((dx / width * 360).clamp(0.0, 360.0));
+        return GestureDetector(
+          onPanDown: (d) => handle(d.localPosition.dx),
+          onPanUpdate: (d) => handle(d.localPosition.dx),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                height: 16,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: const LinearGradient(colors: _spectrum),
+                ),
+              ),
+              Positioned(
+                left: (hue / 360 * width).clamp(0.0, width) - 9,
+                top: -2,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: HSVColor.fromAHSV(1, hue, 1, 1).toColor(),
+                    border: Border.all(color: Colors.white, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.35), blurRadius: 3),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
