@@ -1,4 +1,5 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
@@ -37,10 +38,22 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     final result = await sl<GetStoreUseCase>().call(null);
     if (!mounted) return;
     result.fold(
-      (error) => setState(() {
-        _error = error.toString();
-        _loading = false;
-      }),
+      (error) {
+        if (error.toString() == 'Store not found.') {
+          // The store doc hasn't been provisioned yet (e.g. a demo store
+          // seeded with catalog only). Prefill defaults from the tenant id
+          // so the owner can fill in and save — the save creates the doc.
+          final storeId = sl<StoreContext>().storeId;
+          _nameController.text = storeId;
+          _appTitleController.text = storeId;
+          setState(() => _loading = false);
+        } else {
+          setState(() {
+            _error = error.toString();
+            _loading = false;
+          });
+        }
+      },
       (store) {
         final s = store as StoreEntity;
         _nameController.text = s.name;

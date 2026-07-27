@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/tenant_collections.dart';
 
@@ -31,7 +32,10 @@ class StoreFirebaseServiceImpl implements StoreFirebaseService {
       Map<String, dynamic> branding, String name) async {
     try {
       // Security rules only allow owners to change branding/name.
-      await _tenant.storeDoc.update({'branding': branding, 'name': name});
+      // set+merge (not update) so the store doc is created on first save
+      // when it hasn't been provisioned yet, rather than throwing not-found.
+      await _tenant.storeDoc
+          .set({'branding': branding, 'name': name}, SetOptions(merge: true));
       return const Right('Store updated successfully!');
     } catch (e) {
       return Left('Failed to update store: $e');
