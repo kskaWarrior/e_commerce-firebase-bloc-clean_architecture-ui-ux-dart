@@ -67,13 +67,16 @@ class _WebProductCardState extends State<WebProductCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(17)),
-                    child: AspectRatio(
-                      aspectRatio: 1,
+              // The image fills whatever height remains after the text
+              // block, so the fixed-height caption can never overflow the
+              // grid cell regardless of column width or childAspectRatio.
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(17)),
                       child: imageUrl.isEmpty
                           ? _placeholder(brand)
                           : CachedNetworkImage(
@@ -84,52 +87,52 @@ class _WebProductCardState extends State<WebProductCard> {
                                   _placeholder(brand),
                             ),
                     ),
-                  ),
-                  if (hasDiscount)
-                    Positioned(
-                      left: 10,
-                      top: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: brand.secondary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '-${product.currentDiscount}%',
-                          style: TextStyle(
-                            color: brand.textInverse,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
+                    if (hasDiscount)
+                      Positioned(
+                        left: 10,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: brand.secondary,
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                        ),
-                      ),
-                    ),
-                  if (widget.onFavoritePressed != null)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Material(
-                        color: brand.surfaceBright.withOpacity(0.9),
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          onTap: widget.onFavoritePressed,
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(7),
-                            child: Icon(
-                              widget.isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 19,
-                              color: brand.danger,
+                          child: Text(
+                            '-${product.currentDiscount}%',
+                            style: TextStyle(
+                              color: brand.textInverse,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                    if (widget.onFavoritePressed != null)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Material(
+                          color: brand.surfaceBright.withOpacity(0.9),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: widget.onFavoritePressed,
+                            customBorder: const CircleBorder(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(7),
+                              child: Icon(
+                                widget.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 19,
+                                color: brand.danger,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
