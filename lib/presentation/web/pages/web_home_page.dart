@@ -1,31 +1,32 @@
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/images/image_display_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/categories/entities/categories_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/categories_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/categories_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/state/web_browse_controller.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_catalog_results.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Desktop-web storefront home: hero, category rail, curated product grids.
-/// Reuses the exact cubits/usecases the mobile home is built on.
+/// Desktop-web storefront home in classic e-commerce proportions: a short
+/// wide promotional banner, a category card row, then horizontal product
+/// rails. Search and category navigation live in the site-wide header.
 class WebHomePage extends StatefulWidget {
   const WebHomePage({super.key});
 
@@ -34,9 +35,7 @@ class WebHomePage extends StatefulWidget {
 }
 
 class _WebHomePageState extends State<WebHomePage> {
-  String _searchQuery = '';
-  String? _selectedCategoryId;
-  String? _selectedCategoryTitle;
+  final GlobalKey _railsKey = GlobalKey();
 
   Future<void> _toggleFavorite({
     required BuildContext context,
@@ -62,14 +61,12 @@ class _WebHomePageState extends State<WebHomePage> {
       return;
     }
 
-    final favorite = FavoriteEntity(
+    await favoritesCubit.registerFavorite(FavoriteEntity(
       createdDate: Timestamp.now(),
       id: '',
       productId: product.id,
       userId: userId,
-    );
-
-    await favoritesCubit.registerFavorite(favorite);
+    ));
     if (!context.mounted) return;
     await favoritesCubit.loadFavoritesByUserId(userId);
   }
@@ -79,6 +76,16 @@ class _WebHomePageState extends State<WebHomePage> {
     AppNavigator.push(
       context,
       ProductPage(product: product, topSellingProducts: all),
+    );
+  }
+
+  void _scrollToRails() {
+    final railsContext = _railsKey.currentContext;
+    if (railsContext == null) return;
+    Scrollable.ensureVisible(
+      railsContext,
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -109,77 +116,85 @@ class _WebHomePageState extends State<WebHomePage> {
       ],
       child: Builder(
         builder: (context) {
-          final s = S.of(context);
           return WebScaffold(
             section: WebSection.home,
-            body: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _HeroBanner(
-                    searchQuery: _searchQuery,
-                    onSearchChanged: (value) =>
-                        setState(() => _searchQuery = value),
+            body: WebScrollView(
+              children: [
+                  const SizedBox(height: WebScaffold.headerHeight + 26),
+                  // Hero slot — a search replaces the banner with results.
+                  AnimatedBuilder(
+                    animation: WebBrowseController.instance,
+                    builder: (context, _) {
+                      final controller = WebBrowseController.instance;
+                      final s = S.of(context);
+                      return WebMaxWidth(
+                        child: controller.hasQuery
+                            ? WebCatalogResults(
+                                title: s.resultsFor(controller.query),
+                                subtitleBuilder: (c, n) =>
+                                    S.of(c).productsFound(n),
+                                emptyMessage: s.nothingMatchedSearch,
+                                filter: (product) {
+                                  final q = controller.query.toLowerCase();
+                                  return product.title
+                                          .toLowerCase()
+                                          .contains(q) ||
+                                      product.categoryName
+                                          .toLowerCase()
+                                          .contains(q);
+                                },
+                                onClear: controller.clearSearch,
+                                clearTooltip: s.clearSearch,
+                              )
+                            : _HeroBanner(onShopNow: _scrollToRails),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 44),
+                  const _CategoryCardsSection(),
+                  // Category slot — a selected category renders inline here.
+                  AnimatedBuilder(
+                    animation: WebBrowseController.instance,
+                    builder: (context, _) {
+                      final controller = WebBrowseController.instance;
+                      final category = controller.category;
+                      if (category == null) return const SizedBox.shrink();
+                      final s = S.of(context);
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 32),
+                        child: WebMaxWidth(
+                          child: WebCatalogResults(
+                            title: category.title,
+                            subtitleBuilder: (c, n) =>
+                                S.of(c).productsInCategory(n),
+                            emptyMessage: s.noProductsInCategory,
+                            filter: (product) =>
+                                product.categoryId == category.id,
+                            onClear: controller.clearCategory,
+                            clearTooltip: s.clearCategory,
+                            childAspectRatio: 0.60,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 44),
                   BlocBuilder<FavoritesCubit, FavoritesState>(
                     builder: (context, favoritesState) {
                       final favoriteProductIds =
                           favoritesState is FavoritesLoaded
                               ? favoritesState.favorites
-                                  .map((e) => e.productId)
+                                  .map((favorite) => favorite.productId)
                                   .toSet()
                               : <String>{};
 
                       return Column(
+                        key: _railsKey,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (_searchQuery.trim().isNotEmpty) ...[
-                            _SearchResults(
-                              query: _searchQuery,
-                              favoriteProductIds: favoriteProductIds,
-                              onTap: _openProduct,
-                              onFavorite: (product, ids) => _toggleFavorite(
-                                context: context,
-                                product: product,
-                                favoriteProductIds: ids,
-                              ),
-                            ),
-                            const SizedBox(height: 48),
-                          ],
-                          _CategoriesSection(
-                            selectedCategoryId: _selectedCategoryId,
-                            onCategoryTap: (category) {
-                              setState(() {
-                                if (_selectedCategoryId == category.id) {
-                                  _selectedCategoryId = null;
-                                  _selectedCategoryTitle = null;
-                                } else {
-                                  _selectedCategoryId = category.id;
-                                  _selectedCategoryTitle = category.title;
-                                }
-                              });
-                            },
-                          ),
-                          if (_selectedCategoryId != null) ...[
-                            const SizedBox(height: 36),
-                            _CategoryProducts(
-                              categoryId: _selectedCategoryId!,
-                              categoryTitle:
-                                  _selectedCategoryTitle ?? s.categories,
-                              favoriteProductIds: favoriteProductIds,
-                              onTap: _openProduct,
-                              onFavorite: (product, ids) => _toggleFavorite(
-                                context: context,
-                                product: product,
-                                favoriteProductIds: ids,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 48),
-                          _ProductsSection<ProductsDisplayCubit>(
-                            title: s.topSelling,
-                            subtitle: s.topSellingSubtitle,
+                          _RailSection<ProductsDisplayCubit>(
+                            titleBuilder: (s) => s.topSelling,
+                            subtitleBuilder: (s) => s.topSellingSubtitle,
                             favoriteProductIds: favoriteProductIds,
                             onTap: _openProduct,
                             onFavorite: (product, ids) => _toggleFavorite(
@@ -188,10 +203,10 @@ class _WebHomePageState extends State<WebHomePage> {
                               favoriteProductIds: ids,
                             ),
                           ),
-                          const SizedBox(height: 48),
-                          _ProductsSection<NewInDisplayCubit>(
-                            title: s.newIn,
-                            subtitle: s.newInSubtitle,
+                          const SizedBox(height: 44),
+                          _RailSection<NewInDisplayCubit>(
+                            titleBuilder: (s) => s.newIn,
+                            subtitleBuilder: (s) => s.newInSubtitle,
                             favoriteProductIds: favoriteProductIds,
                             onTap: _openProduct,
                             onFavorite: (product, ids) => _toggleFavorite(
@@ -205,9 +220,7 @@ class _WebHomePageState extends State<WebHomePage> {
                     },
                   ),
                   const SizedBox(height: 64),
-                  const WebFooter(),
-                ],
-              ),
+              ],
             ),
           );
         },
@@ -216,14 +229,11 @@ class _WebHomePageState extends State<WebHomePage> {
   }
 }
 
+/// Short, wide promotional banner — desktop hero proportions.
 class _HeroBanner extends StatelessWidget {
-  const _HeroBanner({
-    required this.searchQuery,
-    required this.onSearchChanged,
-  });
+  const _HeroBanner({required this.onShopNow});
 
-  final String searchQuery;
-  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onShopNow;
 
   @override
   Widget build(BuildContext context) {
@@ -232,120 +242,116 @@ class _HeroBanner extends StatelessWidget {
     final wide = MediaQuery.sizeOf(context).width >= 980;
 
     return Container(
+      height: wide ? 320 : 380,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
           colors: [
             brand.iconStrong,
-            Color.lerp(brand.iconStrong, brand.info, 0.25) ??
+            Color.lerp(brand.iconStrong, brand.info, 0.3) ??
                 brand.iconStrong,
           ],
         ),
       ),
       child: Stack(
         children: [
-          // Warm glows echoing the brand palette.
           Positioned(
-            right: -120,
-            top: -140,
-            child: _glow(brand.primary.withOpacity(0.35), 420),
+            right: -110,
+            top: -130,
+            child: _glow(brand.primary.withOpacity(0.38), 400),
           ),
           Positioned(
-            left: -100,
-            bottom: -160,
-            child: _glow(brand.secondary.withOpacity(0.28), 380),
+            left: -90,
+            bottom: -150,
+            child: _glow(brand.secondary.withOpacity(0.26), 360),
           ),
-          WebMaxWidth(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: WebScaffold.headerHeight + (wide ? 48 : 36),
-                bottom: wide ? 56 : 40,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 44),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: brand.primary.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: brand.primary.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Text(
+                          s.heroWelcome(BrandConfig.appName),
+                          style: TextStyle(
+                            color: brand.primary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        s.heroTitle,
+                        style: TextStyle(
+                          color: brand.textInverse,
+                          fontSize: wide ? 36 : 28,
+                          height: 1.12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        s.heroSubtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: brand.textInverse.withOpacity(0.72),
+                          fontSize: 14.5,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      FilledButton.icon(
+                        onPressed: onShopNow,
+                        icon: const Icon(Icons.storefront_outlined,
+                            size: 19),
+                        label: Text(s.shopNow),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: brand.primary,
+                          foregroundColor: brand.onPrimary,
+                          minimumSize: const Size(0, 48),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: brand.primary.withOpacity(0.16),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: brand.primary.withOpacity(0.4),
-                            ),
-                          ),
-                          child: Text(
-                            s.heroWelcome(BrandConfig.appName),
-                            style: TextStyle(
-                              color: brand.primary,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          s.heroTitle,
-                          style: TextStyle(
-                            color: brand.textInverse,
-                            fontSize: wide ? 42 : 32,
-                            height: 1.12,
+                              horizontal: 26),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: -1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          s.heroSubtitle,
-                          style: TextStyle(
-                            color: brand.textInverse.withOpacity(0.72),
-                            fontSize: 15.5,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 26),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 460),
-                          child: TextField(
-                            onChanged: onSearchChanged,
-                            style: TextStyle(
-                              color: brand.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: s.searchProductsHint,
-                              hintStyle: TextStyle(color: brand.muted),
-                              prefixIcon:
-                                  Icon(Icons.search, color: brand.iconStrong),
-                              filled: true,
-                              fillColor: brand.surfaceBright,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 16, horizontal: 16),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  if (wide) ...[
-                    const SizedBox(width: 40),
-                    Image.asset(
-                      AppImages.appSplash,
-                      height: 320,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ],
+                ),
+                if (wide) ...[
+                  const SizedBox(width: 30),
+                  Image.asset(
+                    AppImages.appSplash,
+                    height: 260,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ],
@@ -367,18 +373,14 @@ class _HeroBanner extends StatelessWidget {
   }
 }
 
-class _CategoriesSection extends StatelessWidget {
-  const _CategoriesSection({
-    required this.selectedCategoryId,
-    required this.onCategoryTap,
-  });
-
-  final String? selectedCategoryId;
-  final ValueChanged<CategoriesEntity> onCategoryTap;
+/// Horizontal row of category cards navigating to the category pages.
+class _CategoryCardsSection extends StatelessWidget {
+  const _CategoryCardsSection();
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+
     return WebMaxWidth(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,9 +389,11 @@ class _CategoriesSection extends StatelessWidget {
             title: s.shopByCategory,
             subtitle: s.shopByCategorySubtitle,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           BlocBuilder<CategoriesCubit, CategoriesState>(
             builder: (context, state) {
+              final brand = context.brand;
+
               if (state is CategoriesLoading) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -399,26 +403,32 @@ class _CategoriesSection extends StatelessWidget {
               if (state is CategoriesError) {
                 return Text(
                   state.message,
-                  style: TextStyle(color: context.brand.danger),
+                  style: TextStyle(color: brand.danger),
                 );
               }
               if (state is! CategoriesLoaded || state.categories.isEmpty) {
                 return Text(
                   s.noCategoriesYet,
-                  style: TextStyle(color: context.brand.muted),
+                  style: TextStyle(color: brand.muted),
                 );
               }
-              return Wrap(
-                spacing: 14,
-                runSpacing: 14,
-                children: [
-                  for (final category in state.categories)
-                    _CategoryChip(
-                      category: category,
-                      selected: category.id == selectedCategoryId,
-                      onTap: () => onCategoryTap(category),
-                    ),
-                ],
+
+              return SizedBox(
+                height: 150,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: state.categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    final category = state.categories[index];
+                    return _CategoryCard(
+                      title: category.title,
+                      image: category.image,
+                      onTap: () => WebBrowseController.instance
+                          .selectCategory(category),
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -428,31 +438,27 @@ class _CategoriesSection extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatefulWidget {
-  const _CategoryChip({
-    required this.category,
-    required this.selected,
+class _CategoryCard extends StatefulWidget {
+  const _CategoryCard({
+    required this.title,
+    required this.image,
     required this.onTap,
   });
 
-  final CategoriesEntity category;
-  final bool selected;
+  final String title;
+  final String image;
   final VoidCallback onTap;
 
   @override
-  State<_CategoryChip> createState() => _CategoryChipState();
+  State<_CategoryCard> createState() => _CategoryCardState();
 }
 
-class _CategoryChipState extends State<_CategoryChip> {
+class _CategoryCardState extends State<_CategoryCard> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final brand = context.brand;
-    final emphasized = widget.selected || _hovered;
-    final image = widget.category.image.trim().isEmpty
-        ? null
-        : ImageDisplayHelper.generateCategoryImagePath(widget.category.image);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -462,46 +468,40 @@ class _CategoryChipState extends State<_CategoryChip> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
+          width: 148,
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: widget.selected
-                ? brand.primary.withOpacity(0.16)
-                : brand.surfaceBright,
-            borderRadius: BorderRadius.circular(999),
+            color: brand.surfaceBright,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: emphasized
+              color: _hovered
                   ? brand.primary
-                  : brand.iconStrong.withOpacity(0.1),
-              width: emphasized ? 1.5 : 1,
+                  : brand.iconStrong.withOpacity(0.08),
+              width: _hovered ? 1.5 : 1,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: brand.mutedSoft.withOpacity(0.6),
-                backgroundImage:
-                    image == null ? null : CachedNetworkImageProvider(image),
-                child: image == null
-                    ? Icon(Icons.category_outlined,
-                        size: 18, color: brand.muted)
-                    : null,
+            boxShadow: [
+              BoxShadow(
+                color: brand.iconStrong.withOpacity(_hovered ? 0.12 : 0.04),
+                blurRadius: _hovered ? 20 : 10,
+                offset: Offset(0, _hovered ? 8 : 3),
               ),
-              const SizedBox(width: 10),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              WebCategoryAvatar(image: widget.image, radius: 34),
+              const SizedBox(height: 12),
               Text(
-                widget.category.title,
+                widget.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight:
-                      widget.selected ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: brand.textPrimary,
                 ),
               ),
-              if (widget.selected) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.close, size: 15, color: brand.muted),
-              ],
             ],
           ),
         ),
@@ -515,177 +515,61 @@ typedef _ProductTapCallback = void Function(
 typedef _FavoriteCallback = void Function(
     ProductEntity product, Set<String> favoriteProductIds);
 
-class _SearchResults extends StatelessWidget {
-  const _SearchResults({
-    required this.query,
-    required this.favoriteProductIds,
-    required this.onTap,
-    required this.onFavorite,
-  });
-
-  final String query;
-  final Set<String> favoriteProductIds;
-  final _ProductTapCallback onTap;
-  final _FavoriteCallback onFavorite;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return WebMaxWidth(
-      child: BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
-        builder: (context, state) {
-          if (state is! ProductsDisplayLoaded) {
-            return const SizedBox.shrink();
-          }
-          final normalized = query.trim().toLowerCase();
-          final results = state.products
-              .where((product) =>
-                  product.title.toLowerCase().contains(normalized) ||
-                  product.categoryName.toLowerCase().contains(normalized))
-              .toList(growable: false);
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              WebSectionTitle(
-                title: s.resultsFor(query.trim()),
-                subtitle: s.productsFound(results.length),
-              ),
-              const SizedBox(height: 20),
-              if (results.isEmpty)
-                Text(
-                  s.nothingMatchedSearch,
-                  style: TextStyle(color: context.brand.muted),
-                )
-              else
-                WebProductGrid(
-                  products: results,
-                  favoriteProductIds: favoriteProductIds,
-                  onTap: (product) => onTap(context, product, state.products),
-                  onFavoritePressed: (product) =>
-                      onFavorite(product, favoriteProductIds),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CategoryProducts extends StatelessWidget {
-  const _CategoryProducts({
-    required this.categoryId,
-    required this.categoryTitle,
-    required this.favoriteProductIds,
-    required this.onTap,
-    required this.onFavorite,
-  });
-
-  final String categoryId;
-  final String categoryTitle;
-  final Set<String> favoriteProductIds;
-  final _ProductTapCallback onTap;
-  final _FavoriteCallback onFavorite;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return WebMaxWidth(
-      child: BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
-        builder: (context, state) {
-          if (state is! ProductsDisplayLoaded) {
-            return const SizedBox.shrink();
-          }
-          final products = state.products
-              .where((product) => product.categoryId == categoryId)
-              .toList(growable: false);
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              WebSectionTitle(
-                title: categoryTitle,
-                subtitle: s.productsInCategory(products.length),
-              ),
-              const SizedBox(height: 20),
-              if (products.isEmpty)
-                Text(
-                  s.noProductsInCategory,
-                  style: TextStyle(color: context.brand.muted),
-                )
-              else
-                WebProductGrid(
-                  products: products,
-                  favoriteProductIds: favoriteProductIds,
-                  onTap: (product) => onTap(context, product, state.products),
-                  onFavoritePressed: (product) =>
-                      onFavorite(product, favoriteProductIds),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ProductsSection<C extends Cubit<ProductsDisplayState>>
+class _RailSection<C extends Cubit<ProductsDisplayState>>
     extends StatelessWidget {
-  const _ProductsSection({
+  const _RailSection({
     super.key,
-    required this.title,
-    required this.subtitle,
+    required this.titleBuilder,
+    required this.subtitleBuilder,
     required this.favoriteProductIds,
     required this.onTap,
     required this.onFavorite,
   });
 
-  final String title;
-  final String subtitle;
+  final String Function(AppStrings s) titleBuilder;
+  final String Function(AppStrings s) subtitleBuilder;
   final Set<String> favoriteProductIds;
   final _ProductTapCallback onTap;
   final _FavoriteCallback onFavorite;
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
+
     return WebMaxWidth(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          WebSectionTitle(title: title, subtitle: subtitle),
-          const SizedBox(height: 20),
-          BlocBuilder<C, ProductsDisplayState>(
-            builder: (context, state) {
-              if (state is ProductsDisplayLoading) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (state is ProductsDisplayError) {
-                return Text(
-                  state.message,
-                  style: TextStyle(color: context.brand.danger),
-                );
-              }
-              if (state is! ProductsDisplayLoaded ||
-                  state.products.isEmpty) {
-                return Text(
-                  S.of(context).noProductsFound,
-                  style: TextStyle(color: context.brand.muted),
-                );
-              }
-              return WebProductGrid(
-                products: state.products,
-                favoriteProductIds: favoriteProductIds,
-                onTap: (product) => onTap(context, product, state.products),
-                onFavoritePressed: (product) =>
-                    onFavorite(product, favoriteProductIds),
-              );
-            },
-          ),
-        ],
+      child: BlocBuilder<C, ProductsDisplayState>(
+        builder: (context, state) {
+          final brand = context.brand;
+
+          if (state is ProductsDisplayLoading) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is ProductsDisplayError) {
+            return Text(
+              state.message,
+              style: TextStyle(color: brand.danger),
+            );
+          }
+          if (state is! ProductsDisplayLoaded || state.products.isEmpty) {
+            return Text(
+              s.noProductsFound,
+              style: TextStyle(color: brand.muted),
+            );
+          }
+
+          return WebProductRail(
+            title: titleBuilder(s),
+            subtitle: subtitleBuilder(s),
+            products: state.products,
+            favoriteProductIds: favoriteProductIds,
+            onTap: (product) => onTap(context, product, state.products),
+            onFavoritePressed: (product) =>
+                onFavorite(product, favoriteProductIds),
+          );
+        },
       ),
     );
   }

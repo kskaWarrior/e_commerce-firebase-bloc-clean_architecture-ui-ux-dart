@@ -257,13 +257,24 @@ class AdminBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: DecoratedBox(
-        decoration: const BoxDecoration(color: AdminColors.canvas),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFDF8EF),
+              AdminColors.canvas,
+              Color(0xFFF3ECDD),
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
         child: Stack(
           children: [
             _glow(
               alignment: const Alignment(-1.2, -1.1),
-              color: AdminColors.highlight.withOpacity(0.38),
-              size: 560,
+              color: AdminColors.highlight.withOpacity(0.40),
+              size: 580,
             ),
             _glow(
               alignment: const Alignment(-0.9, 1.3),
@@ -272,13 +283,18 @@ class AdminBackdrop extends StatelessWidget {
             ),
             _glow(
               alignment: const Alignment(1.25, -0.4),
-              color: AdminColors.accentSoft.withOpacity(0.9),
-              size: 640,
+              color: AdminColors.accentSoft.withOpacity(0.95),
+              size: 660,
             ),
             _glow(
               alignment: const Alignment(0.7, 1.25),
               color: AdminColors.highlight.withOpacity(0.22),
               size: 480,
+            ),
+            _glow(
+              alignment: const Alignment(1.15, 1.15),
+              color: AdminColors.accent.withOpacity(0.10),
+              size: 420,
             ),
           ],
         ),
@@ -347,8 +363,109 @@ class AdminGlassPanel extends StatelessWidget {
   }
 }
 
-/// Shared page scaffold: header row (title, subtitle, actions) above a
-/// white content card, with consistent paddings across admin pages.
+/// Translucent "liquid glass" content card: sits over the [AdminBackdrop]
+/// so the warm glows refract softly through it. A hairline top-lit border
+/// plus a soft ambient shadow give it a floating, layered feel. This is the
+/// default surface for admin content (tables, lists, forms).
+class AdminGlassCard extends StatelessWidget {
+  const AdminGlassCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.radius = 22,
+    this.blur = 20,
+    this.fill,
+    this.elevated = true,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double radius;
+  final double blur;
+  final Color? fill;
+  final bool elevated;
+
+  @override
+  Widget build(BuildContext context) {
+    final br = BorderRadius.circular(radius);
+    final base = fill ?? Colors.white;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: br,
+        boxShadow: elevated
+            ? [
+                BoxShadow(
+                  color: AdminColors.accentStrong.withOpacity(0.10),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
+                ),
+                BoxShadow(
+                  color: AdminColors.accentStrong.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : const [],
+      ),
+      child: ClipRRect(
+        borderRadius: br,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              borderRadius: br,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  base.withOpacity(0.78),
+                  base.withOpacity(0.58),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.60),
+                width: 1,
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A slim gold accent bar used as a section "eyebrow" above page titles.
+class AdminAccentBar extends StatelessWidget {
+  const AdminAccentBar({super.key, this.width = 30});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 4,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        gradient: const LinearGradient(
+          colors: [AdminColors.highlight, Color(0xFFFFD873)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AdminColors.highlight.withOpacity(0.5),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shared page scaffold: header row (accent bar, title, subtitle, actions)
+/// above a translucent glass content card, with consistent paddings.
 class AdminPageScaffold extends StatelessWidget {
   const AdminPageScaffold({
     super.key,
@@ -367,33 +484,33 @@ class AdminPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = Card(
-      clipBehavior: Clip.antiAlias,
-      child: child,
-    );
+    final content = AdminGlassCard(child: child);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
+      padding: const EdgeInsets.fromLTRB(30, 26, 30, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const AdminAccentBar(),
+                    const SizedBox(height: 12),
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
+                        letterSpacing: -0.6,
+                        color: AdminColors.accentStrong,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Text(
                         subtitle!,
                         style: const TextStyle(
@@ -408,7 +525,7 @@ class AdminPageScaffold extends StatelessWidget {
               ...actions,
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           Expanded(
             child: scrollable
                 ? SingleChildScrollView(child: content)
@@ -430,10 +547,11 @@ class AdminStatusChip extends StatelessWidget {
     final color = AdminColors.statusColor(status);
     final soft = AdminColors.statusSoft(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       decoration: BoxDecoration(
         color: soft,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -441,7 +559,13 @@ class AdminStatusChip extends StatelessWidget {
           Container(
             width: 7,
             height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withOpacity(0.5), blurRadius: 5),
+              ],
+            ),
           ),
           const SizedBox(width: 6),
           Text(

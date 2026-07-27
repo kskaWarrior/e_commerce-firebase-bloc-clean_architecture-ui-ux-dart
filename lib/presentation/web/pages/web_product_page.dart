@@ -12,16 +12,20 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Desktop-web product detail: gallery + purchase panel side by side,
-/// related products below. Mirrors the mobile page's add-to-cart contract.
+/// Desktop-web product detail in the marketplace pattern: image gallery on
+/// the left, product info in the middle, and a dedicated buy box on the
+/// right. Related products render as a rail below. Mirrors the mobile
+/// page's add-to-cart contract exactly.
 class WebProductPage extends StatefulWidget {
   const WebProductPage({
     super.key,
@@ -203,9 +207,8 @@ class _WebProductPageState extends State<WebProductPage> {
       },
       child: WebScaffold(
         section: WebSection.none,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
+        body: WebScrollView(
+          children: [
               const SizedBox(height: WebScaffold.headerHeight + 28),
               WebMaxWidth(
                 child: Column(
@@ -215,43 +218,69 @@ class _WebProductPageState extends State<WebProductPage> {
                     const SizedBox(height: 22),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final twoColumns = constraints.maxWidth >= 860;
+                        final width = constraints.maxWidth;
                         final gallery = _Gallery(
                           imagePaths: imagePaths,
                           imageIndex: _imageIndex,
                           onSelect: (index) =>
                               setState(() => _imageIndex = index),
                         );
-                        final details = _details(brand, product, hasDiscount);
+                        final info = _info(brand, product, hasDiscount);
+                        final buyBox = _buyBox(brand, product, hasDiscount);
 
-                        if (!twoColumns) {
-                          return Column(
+                        if (width >= 1100) {
+                          // Three columns: gallery | info | buy box.
+                          return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              gallery,
-                              const SizedBox(height: 28),
-                              details,
+                              Expanded(flex: 5, child: gallery),
+                              const SizedBox(width: 36),
+                              Expanded(flex: 4, child: info),
+                              const SizedBox(width: 32),
+                              Expanded(flex: 3, child: buyBox),
                             ],
                           );
                         }
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        if (width >= 760) {
+                          // Two columns: gallery | info + buy box stacked.
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(flex: 5, child: gallery),
+                              const SizedBox(width: 36),
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    info,
+                                    const SizedBox(height: 28),
+                                    buyBox,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        // Narrow: single column.
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(flex: 5, child: gallery),
-                            const SizedBox(width: 44),
-                            Expanded(flex: 6, child: details),
+                            gallery,
+                            const SizedBox(height: 28),
+                            info,
+                            const SizedBox(height: 28),
+                            buyBox,
                           ],
                         );
                       },
                     ),
                     if (related.isNotEmpty) ...[
                       const SizedBox(height: 60),
-                      WebSectionTitle(
+                      WebProductRail(
                         title: S.of(context).youMayAlsoLike,
                         subtitle: S.of(context).youMayAlsoLikeSubtitle,
-                      ),
-                      const SizedBox(height: 20),
-                      WebProductGrid(
                         products: related,
                         favoriteProductIds: _favoriteProductIds,
                         onTap: (selected) {
@@ -270,18 +299,16 @@ class _WebProductPageState extends State<WebProductPage> {
                 ),
               ),
               const SizedBox(height: 64),
-              const WebFooter(),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _details(
-      BrandTokens brand, ProductEntity product, bool hasDiscount) {
+  /// Middle column: category eyebrow, title, sold/code line, subtle price
+  /// echo, description and the size/color selectors.
+  Widget _info(BrandTokens brand, ProductEntity product, bool hasDiscount) {
     final s = S.of(context);
-    final isFavorite = _favoriteProductIds.contains(product.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,93 +323,32 @@ class _WebProductPageState extends State<WebProductPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                product.title,
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
-                  height: 1.15,
-                  color: brand.iconStrong,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Material(
-              color: brand.surfaceBright,
-              shape: CircleBorder(
-                side: BorderSide(color: brand.iconStrong.withOpacity(0.12)),
-              ),
-              child: InkWell(
-                onTap: () => _toggleFavorite(product),
-                customBorder: const CircleBorder(),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: brand.danger,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        Text(
+          product.title,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.6,
+            height: 1.15,
+            color: brand.iconStrong,
+          ),
         ),
-        const SizedBox(height: 14),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${(hasDiscount ? product.discountedPrice : product.price).toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: brand.iconStrong,
-              ),
-            ),
-            if (hasDiscount) ...[
-              const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Text(
-                  '\$${product.price.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: brand.muted,
-                    decoration: TextDecoration.lineThrough,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: brand.secondary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  s.percentOff(product.currentDiscount),
-                  style: TextStyle(
-                    color: brand.secondaryVariant,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           s.soldAndCode(product.salesNumber, product.productId),
           style: TextStyle(fontSize: 13, color: brand.muted),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
+        // Subtle price echo — the full price treatment lives in the buy box.
+        Text(
+          '\$${(hasDiscount ? product.discountedPrice : product.price).toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: brand.textPrimary.withOpacity(0.75),
+          ),
+        ),
+        const SizedBox(height: 18),
         Text(
           product.description,
           style: TextStyle(
@@ -438,84 +404,194 @@ class _WebProductPageState extends State<WebProductPage> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
         ],
-        _OptionLabel(label: s.quantity, value: null),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            _QuantityButton(
-              icon: Icons.remove,
-              onTap: _quantity > 1
-                  ? () => setState(() => _quantity--)
-                  : null,
-            ),
-            Container(
-              width: 58,
-              height: 42,
-              alignment: Alignment.center,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: brand.surfaceBright,
-                borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: brand.iconStrong.withOpacity(0.15)),
-              ),
-              child: Text(
-                '$_quantity',
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w800),
-              ),
-            ),
-            _QuantityButton(
-              icon: Icons.add,
-              onTap: () => setState(() => _quantity++),
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: _addToCart,
-                icon: const Icon(Icons.shopping_bag_outlined, size: 20),
-                label: Text(s.addToCart),
-                style: FilledButton.styleFrom(
-                  backgroundColor: brand.primary,
-                  foregroundColor: brand.onPrimary,
-                  minimumSize: const Size(0, 52),
-                  textStyle: const TextStyle(
-                      fontSize: 15.5, fontWeight: FontWeight.w800),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () =>
-                    AppNavigator.push(context, const CartPage()),
-                icon: const Icon(Icons.shopping_cart_checkout, size: 20),
-                label: Text(s.goToCart),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brand.iconStrong,
-                  minimumSize: const Size(0, 52),
-                  side: BorderSide(
-                      color: brand.iconStrong.withOpacity(0.3), width: 1.4),
-                  textStyle: const TextStyle(
-                      fontSize: 15.5, fontWeight: FontWeight.w700),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
+    );
+  }
+
+  /// Right column: the buy box card — price, trust note, quantity stepper,
+  /// primary/secondary CTAs and the favorite toggle.
+  Widget _buyBox(BrandTokens brand, ProductEntity product, bool hasDiscount) {
+    final s = S.of(context);
+    final isFavorite = _favoriteProductIds.contains(product.id);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
+      decoration: BoxDecoration(
+        color: brand.surfaceBright,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: brand.iconStrong.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: brand.iconStrong.withOpacity(0.07),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '\$${(hasDiscount ? product.discountedPrice : product.price).toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: brand.iconStrong,
+            ),
+          ),
+          if (hasDiscount) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text(
+                  '\$${product.price.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: brand.muted,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: brand.secondary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    s.percentOff(product.currentDiscount),
+                    style: TextStyle(
+                      color: brand.secondaryVariant,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 16, color: brand.muted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s.demoCheckoutNote,
+                  style:
+                      TextStyle(fontSize: 12.5, height: 1.4, color: brand.muted),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            color: brand.iconStrong.withOpacity(0.08),
+          ),
+          const SizedBox(height: 16),
+          _OptionLabel(label: s.quantity, value: null),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _QuantityButton(
+                icon: Icons.remove,
+                onTap:
+                    _quantity > 1 ? () => setState(() => _quantity--) : null,
+              ),
+              Container(
+                width: 58,
+                height: 42,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: brand.surfaceBright,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: brand.iconStrong.withOpacity(0.15)),
+                ),
+                child: Text(
+                  '$_quantity',
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+              ),
+              _QuantityButton(
+                icon: Icons.add,
+                onTap: () => setState(() => _quantity++),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            onPressed: _addToCart,
+            icon: const Icon(Icons.shopping_bag_outlined, size: 20),
+            label: Text(s.addToCart),
+            style: FilledButton.styleFrom(
+              backgroundColor: brand.primary,
+              foregroundColor: brand.onPrimary,
+              minimumSize: const Size.fromHeight(52),
+              textStyle: const TextStyle(
+                  fontSize: 15.5, fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => AppNavigator.push(context, const CartPage()),
+            icon: const Icon(Icons.shopping_cart_checkout, size: 20),
+            label: Text(s.goToCart),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: brand.iconStrong,
+              minimumSize: const Size.fromHeight(52),
+              side: BorderSide(
+                  color: brand.iconStrong.withOpacity(0.3), width: 1.4),
+              textStyle: const TextStyle(
+                  fontSize: 15.5, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _toggleFavorite(product),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      size: 19,
+                      color: brand.danger,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.favorites,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: brand.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -580,23 +656,47 @@ class _Gallery extends StatelessWidget {
 
     return Column(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: brand.surfaceBright,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: current == null
-                ? _placeholder(brand)
-                : CachedNetworkImage(
-                    imageUrl: current,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(brand),
-                    errorWidget: (_, __, ___) => _placeholder(brand),
-                  ),
+        MouseRegion(
+          cursor: current == null
+              ? MouseCursor.defer
+              : SystemMouseCursors.zoomIn,
+          child: GestureDetector(
+            onTap: current == null
+                ? null
+                : () => showWebImageViewer(
+                      context,
+                      imagePaths: imagePaths,
+                      initialIndex: imageIndex.clamp(0, imagePaths.length - 1),
+                    ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: brand.surfaceBright,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: current == null
+                    ? _placeholder(brand)
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: current,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => _placeholder(brand),
+                            errorWidget: (_, __, ___) => _placeholder(brand),
+                          ),
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: _ZoomHint(label: S.of(context).viewLarger),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
         if (imagePaths.length > 1) ...[
@@ -648,6 +748,40 @@ class _Gallery extends StatelessWidget {
       color: brand.mutedSoft.withOpacity(0.5),
       alignment: Alignment.center,
       child: Icon(Icons.image_outlined, size: 44, color: brand.muted),
+    );
+  }
+}
+
+/// The small "View larger" pill overlaid on the gallery's main image to
+/// signal that clicking opens the zoomable fullscreen viewer.
+class _ZoomHint extends StatelessWidget {
+  const _ZoomHint({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.zoom_in, size: 18, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

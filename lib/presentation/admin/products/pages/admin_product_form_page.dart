@@ -5,6 +5,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upload_product_image_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upsert_product_usecase.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
@@ -309,16 +310,26 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
                           for (var i = 0; i < _imageUrls.length; i++)
                             Stack(
                               children: [
-                                Image.network(
-                                  _imageUrls[i],
-                                  width: 96,
-                                  height: 96,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 96,
-                                    height: 96,
-                                    color: Colors.black12,
-                                    child: const Icon(Icons.broken_image),
+                                MouseRegion(
+                                  cursor: SystemMouseCursors.zoomIn,
+                                  child: GestureDetector(
+                                    onTap: () => showWebImageViewer(
+                                      context,
+                                      imagePaths: _imageUrls,
+                                      initialIndex: i,
+                                    ),
+                                    child: Image.network(
+                                      _imageUrls[i],
+                                      width: 96,
+                                      height: 96,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        width: 96,
+                                        height: 96,
+                                        color: Colors.black12,
+                                        child: const Icon(Icons.broken_image),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 Positioned(

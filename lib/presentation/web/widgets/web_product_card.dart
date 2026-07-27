@@ -67,13 +67,16 @@ class _WebProductCardState extends State<WebProductCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(17)),
-                    child: AspectRatio(
-                      aspectRatio: 1,
+              // The image fills whatever height remains after the text
+              // block, so the fixed-height caption can never overflow the
+              // grid cell regardless of column width or childAspectRatio.
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(17)),
                       child: imageUrl.isEmpty
                           ? _placeholder(brand)
                           : CachedNetworkImage(
@@ -84,52 +87,52 @@ class _WebProductCardState extends State<WebProductCard> {
                                   _placeholder(brand),
                             ),
                     ),
-                  ),
-                  if (hasDiscount)
-                    Positioned(
-                      left: 10,
-                      top: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: brand.secondary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '-${product.currentDiscount}%',
-                          style: TextStyle(
-                            color: brand.textInverse,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
+                    if (hasDiscount)
+                      Positioned(
+                        left: 10,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: brand.secondary,
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                        ),
-                      ),
-                    ),
-                  if (widget.onFavoritePressed != null)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Material(
-                        color: brand.surfaceBright.withOpacity(0.9),
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          onTap: widget.onFavoritePressed,
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(7),
-                            child: Icon(
-                              widget.isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 19,
-                              color: brand.danger,
+                          child: Text(
+                            '-${product.currentDiscount}%',
+                            style: TextStyle(
+                              color: brand.textInverse,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                    if (widget.onFavoritePressed != null)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Material(
+                          color: brand.surfaceBright.withOpacity(0.9),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: widget.onFavoritePressed,
+                            customBorder: const CircleBorder(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(7),
+                              child: Icon(
+                                widget.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 19,
+                                color: brand.danger,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
@@ -208,6 +211,7 @@ class WebProductGrid extends StatelessWidget {
     this.favoriteProductIds = const <String>{},
     required this.onTap,
     this.onFavoritePressed,
+    this.childAspectRatio = 0.70,
   });
 
   final List<ProductEntity> products;
@@ -215,17 +219,21 @@ class WebProductGrid extends StatelessWidget {
   final ValueChanged<ProductEntity> onTap;
   final ValueChanged<ProductEntity>? onFavoritePressed;
 
+  /// Cell width:height ratio. Lower values give taller cards (used by the
+  /// category-filter gallery); defaults to the standard grid proportion.
+  final double childAspectRatio;
+
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: products.length,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
         mainAxisSpacing: 20,
         crossAxisSpacing: 20,
-        childAspectRatio: 0.70,
+        childAspectRatio: childAspectRatio,
       ),
       itemBuilder: (context, index) {
         final product = products[index];

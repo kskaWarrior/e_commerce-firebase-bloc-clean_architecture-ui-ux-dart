@@ -1,0 +1,223 @@
+{
+  "categories": [
+    { "id": "cat-accessories", "title": "Accessories", "file": "categories/acessories.jpg" },
+    { "id": "cat-bags", "title": "Bags", "file": "categories/bags.jpg" },
+    { "id": "cat-hoodies", "title": "Hoodies", "file": "categories/hoodies.jpg" },
+    { "id": "cat-hoodies-women", "title": "Women's Hoodies", "file": "categories/hoodiesF.jpg" },
+    { "id": "cat-shoes", "title": "Shoes", "file": "categories/shoes.jpeg" },
+    { "id": "cat-shorts", "title": "Shorts", "file": "categories/shorts.jpg" }
+  ],
+  "products": [
+    {
+      "id": "prod-casual-hoodie",
+      "title": "Casual Hoodie",
+      "description": "Soft brushed-fleece pullover hoodie with a roomy kangaroo pocket and ribbed cuffs. An everyday layer that pairs with anything.",
+      "categoryId": "cat-hoodies",
+      "categoryName": "Hoodies",
+      "gender": "unisex",
+      "price": 189.90,
+      "discountedPrice": 151.90,
+      "currentDiscount": 20,
+      "salesNumber": 34,
+      "createdDate": "2026-07-18T10:00:00Z",
+      "sizes": ["S", "M", "L", "XL"],
+      "colors": [
+        { "title": "Black", "hexCode": "1C1C1C" },
+        { "title": "Orange", "hexCode": "F7A70C" },
+        { "title": "White", "hexCode": "F5F5F5" }
+      ],
+      "images": [
+        "products/casual hoodies/black_moletom.png",
+        "products/casual hoodies/orange_moletom.png",
+        "products/casual hoodies/white_moletom.png"
+      ]
+    },
+    {
+      "id": "prod-nike-backpack",
+      "title": "Nike Sport Backpack",
+      "description": "Durable water-resistant backpack with a padded laptop sleeve and adjustable straps. Built for the commute and the gym.",
+      "categoryId": "cat-bags",
+      "categoryName": "Bags",
+      "gender": "unisex",
+      "price": 249.90,
+      "discountedPrice": 212.40,
+      "currentDiscount": 15,
+      "salesNumber": 28,
+      "createdDate": "2026-07-19T10:00:00Z",
+      "sizes": ["One Size"],
+      "colors": [
+        { "title": "Black", "hexCode": "1C1C1C" },
+        { "title": "Blue", "hexCode": "2B5FA8" },
+        { "title": "Orange", "hexCode": "F7A70C" }
+      ],
+      "images": [
+        "products/nike bags/black_bag.png",
+        "products/nike bags/blue_bag.png",
+        "products/nike bags/orange_bag.png"
+      ]
+    },
+    {
+      "id": "prod-nike-cap",
+      "title": "Nike Heritage Cap",
+      "description": "Classic six-panel cap with an embroidered logo and an adjustable strap for a clean, everyday fit.",
+      "categoryId": "cat-accessories",
+      "categoryName": "Accessories",
+      "gender": "unisex",
+      "price": 129.90,
+      "discountedPrice": 110.40,
+      "currentDiscount": 15,
+      "salesNumber": 41,
+      "createdDate": "2026-07-21T10:00:00Z",
+      "sizes": ["One Size"],
+      "colors": [
+        { "title": "Black", "hexCode": "1C1C1C" },
+        { "title": "White", "hexCode": "F5F5F5" }
+      ],
+      "images": [
+        "products/nike cap/black_cap_1.png",
+        "products/nike cap/black_cap_2.png",
+        "products/nike cap/white_cap_1.png",
+        "products/nike cap/white_cap_2.png"
+      ]
+    },
+    {
+      "id": "prod-nike-hat",
+      "title": "Nike Bucket Hat",
+      "description": "Lightweight cotton bucket hat with a stitched brim for casual sun coverage.",
+      "categoryId": "cat-accessories",
+      "categoryName": "Accessories",
+      "gender": "unisex",
+      "price": 139.90,
+      "discountedPrice": 118.90,
+      "currentDiscount": 15,
+      "salesNumber": 22,
+      "createdDate": "2026-07-16T10:00:00Z",
+      "sizes": ["One Size"],
+      "colors": [
+        { "title": "Black", "hexCode": "1C1C1C" }
+      ],
+      "images": [
+        "products/nike hat/black_hat_1.png",
+        "products/nike hat/black_hat_2.png"
+      ]
+    },
+    {
+      "id": "prod-nike-shoes-women",
+      "title": "Nike Air Runner (Women)",
+      "description": "Lightweight women's running shoe with a responsive foam midsole and breathable mesh upper for all-day comfort.",
+      "categoryId": "cat-shoes",
+      "categoryName": "Shoes",
+      "gender": "female",
+      "price": 599.90,
+      "discountedPrice": 479.90,
+      "currentDiscount": 20,
+      "salesNumber": 52,
+      "createdDate": "2026-07-22T10:00:00Z",
+      "sizes": ["36", "37", "38", "39", "40"],
+      "colors": [
+        { "title": "White", "hexCode": "F5F5F5" }
+      ],
+      "images": [
+        "products/nike shoes f/white_f_shoes_1.png",
+        "products/nike shoes f/white_f_shoes_2.png",
+        "products/nike shoes f/white_f_shoes_3.png",
+        "products/nike shoes f/white_f_shoes_4.png"
+      ]
+    },
+    {
+      "id": "prod-nike-shoes-men",
+      "title": "Nike Air Runner (Men)",
+      "description": "Men's daily trainer with a cushioned foam midsole and a durable rubber outsole built for the road.",
+      "categoryId": "cat-shoes",
+      "categoryName": "Shoes",
+      "gender": "male",
+      "price": 599.90,
+      "discountedPrice": 479.90,
+      "currentDiscount": 20,
+      "salesNumber": 47,
+      "createdDate": "2026-07-23T10:00:00Z",
+      "sizes": ["40", "41", "42", "43", "44"],
+      "colors": [
+        { "title": "Black", "hexCode": "1C1C1C" }
+      ],
+      "images": [
+        "products/nike shoes m/black_m_shoes_1.png",
+        "products/nike shoes m/black_m_shoes_2.png",
+        "products/nike shoes m/black_m_shoes_3.png",
+        "products/nike shoes m/black_m_shoes_4.png"
+      ]
+    },
+    {
+      "id": "prod-nike-shoes-uni",
+      "title": "Nike Air Runner",
+      "description": "Unisex everyday sneaker with a plush foam midsole and a knit upper. Available in two seasonal colorways.",
+      "categoryId": "cat-shoes",
+      "categoryName": "Shoes",
+      "gender": "unisex",
+      "price": 649.90,
+      "discountedPrice": 552.40,
+      "currentDiscount": 15,
+      "salesNumber": 60,
+      "createdDate": "2026-07-24T10:00:00Z",
+      "sizes": ["38", "39", "40", "41", "42", "43"],
+      "colors": [
+        { "title": "Blue", "hexCode": "2B5FA8" },
+        { "title": "Green", "hexCode": "3BA55D" }
+      ],
+      "images": [
+        "products/nike shoes uni/blue_uni_shoes_1.png",
+        "products/nike shoes uni/blue_uni_shoes_2.png",
+        "products/nike shoes uni/blue_uni_shoes_3.png",
+        "products/nike shoes uni/blue_uni_shoes_4.png",
+        "products/nike shoes uni/green_uni_shoes_1.png",
+        "products/nike shoes uni/green_uni_shoes_2.png",
+        "products/nike shoes uni/green_uni_shoes_3.png",
+        "products/nike shoes uni/green_uni_shoes_4.png"
+      ]
+    },
+    {
+      "id": "prod-nike-shorts-women",
+      "title": "Nike Sport Shorts (Women)",
+      "description": "Women's lightweight training shorts with a soft elastic waistband and moisture-wicking fabric.",
+      "categoryId": "cat-shorts",
+      "categoryName": "Shorts",
+      "gender": "female",
+      "price": 149.90,
+      "discountedPrice": 127.40,
+      "currentDiscount": 15,
+      "salesNumber": 23,
+      "createdDate": "2026-07-17T10:00:00Z",
+      "sizes": ["S", "M", "L"],
+      "colors": [
+        { "title": "Aqua", "hexCode": "2BB6B0" }
+      ],
+      "images": [
+        "products/nike shorts f/aqua_f_shorts_1.png",
+        "products/nike shorts f/aqua_f_shorts_2.png",
+        "products/nike shorts f/aqua_f_shorts_3.png"
+      ]
+    },
+    {
+      "id": "prod-nike-shorts-men",
+      "title": "Nike Sport Shorts (Men)",
+      "description": "Men's training shorts with a relaxed fit, side pockets and breathable moisture-wicking fabric.",
+      "categoryId": "cat-shorts",
+      "categoryName": "Shorts",
+      "gender": "male",
+      "price": 149.90,
+      "discountedPrice": 127.40,
+      "currentDiscount": 15,
+      "salesNumber": 30,
+      "createdDate": "2026-07-20T10:00:00Z",
+      "sizes": ["S", "M", "L", "XL"],
+      "colors": [
+        { "title": "Khaki", "hexCode": "B5A16B" }
+      ],
+      "images": [
+        "products/nike shorts m/khaki_m_shorts_1.png",
+        "products/nike shorts m/khaki_m_shorts_2.png",
+        "products/nike shorts m/khaki_m_shorts_3.png"
+      ]
+    }
+  ]
+}

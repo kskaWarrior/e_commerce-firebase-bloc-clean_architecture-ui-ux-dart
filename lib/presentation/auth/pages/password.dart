@@ -16,6 +16,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
     as auth_pages;
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -105,6 +106,23 @@ class _PasswordPageState extends State<PasswordPage>
     });
   }
 
+  Locale? _typewriterLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Restart the typewriter when the language changes, otherwise the
+    // already-typed text stays in the previous language.
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_typewriterLocale != locale) {
+      final isFirstResolution = _typewriterLocale == null;
+      _typewriterLocale = locale;
+      if (!isFirstResolution) {
+        _startTypewriter();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _slideController.dispose();
@@ -116,9 +134,240 @@ class _PasswordPageState extends State<PasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets the storefront-style split layout (asset beside a glass
+    // card); everything else keeps the mobile layout, framed on web.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  /// Shared reaction to the sign-in [ButtonCubit] result — used by both the
+  /// mobile and web layouts so the lockout / navigation logic stays single.
+  Future<void> _handleButtonState(
+      BuildContext context, ButtonState state) async {
+    if (state is FailureState) {
+      final email = widget.userSigninReq?.email ?? '';
+      final isInvalidCredentials =
+          email.isNotEmpty && _isInvalidCredentialsError(state.error);
+
+      if (isInvalidCredentials) {
+        final hasBeenLocked =
+            await _signinLockoutStore.registerInvalidAttempt(email);
+        if (!context.mounted) return;
+
+        if (hasBeenLocked) {
+          final lockoutStatus = await _signinLockoutStore.getStatus(email);
+          if (!context.mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                S.of(context).tooManyAttemptsLocked(
+                    formatLockoutRemaining(lockoutStatus.remaining)),
+              ),
+              backgroundColor: context.brand.danger,
+            ),
+          );
+
+          AppNavigator.pushAndRemoveUntil(
+            context,
+            auth_pages.SigninPage(initialEmail: email),
+          );
+          return;
+        }
+
+        final status = await _signinLockoutStore.getStatus(email);
+        if (!context.mounted) return;
+        final remainingAttempts =
+            (SigninLockoutStore.maxAttempts - status.failedAttempts)
+                .clamp(0, SigninLockoutStore.maxAttempts);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${state.error} ${S.of(context).attemptsLeftBeforeLock(remainingAttempts)}',
+            ),
+            backgroundColor: context.brand.danger,
+          ),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.error),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+    } else if (state is SuccessState) {
+      final email = widget.userSigninReq?.email;
+      if (email != null && email.isNotEmpty) {
+        await _signinLockoutStore.clearAttempts(email);
+        if (!context.mounted) return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.message),
+          backgroundColor: context.brand.success,
+        ),
+      );
+      AppNavigator.pushAndRemoveUntil(
+        context,
+        const HomePage(),
+      );
+    }
+  }
+
+  /// Validates the entered password, checks the lockout, then dispatches the
+  /// sign-in use case. Shared by both layouts.
+  Future<void> _submitPassword(BuildContext context) async {
+    final password = _passwordController.text;
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterPassword),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+    final email = widget.userSigninReq?.email ?? '';
+    if (email.isNotEmpty) {
+      final lockoutStatus = await _signinLockoutStore.getStatus(email);
+      if (!context.mounted) return;
+      if (lockoutStatus.isLocked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              S.of(context).emailLockedTryAgainIn(
+                  formatLockoutRemaining(lockoutStatus.remaining)),
+            ),
+            backgroundColor: context.brand.danger,
+          ),
+        );
+        AppNavigator.pushAndRemoveUntil(
+          context,
+          auth_pages.SigninPage(initialEmail: email),
+        );
+        return;
+      }
+    }
+
+    final signInReq = widget.userSigninReq;
+    if (signInReq == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).signinSessionExpired),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      AppNavigator.pushAndRemoveUntil(
+        context,
+        const auth_pages.SigninPage(),
+      );
+      return;
+    }
+
+    signInReq.password = password;
+    context.read<ButtonCubit>().execute(
+          useCase: sl<SigninUseCase>(),
+          params: signInReq,
+        );
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return BlocProvider(
+      create: (context) => ButtonCubit(),
+      child: BlocListener<ButtonCubit, ButtonState>(
+        listener: _handleButtonState,
+        child: WebAuthScaffold(
+          card: WebGoldGlassPanel(
+            width: 460,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WebAuthCardHeader(
+                    title: s.welcomeBackTo,
+                    subtitle: _displayedText,
+                    titleFirst: true,
+                    onBack: Navigator.of(context).canPop()
+                        ? () => Navigator.of(context).pop()
+                        : null,
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _passwordController,
+                    focusNode: _passwordFocusNode,
+                    obscureText: _obscureText,
+                    keyboardType: TextInputType.visiblePassword,
+                    onSubmitted: (_) => _submitPassword(context),
+                    style: const TextStyle(
+                        fontSize: 15.5, fontWeight: FontWeight.w600),
+                    decoration: webAuthInputDecoration(
+                      context,
+                      hintText: s.password,
+                      prefixIcon: Icon(Icons.password_outlined,
+                          color: brand.iconStrong),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureText
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: brand.muted,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureText = !_obscureText),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Builder(
+                    builder: (context) => WebAuthReactiveButton(
+                      text: s.signInButton,
+                      onPressed: () => _submitPassword(context),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  RichText(
+                    text: TextSpan(
+                      text: s.forgotYourPassword,
+                      style: TextStyle(
+                        color: brand.textPrimary,
+                        fontSize: 14.5,
+                        fontFamily: 'BrandFont',
+                      ),
+                      children: [
+                        TextSpan(
+                          text: s.clickHere,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: brand.secondaryVariant,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'BrandFont',
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              AppNavigator.push(
+                                  context, const ForgotPasswordPage());
+                            },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
@@ -131,80 +380,7 @@ class _PasswordPageState extends State<PasswordPage>
       body: BlocProvider(
         create: (context) => ButtonCubit(),
         child: BlocListener<ButtonCubit, ButtonState>(
-          listener: (context, state) async {
-            if (state is FailureState) {
-              final email = widget.userSigninReq?.email ?? '';
-              final isInvalidCredentials =
-                  email.isNotEmpty && _isInvalidCredentialsError(state.error);
-
-              if (isInvalidCredentials) {
-                final hasBeenLocked =
-                    await _signinLockoutStore.registerInvalidAttempt(email);
-                if (!context.mounted) return;
-
-                if (hasBeenLocked) {
-                  final lockoutStatus =
-                      await _signinLockoutStore.getStatus(email);
-                  if (!context.mounted) return;
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        S.of(context).tooManyAttemptsLocked(
-                            formatLockoutRemaining(lockoutStatus.remaining)),
-                      ),
-                      backgroundColor: context.brand.danger,
-                    ),
-                  );
-
-                  AppNavigator.pushAndRemoveUntil(
-                    context,
-                    auth_pages.SigninPage(initialEmail: email),
-                  );
-                  return;
-                }
-
-                final status = await _signinLockoutStore.getStatus(email);
-                if (!context.mounted) return;
-                final remainingAttempts =
-                    (SigninLockoutStore.maxAttempts - status.failedAttempts)
-                        .clamp(0, SigninLockoutStore.maxAttempts);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${state.error} ${S.of(context).attemptsLeftBeforeLock(remainingAttempts)}',
-                    ),
-                    backgroundColor: context.brand.danger,
-                  ),
-                );
-                return;
-              }
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: context.brand.danger,
-                ),
-              );
-            } else if (state is SuccessState) {
-              final email = widget.userSigninReq?.email;
-              if (email != null && email.isNotEmpty) {
-                await _signinLockoutStore.clearAttempts(email);
-                if (!context.mounted) return;
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: context.brand.success,
-                ),
-              );
-              AppNavigator.pushAndRemoveUntil(
-                context,
-                const HomePage(),
-              );
-            }
-          },
+          listener: _handleButtonState,
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {

@@ -5,19 +5,29 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/home/bloc/new_in_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_cubit.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/bloc/products_display_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_card.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum _PaymentMethod { creditCard, debitCard }
 
@@ -237,9 +247,8 @@ class _WebCartPageState extends State<WebCartPage> {
         builder: (context, _) {
           final drafts = CartDraftStore.instance.drafts;
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
+          return WebScrollView(
+            children: [
                 const SizedBox(height: WebScaffold.headerHeight + 28),
                 WebMaxWidth(
                   child: userId == null || userId.isEmpty
@@ -249,29 +258,33 @@ class _WebCartPageState extends State<WebCartPage> {
                           body: s.signInToViewCart,
                         )
                       : drafts.isEmpty
-                          ? _EmptyState(
-                              icon: Icons.shopping_bag_outlined,
-                              title: s.cartEmptyTitle,
-                              body: s.cartEmptyBody,
-                              action: FilledButton.icon(
-                                onPressed: () => Navigator.of(context)
-                                    .popUntil((route) => route.isFirst),
-                                icon: const Icon(Icons.storefront_outlined,
-                                    size: 19),
-                                label: Text(s.continueShopping),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: brand.primary,
-                                  foregroundColor: brand.onPrimary,
-                                  minimumSize: const Size(0, 48),
+                          ? Column(
+                              children: [
+                                _EmptyState(
+                                  icon: Icons.shopping_bag_outlined,
+                                  title: s.cartEmptyTitle,
+                                  body: s.cartEmptyBody,
+                                  action: FilledButton.icon(
+                                    onPressed: () => Navigator.of(context)
+                                        .popUntil((route) => route.isFirst),
+                                    icon: const Icon(
+                                        Icons.storefront_outlined, size: 19),
+                                    label: Text(s.continueShopping),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: brand.primary,
+                                      foregroundColor: brand.onPrimary,
+                                      minimumSize: const Size(0, 48),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 48),
+                                _EmptyCartSuggestions(userId: userId),
+                              ],
                             )
                           : _cartContent(brand, drafts),
                 ),
                 const SizedBox(height: 64),
-                const WebFooter(),
-              ],
-            ),
+            ],
           );
         },
       ),
@@ -292,12 +305,32 @@ class _WebCartPageState extends State<WebCartPage> {
           subtitle: s.itemsReadyForCheckout(drafts.length),
         ),
         const SizedBox(height: 20),
-        for (var i = 0; i < drafts.length; i++)
-          _CartItemRow(
-            draft: drafts[i],
-            onOpen: () => _openProductDetails(drafts[i]),
-            onRemove: () => CartDraftStore.instance.removeAt(i),
+        const _CartHeaderRow(),
+        const SizedBox(height: 10),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: brand.surfaceBright,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
           ),
+          child: Column(
+            children: [
+              for (var i = 0; i < drafts.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    color: brand.iconStrong.withOpacity(0.07),
+                    height: 1,
+                  ),
+                _CartItemRow(
+                  draft: drafts[i],
+                  onOpen: () => _openProductDetails(drafts[i]),
+                  onRemove: () => CartDraftStore.instance.removeAt(i),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
 
@@ -376,6 +409,71 @@ class _WebCartPageState extends State<WebCartPage> {
   }
 }
 
+// Shared column metrics so the header row and item rows stay aligned.
+const double _kCartColUnitPrice = 92;
+const double _kCartColQuantity = 76;
+const double _kCartColTotal = 104;
+const double _kCartColAction = 44;
+const double _kCartRowHPadding = 18;
+
+class _CartHeaderRow extends StatelessWidget {
+  const _CartHeaderRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+    final labelStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.8,
+      color: brand.muted,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _kCartRowHPadding),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(s.productLabel.toUpperCase(), style: labelStyle),
+          ),
+          SizedBox(
+            width: _kCartColUnitPrice,
+            child: Text(
+              s.unitPrice.toUpperCase(),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          SizedBox(
+            width: _kCartColQuantity,
+            child: Text(
+              s.quantity.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          SizedBox(
+            width: _kCartColTotal,
+            child: Text(
+              s.total.toUpperCase(),
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+          ),
+          const SizedBox(width: _kCartColAction),
+        ],
+      ),
+    );
+  }
+}
+
 class _CartItemRow extends StatelessWidget {
   const _CartItemRow({
     required this.draft,
@@ -407,19 +505,22 @@ class _CartItemRow extends StatelessWidget {
     final resolvedTitle = title.isEmpty
         ? s.productFallback(code.isEmpty ? '-' : code)
         : title;
+    final metaParts = <String>[
+      if (size.trim().isNotEmpty && size != 'N/A') '${s.size} $size',
+      if (color.trim().isNotEmpty && color != 'N/A') color,
+    ];
+    final meta = metaParts.isEmpty
+        ? s.codeLabel(code.isEmpty ? '-' : code)
+        : metaParts.join(' · ');
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onOpen,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: brand.surfaceBright,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
-          ),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: _kCartRowHPadding, vertical: 16),
           child: Row(
             children: [
               Container(
@@ -446,29 +547,64 @@ class _CartItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      s.itemMeta(size, color, quantity,
-                          '\$${unitDiscounted.toStringAsFixed(2)}'),
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 13, color: brand.muted),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Text(
-                '\$${draft.totalPrice.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w800,
-                  color: brand.iconStrong,
+              SizedBox(
+                width: _kCartColUnitPrice,
+                child: Text(
+                  '\$${unitDiscounted.toStringAsFixed(2)}',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: brand.textPrimary,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: s.remove,
-                onPressed: onRemove,
-                icon: Icon(Icons.delete_outline,
-                    size: 21, color: brand.muted),
-                hoverColor: brand.danger.withOpacity(0.08),
+              SizedBox(
+                width: _kCartColQuantity,
+                child: Text(
+                  quantity,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brand.textPrimary,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _kCartColTotal,
+                child: Text(
+                  '\$${draft.totalPrice.toStringAsFixed(2)}',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: brand.iconStrong,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _kCartColAction,
+                child: Center(
+                  child: IconButton(
+                    tooltip: s.remove,
+                    onPressed: onRemove,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                        minWidth: 36, minHeight: 36),
+                    icon: Icon(Icons.delete_outline,
+                        size: 21, color: brand.muted),
+                    hoverColor: brand.danger.withOpacity(0.08),
+                  ),
+                ),
               ),
             ],
           ),
@@ -804,6 +940,130 @@ class _EmptyState extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Below the empty cart: the shopper's own favorites plus a "New In" rail —
+/// mirrors the Favorites page's Novidades section. Owns its own cubits scoped
+/// to this subtree so they close automatically once the cart is filled.
+class _EmptyCartSuggestions extends StatelessWidget {
+  const _EmptyCartSuggestions({required this.userId});
+
+  final String userId;
+
+  Future<void> _toggle(
+    BuildContext context,
+    ProductEntity product,
+    Set<String> favoriteProductIds,
+  ) async {
+    final cubit = context.read<FavoritesCubit>();
+    if (favoriteProductIds.contains(product.id)) {
+      await cubit.deleteFavorite(userId, product.id);
+    } else {
+      await cubit.registerFavorite(FavoriteEntity(
+        createdDate: Timestamp.now(),
+        id: '',
+        productId: product.id,
+        userId: userId,
+      ));
+    }
+    if (!context.mounted) return;
+    await cubit.loadFavoritesByUserId(userId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<FavoritesCubit>()..loadFavoritesByUserId(userId),
+        ),
+        BlocProvider(
+          create: (_) => sl<ProductsDisplayCubit>()..displayProducts(),
+        ),
+        BlocProvider(
+          create: (_) => sl<NewInDisplayCubit>()..displayProducts(),
+        ),
+      ],
+      child: BlocBuilder<FavoritesCubit, FavoritesState>(
+        builder: (context, favoritesState) {
+          final favoriteProductIds = favoritesState is FavoritesLoaded
+              ? favoritesState.favorites.map((f) => f.productId).toSet()
+              : <String>{};
+
+          return BlocBuilder<ProductsDisplayCubit, ProductsDisplayState>(
+            builder: (context, topState) {
+              return BlocBuilder<NewInDisplayCubit, ProductsDisplayState>(
+                builder: (context, newState) {
+                  final s = S.of(context);
+
+                  final catalogById = <String, ProductEntity>{};
+                  if (topState is ProductsDisplayLoaded) {
+                    for (final product in topState.products) {
+                      catalogById[product.id] = product;
+                    }
+                  }
+                  final newIn = newState is ProductsDisplayLoaded
+                      ? newState.products
+                      : const <ProductEntity>[];
+                  for (final product in newIn) {
+                    catalogById[product.id] = product;
+                  }
+
+                  final favoriteProducts = favoriteProductIds
+                      .map((id) => catalogById[id])
+                      .whereType<ProductEntity>()
+                      .toList(growable: false);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (favoriteProducts.isNotEmpty) ...[
+                        WebSectionTitle(
+                          title: s.myFavorites,
+                          subtitle: s.savedProducts(favoriteProducts.length),
+                        ),
+                        const SizedBox(height: 20),
+                        WebProductGrid(
+                          products: favoriteProducts,
+                          favoriteProductIds: favoriteProductIds,
+                          onTap: (product) => AppNavigator.push(
+                            context,
+                            ProductPage(
+                              product: product,
+                              topSellingProducts: favoriteProducts,
+                            ),
+                          ),
+                          onFavoritePressed: (product) =>
+                              _toggle(context, product, favoriteProductIds),
+                        ),
+                        const SizedBox(height: 48),
+                      ],
+                      if (newIn.isNotEmpty)
+                        WebProductRail(
+                          title: s.newIn,
+                          subtitle: s.youMightAlsoLike,
+                          products: newIn,
+                          favoriteProductIds: favoriteProductIds,
+                          onTap: (product) => AppNavigator.push(
+                            context,
+                            ProductPage(
+                              product: product,
+                              topSellingProducts: newIn,
+                            ),
+                          ),
+                          onFavoritePressed: (product) =>
+                              _toggle(context, product, favoriteProductIds),
+                        ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

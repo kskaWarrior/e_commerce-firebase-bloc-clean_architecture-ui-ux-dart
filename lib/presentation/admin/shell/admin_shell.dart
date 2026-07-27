@@ -67,10 +67,17 @@ class AdminShell extends StatelessWidget {
                   child: Container(
                     width: 248,
                     decoration: BoxDecoration(
-                      color: AdminColors.sidebar.withOpacity(0.86),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AdminColors.sidebar.withOpacity(0.92),
+                          AdminColors.accent.withOpacity(0.82),
+                        ],
+                      ),
                       border: Border(
                         right: BorderSide(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withOpacity(0.10),
                         ),
                       ),
                     ),
@@ -235,11 +242,19 @@ class _SidebarItemState extends State<_SidebarItem> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
-              color: background,
+              color: widget.selected ? null : background,
+              gradient: widget.selected
+                  ? LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.17),
+                        Colors.white.withOpacity(0.05),
+                      ],
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: widget.selected
-                    ? Colors.white.withOpacity(0.14)
+                    ? Colors.white.withOpacity(0.16)
                     : Colors.transparent,
               ),
             ),
@@ -253,6 +268,12 @@ class _SidebarItemState extends State<_SidebarItem> {
                     decoration: BoxDecoration(
                       color: AdminColors.highlight,
                       borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AdminColors.highlight.withOpacity(0.7),
+                          blurRadius: 8,
+                        ),
+                      ],
                     ),
                   )
                 else

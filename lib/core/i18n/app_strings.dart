@@ -73,6 +73,8 @@ abstract class AppStrings {
   String get nothingMatchedSearch;
   String productsInCategory(int count);
   String get noProductsInCategory;
+  String get clearSearch;
+  String get clearCategory;
   String get youMayAlsoLike;
   String get youMayAlsoLikeSubtitle;
   String get youMightAlsoLike;
@@ -90,6 +92,14 @@ abstract class AppStrings {
   String get goToCart;
   String get noSizesAvailable;
   String get noColorsAvailable;
+  // Fullscreen image viewer (web zoom)
+  String get viewLarger;
+  String get zoomIn;
+  String get zoomOut;
+  String get resetZoom;
+  String get closeViewer;
+  String get previousImage;
+  String get nextImage;
   String soldAndCode(int sold, String code);
   String salesCount(int count);
   String codeLabel(String code);
@@ -223,6 +233,13 @@ abstract class AppStrings {
   String get secondaryColor;
   String get backgroundColor;
 
+  // -------------------------------------------------- web storefront chrome
+  String get shopNow;
+  String get allCategories;
+  String get seeAll;
+  String get footerShop;
+  String get footerAccount;
+
   // ----------------------------------------------------- localization tail
   // Auth: sign-in password step
   String get signingIn;
@@ -263,6 +280,11 @@ abstract class AppStrings {
 
   // Profile
   String get tapToChangePhoto;
+  String get profileSubtitle;
+  String get completeProfileHint;
+  String get accountDetails;
+  String get personalDetails;
+  String get preferencesSection;
   String get registeredEmailLocked;
   String get newPasswordOptional;
   String get address;
@@ -458,6 +480,10 @@ class AppStringsEn extends AppStrings {
   @override
   String get noProductsInCategory => 'No products in this category yet.';
   @override
+  String get clearSearch => 'Clear search';
+  @override
+  String get clearCategory => 'Clear category';
+  @override
   String get youMayAlsoLike => 'You may also like';
   @override
   String get youMayAlsoLikeSubtitle => 'More from the top sellers';
@@ -466,6 +492,20 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get productDetails => 'Product details';
+  @override
+  String get viewLarger => 'View larger';
+  @override
+  String get zoomIn => 'Zoom in';
+  @override
+  String get zoomOut => 'Zoom out';
+  @override
+  String get resetZoom => 'Reset zoom';
+  @override
+  String get closeViewer => 'Close';
+  @override
+  String get previousImage => 'Previous image';
+  @override
+  String get nextImage => 'Next image';
   @override
   String get description => 'Description';
   @override
@@ -762,6 +802,18 @@ class AppStringsEn extends AppStrings {
   @override
   String get backgroundColor => 'Background';
 
+  // -------------------------------------------------- web storefront chrome
+  @override
+  String get shopNow => 'Shop now';
+  @override
+  String get allCategories => 'All categories';
+  @override
+  String get seeAll => 'See all';
+  @override
+  String get footerShop => 'Shop';
+  @override
+  String get footerAccount => 'Account';
+
   // ----------------------------------------------------- localization tail
   @override
   String get signingIn => 'Signing In';
@@ -837,6 +889,17 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get tapToChangePhoto => 'Tap to change photo';
+  @override
+  String get profileSubtitle => 'Manage your account details and preferences';
+  @override
+  String get completeProfileHint =>
+      'Complete your profile below to get started.';
+  @override
+  String get accountDetails => 'Account';
+  @override
+  String get personalDetails => 'Personal details';
+  @override
+  String get preferencesSection => 'Preferences';
   @override
   String get registeredEmailLocked => 'Registered email (locked)';
   @override
@@ -1105,6 +1168,10 @@ class AppStringsPtBr extends AppStrings {
   String get noProductsInCategory =>
       'Ainda não há produtos nesta categoria.';
   @override
+  String get clearSearch => 'Limpar busca';
+  @override
+  String get clearCategory => 'Limpar categoria';
+  @override
   String get youMayAlsoLike => 'Você também pode gostar';
   @override
   String get youMayAlsoLikeSubtitle => 'Mais entre os mais vendidos';
@@ -1113,6 +1180,20 @@ class AppStringsPtBr extends AppStrings {
 
   @override
   String get productDetails => 'Detalhes do produto';
+  @override
+  String get viewLarger => 'Ver maior';
+  @override
+  String get zoomIn => 'Ampliar';
+  @override
+  String get zoomOut => 'Reduzir';
+  @override
+  String get resetZoom => 'Redefinir zoom';
+  @override
+  String get closeViewer => 'Fechar';
+  @override
+  String get previousImage => 'Imagem anterior';
+  @override
+  String get nextImage => 'Próxima imagem';
   @override
   String get description => 'Descrição';
   @override
@@ -1422,6 +1503,18 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get backgroundColor => 'Fundo';
 
+  // -------------------------------------------------- web storefront chrome
+  @override
+  String get shopNow => 'Comprar agora';
+  @override
+  String get allCategories => 'Todas as categorias';
+  @override
+  String get seeAll => 'Ver tudo';
+  @override
+  String get footerShop => 'Loja';
+  @override
+  String get footerAccount => 'Conta';
+
   // ----------------------------------------------------- localization tail
   @override
   String get signingIn => 'Entrando';
@@ -1499,6 +1592,17 @@ class AppStringsPtBr extends AppStrings {
 
   @override
   String get tapToChangePhoto => 'Toque para trocar a foto';
+  @override
+  String get profileSubtitle => 'Gerencie os dados e preferências da sua conta';
+  @override
+  String get completeProfileHint =>
+      'Complete seu perfil abaixo para começar.';
+  @override
+  String get accountDetails => 'Conta';
+  @override
+  String get personalDetails => 'Dados pessoais';
+  @override
+  String get preferencesSection => 'Preferências';
   @override
   String get registeredEmailLocked => 'E-mail cadastrado (bloqueado)';
   @override

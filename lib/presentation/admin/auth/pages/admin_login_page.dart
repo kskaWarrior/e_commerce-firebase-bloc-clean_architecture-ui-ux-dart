@@ -183,16 +183,22 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             ),
                           ],
                           const SizedBox(height: 22),
-                          FilledButton(
-                            onPressed: _busy ? null : _signIn,
-                            child: _busy
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white),
-                                  )
-                                : Text(s.signIn),
+                          // Same height as the text fields above (their
+                          // 14px vertical content padding + one text line).
+                          SizedBox(
+                            height: 52,
+                            child: FilledButton(
+                              onPressed: _busy ? null : _signIn,
+                              child: _busy
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white),
+                                    )
+                                  : Text(s.signIn),
+                            ),
                           ),
                           const SizedBox(height: 18),
                           Text(

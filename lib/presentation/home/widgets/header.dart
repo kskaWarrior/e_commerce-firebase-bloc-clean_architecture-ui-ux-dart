@@ -18,31 +18,38 @@ class HomeHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      // Keep the icons matched in size and give the centered wordmark room so
+      // the three top elements never crowd each other on narrow phones.
+      titleSpacing: 4,
+      leadingWidth: 52,
       leading: IconButton(
         icon: Icon(
           Icons.menu,
-          size: 32,
+          size: 26,
           color: context.brand.iconStrong,
         ),
         onPressed: onMenuTap,
         tooltip: 'Menu',
       ),
-      title: SizedBox(
-        height: 40,
-        child: BrandConfig.hasWordmark
-            ? Image.asset(
-                AppImages.brandWordmark,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    const _BrandNameTitle(),
-              )
-            : const _BrandNameTitle(),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: SizedBox(
+          height: 34,
+          child: BrandConfig.hasWordmark
+              ? Image.asset(
+                  AppImages.brandWordmark,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const _BrandNameTitle(),
+                )
+              : const _BrandNameTitle(),
+        ),
       ),
       actions: [
         IconButton(
           icon: Icon(
             Icons.shopping_cart,
-            size: 35,
+            size: 26,
             color: context.brand.iconStrong,
           ),
           onPressed: onCartTap,

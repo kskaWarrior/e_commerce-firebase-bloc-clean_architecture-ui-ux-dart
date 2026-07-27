@@ -4,12 +4,14 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/assets/app_images.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/language_menu.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_signin_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/password.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signup.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -82,9 +84,22 @@ class _SigninPageState extends State<SigninPage>
     });
   }
 
+  Locale? _typewriterLocale;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // Restart the typewriter when the language changes, otherwise the
+    // already-typed text stays in the previous language.
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_typewriterLocale != locale) {
+      final isFirstResolution = _typewriterLocale == null;
+      _typewriterLocale = locale;
+      if (!isFirstResolution) {
+        _restartTypewriter();
+      }
+    }
 
     final route = ModalRoute.of(context);
     if (_currentRoute == route || route is! PageRoute) {
@@ -144,11 +159,257 @@ class _SigninPageState extends State<SigninPage>
     super.dispose();
   }
 
+  /// Shared submit flow (validation + lockout check + navigation), used by
+  /// both the mobile and the web layout.
+  Future<void> _submitEmail() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterEmail),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterValidEmail),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+
+    final lockoutStatus = await _signinLockoutStore.getStatus(email);
+    if (!mounted) return;
+
+    if (lockoutStatus.isLocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            S.of(context).emailTemporarilyLocked(
+                formatLockoutRemaining(lockoutStatus.remaining)),
+          ),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    AppNavigator.push(
+      context,
+      PasswordPage(userSigninReq: UserSigninReq(email: email)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets a dedicated storefront-style landing (asset beside a
+    // gold glass card); everything else keeps the mobile layout.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+    final size = MediaQuery.sizeOf(context);
+    final twoColumns = size.width >= 1020;
+    final assetSize = twoColumns
+        ? (size.width * 0.36).clamp(400.0, 600.0).toDouble()
+        : (size.height * 0.4).clamp(260.0, 420.0).toDouble();
+
+    // Portuguese shoppers get the translated splash art; fall back to the
+    // default (and then to nothing) if a brand ships no localized variant.
+    final isPt = Localizations.maybeLocaleOf(context)?.languageCode == 'pt';
+    final heroAsset = Image.asset(
+      isPt ? AppImages.appSplashPt : AppImages.appSplash,
+      width: assetSize,
+      height: assetSize,
+      errorBuilder: (_, __, ___) => Image.asset(
+        AppImages.appSplash,
+        width: assetSize,
+        height: assetSize,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
+    );
+
+    final card = WebGoldGlassPanel(
+      width: 460,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(36, 40, 36, 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Image.asset(
+                AppImages.brandWordmark,
+                height: 36,
+                errorBuilder: (_, __, ___) => Text(
+                  BrandConfig.appName,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: brand.iconStrong,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 26),
+            Text(
+              s.heroWelcome(BrandConfig.appName),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: brand.iconStrong,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 22,
+              child: Text(
+                _displayedText,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  color: brand.textPrimary.withOpacity(0.65),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              onSubmitted: (_) => _submitEmail(),
+              style: const TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: s.email,
+                hintStyle: TextStyle(color: brand.muted),
+                prefixIcon:
+                    Icon(Icons.email_outlined, color: brand.iconStrong),
+                filled: true,
+                fillColor: brand.surfaceBright.withOpacity(0.9),
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: 18, horizontal: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 52,
+              child: FilledButton(
+                onPressed: _submitEmail,
+                style: FilledButton.styleFrom(
+                  backgroundColor: brand.iconStrong,
+                  foregroundColor: brand.textInverse,
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(s.continueLabel),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Center(
+              child: RichText(
+                text: TextSpan(
+                  text: s.dontHaveAccount,
+                  style: TextStyle(
+                    color: brand.textPrimary,
+                    fontSize: 14.5,
+                    fontFamily: 'BrandFont',
+                  ),
+                  children: [
+                    TextSpan(
+                      text: s.signUpExclamation,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        color: brand.secondaryVariant,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'BrandFont',
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          AppNavigator.push(context, const SignUpPage());
+                        },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Divider(color: brand.iconStrong.withOpacity(0.15), height: 1),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  s.language,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: brand.textPrimary.withOpacity(0.75),
+                  ),
+                ),
+                const LanguageSelectorPill(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Scaffold(
+      backgroundColor: brand.background,
+      body: Stack(
+        children: [
+          const WebBrandBackdrop(),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: twoColumns
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        heroAsset,
+                        const SizedBox(width: 64),
+                        card,
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        heroAsset,
+                        const SizedBox(height: 20),
+                        card,
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
@@ -233,56 +494,7 @@ class _SigninPageState extends State<SigninPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                        onPressed: () async {
-                          final email = _emailController.text.trim();
-                          if (email.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(S.of(context).pleaseEnterEmail),
-                            backgroundColor: context.brand.danger,
-                          ),
-                        );
-                        return;
-                      }
-
-                          if (!email.contains('@') || !email.contains('.')) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text(S.of(context).pleaseEnterValidEmail),
-                                backgroundColor: context.brand.danger,
-                              ),
-                            );
-                            return;
-                          }
-
-                          final lockoutStatus =
-                              await _signinLockoutStore.getStatus(email);
-                          if (!context.mounted) return;
-
-                          if (lockoutStatus.isLocked) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  S.of(context).emailTemporarilyLocked(
-                                      formatLockoutRemaining(
-                                          lockoutStatus.remaining)),
-                                ),
-                                backgroundColor: context.brand.danger,
-                              ),
-                            );
-                            return;
-                          }
-
-                      AppNavigator.push(
-                        context,
-                            PasswordPage(
-                              userSigninReq: UserSigninReq(
-                                email: email,
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _submitEmail,
                     child: Text(S.of(context).continueLabel),
                   ),
                 ),

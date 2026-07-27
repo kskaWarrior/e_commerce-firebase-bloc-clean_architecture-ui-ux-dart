@@ -12,6 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/pages/signin.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -100,6 +101,23 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
     return age >= _minimumAge;
   }
 
+  Locale? _typewriterLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Restart the typewriter when the language changes, otherwise the
+    // already-typed text stays in the previous language.
+    final locale = Localizations.maybeLocaleOf(context);
+    if (_typewriterLocale != locale) {
+      final isFirstResolution = _typewriterLocale == null;
+      _typewriterLocale = locale;
+      if (!isFirstResolution) {
+        _startTypewriter();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _typewriterTimer?.cancel();
@@ -109,9 +127,196 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
 
   @override
   Widget build(BuildContext context) {
-    // On web, the untouched mobile layout renders inside a centered glass
-    // panel over a branded backdrop (see WebAuthFrame).
+    // Wide web gets the storefront-style split layout (asset beside a glass
+    // card); everything else keeps the mobile layout, framed on web.
+    if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {
+      return _buildWebLayout(context);
+    }
     return WebAuthFrame.wrap(_buildMobileLayout(context));
+  }
+
+  /// Shared reaction to the sign-up [ButtonCubit] result.
+  void _handleButtonState(BuildContext context, ButtonState state) {
+    if (state is FailureState) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.error),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+    } else if (state is SuccessState) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.message),
+          backgroundColor: context.brand.success,
+        ),
+      );
+      // Navigate to SigninPage on success
+      AppNavigator.pushReplacement(
+        context,
+        const SigninPage(),
+      );
+    }
+  }
+
+  /// Validates address + age, then dispatches the sign-up use case. Shared by
+  /// both layouts.
+  void _submitFinish(BuildContext context) {
+    if (_addressController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseEnterAddress),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedDate == null || !_isAtLeastMinimumAge(_selectedDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).mustBeAtLeastTwelve),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+
+    widget.userCreationReq?.gender = _selectedGender;
+    widget.userCreationReq?.birthDate = _selectedDate;
+    widget.userCreationReq?.address = _addressController.text;
+    context.read<ButtonCubit>().execute(
+          useCase: sl<SignupUseCase>(),
+          params: widget.userCreationReq,
+        );
+  }
+
+  Widget _buildWebLayout(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    Widget genderChip(String value) {
+      return ChoiceChip(
+        label: Text(value),
+        selected: _selectedGender == value,
+        onSelected: (_) => setState(() => _selectedGender = value),
+        selectedColor: Theme.of(context).colorScheme.primary,
+        labelStyle: TextStyle(
+          color: _selectedGender == value
+              ? brand.textInverse
+              : Theme.of(context).colorScheme.onSurface,
+        ),
+      );
+    }
+
+    return BlocProvider(
+      create: (context) => ButtonCubit(),
+      child: BlocListener<ButtonCubit, ButtonState>(
+        listener: _handleButtonState,
+        child: WebAuthScaffold(
+          // Restore this step's own illustration (larger than before), rather
+          // than the shared splash art.
+          assetPath: AppImages.oneStep,
+          assetScale: 1.2,
+          card: WebGoldGlassPanel(
+            width: 480,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WebAuthCardHeader(
+                    title: s.oneStepAway,
+                    onBack: Navigator.of(context).canPop()
+                        ? () => Navigator.of(context).pop()
+                        : null,
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    s.whatGenderInterested,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                      color: brand.textPrimary.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      genderChip('Male'),
+                      const SizedBox(width: 12),
+                      genderChip('Female'),
+                      const SizedBox(width: 12),
+                      genderChip('Both'),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () => _pickDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: brand.surfaceBright.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: brand.mutedSoft),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.cake_outlined, color: brand.muted),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedDate == null
+                                  ? s.selectYourBirthDate
+                                  : '${_selectedDate!.day.toString().padLeft(2, '0')}/'
+                                      '${_selectedDate!.month.toString().padLeft(2, '0')}/'
+                                      '${_selectedDate!.year}',
+                              style: TextStyle(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w600,
+                                color: brand.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down, color: brand.muted),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _addressController,
+                    keyboardType: TextInputType.streetAddress,
+                    onSubmitted: (_) => _submitFinish(context),
+                    style: const TextStyle(
+                        fontSize: 15.5, fontWeight: FontWeight.w600),
+                    decoration: webAuthInputDecoration(
+                      context,
+                      hintText: _displayedAddress.isEmpty
+                          ? s.typeYourAddress
+                          : _displayedAddress,
+                      prefixIcon: Icon(Icons.location_on_outlined,
+                          color: brand.iconStrong),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Builder(
+                    builder: (context) => WebAuthReactiveButton(
+                      text: s.signUpButton,
+                      onPressed: () => _submitFinish(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
@@ -124,28 +329,7 @@ class _GenderAndAgePageState extends State<GenderAndAgePage> {
       body: BlocProvider(
         create: (context) => ButtonCubit(),
         child: BlocListener<ButtonCubit, ButtonState>(
-          listener: (context, state) {
-            if (state is FailureState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: context.brand.danger,
-                ),
-              );
-            } else if (state is SuccessState) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: context.brand.success,
-                ),
-              );
-              // Navigate to SigninPage on success
-              AppNavigator.pushReplacement(
-                context,
-                const SigninPage(),
-              );
-            }
-          },
+          listener: _handleButtonState,
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
