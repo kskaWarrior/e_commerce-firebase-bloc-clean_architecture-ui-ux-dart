@@ -1,8 +1,10 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/theme/admin_theme.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/widgets/admin_color_picker.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 
@@ -37,10 +39,22 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     final result = await sl<GetStoreUseCase>().call(null);
     if (!mounted) return;
     result.fold(
-      (error) => setState(() {
-        _error = error.toString();
-        _loading = false;
-      }),
+      (error) {
+        if (error.toString() == 'Store not found.') {
+          // The store doc hasn't been provisioned yet (e.g. a demo store
+          // seeded with catalog only). Prefill defaults from the tenant id
+          // so the owner can fill in and save — the save creates the doc.
+          final storeId = sl<StoreContext>().storeId;
+          _nameController.text = storeId;
+          _appTitleController.text = storeId;
+          setState(() => _loading = false);
+        } else {
+          setState(() {
+            _error = error.toString();
+            _loading = false;
+          });
+        }
+      },
       (store) {
         final s = store as StoreEntity;
         _nameController.text = s.name;
@@ -241,6 +255,19 @@ class _ColorFieldState extends State<_ColorField> {
     return value == null ? null : Color(value);
   }
 
+  Future<void> _openPicker() async {
+    final current = widget.controller.text.trim();
+    final result = await showAdminColorPicker(
+      context,
+      title: S.of(context).pickColor,
+      withName: false,
+      initialHex: current.isEmpty ? widget.hint : current,
+    );
+    if (result == null || !mounted) return;
+    // Store colors are 8-digit ARGB; keep them opaque.
+    setState(() => widget.controller.text = 'FF${result.hex}');
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _parse(widget.controller.text);
@@ -254,18 +281,29 @@ class _ColorFieldState extends State<_ColorField> {
         const SizedBox(height: 7),
         Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color ?? AdminColors.surfaceTintStrong,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminColors.border),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: _openPicker,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color ?? AdminColors.surfaceTintStrong,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AdminColors.border),
+                  ),
+                  child: Icon(
+                    Icons.colorize,
+                    size: 16,
+                    color: color == null
+                        ? AdminColors.textSecondary
+                        : (color.computeLuminance() > 0.5
+                            ? Colors.black.withOpacity(0.55)
+                            : Colors.white.withOpacity(0.85)),
+                  ),
+                ),
               ),
-              child: color == null
-                  ? const Icon(Icons.question_mark,
-                      size: 16, color: AdminColors.textSecondary)
-                  : null,
             ),
             const SizedBox(width: 10),
             Expanded(

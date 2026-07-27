@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/app_theme.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/theme_controller.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_locale_controller.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/firebase_brand_options.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/cart/cart_draft_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_route_observer.dart';
@@ -64,6 +67,10 @@ void main() {
           .catchError((_) {});
       runApp(const MyApp());
 
+      // Runtime theming: pull the store's saved branding and swap the palette
+      // in (no rebuild). Fire-and-forget so it never blocks first paint.
+      unawaited(_applyStoreBranding());
+
       unawaited(
         CartDraftStore.instance
             .restore()
@@ -81,6 +88,27 @@ void main() {
   );
 }
 
+/// Fetches the store's saved branding and applies it to [ThemeController] so
+/// the shopper app themes to the owner's colours. Best-effort: any failure
+/// (missing/unprovisioned store doc, offline) leaves the compile-time palette.
+Future<void> _applyStoreBranding() async {
+  try {
+    final result = await sl<GetStoreUseCase>()
+        .call(null)
+        .timeout(const Duration(seconds: 4));
+    result.fold(
+      (_) {},
+      (store) {
+        if (store is StoreEntity) {
+          ThemeController.instance.applyBranding(store.branding);
+        }
+      },
+    );
+  } catch (_) {
+    // Keep the default palette.
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -90,10 +118,11 @@ class MyApp extends StatelessWidget {
     return BlocProvider(
       create: (context) => sl<SplashCubit>()..appStarted(),
       child: AnimatedBuilder(
-        animation: AppLocaleController.instance,
+        animation: Listenable.merge(
+            [AppLocaleController.instance, ThemeController.instance]),
         builder: (context, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.getTheme(AppTheme.defaultTheme),
+          theme: AppTheme.buildLight(ThemeController.instance.tokens),
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.light,
           locale: AppLocaleController.instance.locale,

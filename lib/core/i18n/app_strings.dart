@@ -355,6 +355,11 @@ abstract class AppStrings {
   String get genderWomen;
   String get sizesHint;
   String get colorsHint;
+  String get addColor;
+  String get editColor;
+  String get pickColor;
+  String get colorName;
+  String get colorValueHex;
   String get images;
   String get uploadImage;
   String get saveProduct;
@@ -1036,6 +1041,16 @@ class AppStringsEn extends AppStrings {
   @override
   String get colorsHint =>
       'One per line: "<name> <hex>", e.g. Navy #0A2035';
+  @override
+  String get addColor => 'Add color';
+  @override
+  String get editColor => 'Edit color';
+  @override
+  String get pickColor => 'Pick a color';
+  @override
+  String get colorName => 'Color name';
+  @override
+  String get colorValueHex => 'Hex';
   @override
   String get images => 'Images';
   @override
@@ -1745,6 +1760,16 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get colorsHint =>
       'Um por linha: "<nome> <hex>", ex.: Azul-marinho #0A2035';
+  @override
+  String get addColor => 'Adicionar cor';
+  @override
+  String get editColor => 'Editar cor';
+  @override
+  String get pickColor => 'Escolher cor';
+  @override
+  String get colorName => 'Nome da cor';
+  @override
+  String get colorValueHex => 'Hex';
   @override
   String get images => 'Imagens';
   @override

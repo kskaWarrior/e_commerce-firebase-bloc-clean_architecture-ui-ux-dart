@@ -41,6 +41,11 @@ class AppTheme {
     );
   }
 
+  /// Builds a light theme from runtime tokens (used by [ThemeController] so a
+  /// store's saved branding themes the app without a rebuild).
+  static ThemeData buildLight(BrandTokens tokens) =>
+      _build(tokens, Brightness.light);
+
   static final ThemeData lightTheme =
       _build(BrandTokens.light(), Brightness.light);
 

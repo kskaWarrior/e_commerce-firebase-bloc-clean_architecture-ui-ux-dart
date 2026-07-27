@@ -7,6 +7,8 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upsert_product_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/theme/admin_theme.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/widgets/admin_color_picker.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +30,7 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
   final _priceController = TextEditingController();
   final _discountedPriceController = TextEditingController();
   final _sizesController = TextEditingController();
-  final _colorsController = TextEditingController();
+  final List<_ColorItem> _colors = [];
 
   List<CategoriesEntity> _categories = [];
   String? _categoryId;
@@ -68,9 +70,10 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
           _priceController.text = p.price.toString();
           _discountedPriceController.text = p.discountedPrice.toString();
           _sizesController.text = p.sizes.join(', ');
-          _colorsController.text = p.colors
-              .map((c) => '${c.title} ${c.hexCode}')
-              .join('\n');
+          _colors
+            ..clear()
+            ..addAll(p.colors
+                .map((c) => _ColorItem(c.title, _normalizeHex(c.hexCode))));
           _categoryId = p.categoryId.isEmpty ? null : p.categoryId;
           _gender = p.gender.isEmpty ? 'unisex' : p.gender;
           _imageUrls.addAll(p.images.map((e) => e.toString()));
@@ -108,19 +111,40 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
     );
   }
 
+  /// 6-digit uppercase RRGGBB (drops any leading alpha and the '#').
+  static String _normalizeHex(String raw) {
+    final cleaned = raw.replaceAll('#', '').trim().toUpperCase();
+    if (cleaned.length >= 6) {
+      return cleaned.substring(cleaned.length - 6);
+    }
+    return cleaned.padLeft(6, '0');
+  }
+
   List<Map<String, String>> _parseColors() {
-    // One color per line: "<name> <#AARRGGBB or #RRGGBB>", e.g. "Navy #0A2035".
-    return _colorsController.text
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .map((line) {
-      final parts = line.split(RegExp(r'\s+'));
-      final hex = parts.length > 1 ? parts.last : '';
-      final title =
-          parts.length > 1 ? parts.sublist(0, parts.length - 1).join(' ') : line;
-      return {'title': title, 'hexCode': hex.replaceFirst('#', '')};
-    }).toList();
+    return _colors
+        .where((c) => c.hex.isNotEmpty)
+        .map((c) => {'title': c.title.trim(), 'hexCode': c.hex})
+        .toList();
+  }
+
+  Future<void> _editColor({int? index}) async {
+    final s = S.of(context);
+    final initial = index != null ? _colors[index] : null;
+    final result = await showAdminColorPicker(
+      context,
+      title: initial == null ? s.addColor : s.editColor,
+      initialHex: initial?.hex ?? '1C1C1C',
+      initialName: initial?.title ?? '',
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      final item = _ColorItem(result.name, result.hex);
+      if (index != null) {
+        _colors[index] = item;
+      } else {
+        _colors.add(item);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -179,7 +203,6 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
     _priceController.dispose();
     _discountedPriceController.dispose();
     _sizesController.dispose();
-    _colorsController.dispose();
     super.dispose();
   }
 
@@ -290,14 +313,28 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
                           hintText: s.sizesHint,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _colorsController,
-                        decoration: InputDecoration(
-                          labelText: s.colors,
-                          hintText: s.colorsHint,
-                        ),
-                        maxLines: 3,
+                      const SizedBox(height: 20),
+                      Text(s.colors,
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          for (var i = 0; i < _colors.length; i++)
+                            _ColorChip(
+                              item: _colors[i],
+                              onEdit: () => _editColor(index: i),
+                              onDelete: () =>
+                                  setState(() => _colors.removeAt(i)),
+                            ),
+                          OutlinedButton.icon(
+                            onPressed: () => _editColor(),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text(s.addColor),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       Text(s.images,
@@ -371,6 +408,73 @@ class _AdminProductFormPageState extends State<AdminProductFormPage> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// A single editable product color: a display name plus a 6-digit RRGGBB
+/// hex (uppercase, no leading '#').
+class _ColorItem {
+  _ColorItem(this.title, this.hex);
+  String title;
+  String hex;
+}
+
+/// Read-only swatch chip shown in the form; tap opens the editor, X removes.
+class _ColorChip extends StatelessWidget {
+  const _ColorChip({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final _ColorItem item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onEdit,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+        decoration: BoxDecoration(
+          color: AdminColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AdminColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: adminHexToColor(item.hex),
+                shape: BoxShape.circle,
+                border: Border.all(color: AdminColors.border),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              item.title.trim().isEmpty ? '#${item.hex}' : item.title,
+              style:
+                  const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 4),
+            InkWell(
+              onTap: onDelete,
+              customBorder: const CircleBorder(),
+              child: const Padding(
+                padding: EdgeInsets.all(3),
+                child: Icon(Icons.close,
+                    size: 15, color: AdminColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
