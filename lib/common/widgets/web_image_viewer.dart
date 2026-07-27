@@ -5,10 +5,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/a
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Opens the fullscreen, zoomable product-image viewer as a black overlay
-/// route. [imagePaths] are the raw stored image references (URLs or legacy
+/// Opens the fullscreen, zoomable image viewer as a black overlay route.
+/// [imagePaths] are the raw stored image references (URLs or legacy
 /// filenames); they are resolved through [ImageDisplayHelper]. [initialIndex]
-/// is the image to show first.
+/// is the image to show first. Shared by the shopper storefront and the admin
+/// console so product/category images can be inspected up close.
 Future<void> showWebImageViewer(
   BuildContext context, {
   required List<String> imagePaths,

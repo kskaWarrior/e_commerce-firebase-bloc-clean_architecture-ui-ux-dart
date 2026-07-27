@@ -12,7 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
-import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_image_viewer.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
