@@ -167,8 +167,10 @@ class _CategoryCardState extends State<_CategoryCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
           width: 200,
+          transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
           decoration: BoxDecoration(
             color: _hovered ? AdminColors.surfaceTint : AdminColors.surface,
             borderRadius: BorderRadius.circular(14),
@@ -176,6 +178,14 @@ class _CategoryCardState extends State<_CategoryCard> {
               color: _hovered ? AdminColors.accent : AdminColors.border,
               width: _hovered ? 1.4 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AdminColors.accentStrong
+                    .withOpacity(_hovered ? 0.16 : 0.06),
+                blurRadius: _hovered ? 22 : 10,
+                offset: Offset(0, _hovered ? 12 : 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

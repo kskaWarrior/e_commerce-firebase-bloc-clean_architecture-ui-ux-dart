@@ -169,8 +169,11 @@ class _ProductRowState extends State<_ProductRow> {
       onExit: (_) => setState(() => _hovered = false),
       child: InkWell(
         onTap: widget.onTap,
-        child: Container(
-          color: _hovered ? AdminColors.surfaceTint : Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          color: _hovered
+              ? AdminColors.accent.withOpacity(0.05)
+              : Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
