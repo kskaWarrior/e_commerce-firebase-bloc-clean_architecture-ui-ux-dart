@@ -280,6 +280,11 @@ abstract class AppStrings {
 
   // Profile
   String get tapToChangePhoto;
+  String get profileSubtitle;
+  String get completeProfileHint;
+  String get accountDetails;
+  String get personalDetails;
+  String get preferencesSection;
   String get registeredEmailLocked;
   String get newPasswordOptional;
   String get address;
@@ -884,6 +889,17 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get tapToChangePhoto => 'Tap to change photo';
+  @override
+  String get profileSubtitle => 'Manage your account details and preferences';
+  @override
+  String get completeProfileHint =>
+      'Complete your profile below to get started.';
+  @override
+  String get accountDetails => 'Account';
+  @override
+  String get personalDetails => 'Personal details';
+  @override
+  String get preferencesSection => 'Preferences';
   @override
   String get registeredEmailLocked => 'Registered email (locked)';
   @override
@@ -1576,6 +1592,17 @@ class AppStringsPtBr extends AppStrings {
 
   @override
   String get tapToChangePhoto => 'Toque para trocar a foto';
+  @override
+  String get profileSubtitle => 'Gerencie os dados e preferências da sua conta';
+  @override
+  String get completeProfileHint =>
+      'Complete seu perfil abaixo para começar.';
+  @override
+  String get accountDetails => 'Conta';
+  @override
+  String get personalDetails => 'Dados pessoais';
+  @override
+  String get preferencesSection => 'Preferências';
   @override
   String get registeredEmailLocked => 'E-mail cadastrado (bloqueado)';
   @override

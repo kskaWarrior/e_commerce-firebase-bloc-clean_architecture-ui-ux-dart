@@ -11,7 +11,10 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/upload_profile_image.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/update_user.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_auth_frame.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,6 +42,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   bool _isSaving = false;
   bool _isUploadingImage = false;
   bool _obscurePassword = true;
+  bool _isNewProfile = false;
   String _profileImageUrl = '';
   String _registeredEmail = '';
 
@@ -72,12 +76,22 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
     result.fold(
       (failure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(failure.error),
-            backgroundColor: context.brand.danger,
-          ),
-        );
+        if (failure.error == 'profile-not-found') {
+          // No profile in this store yet: prefill the email from the Auth
+          // account so the user can complete and save it (save creates the
+          // doc). Not an error state — no scary snackbar.
+          final authUser = FirebaseAuth.instance.currentUser;
+          _emailController.text = authUser?.email ?? '';
+          _registeredEmail = authUser?.email ?? '';
+          _isNewProfile = true;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(failure.error),
+              backgroundColor: context.brand.danger,
+            ),
+          );
+        }
       },
       (user) {
         _nameController.text = user.name;
@@ -88,6 +102,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         _selectedGender = user.gender.isNotEmpty ? user.gender : 'Male';
         _selectedDate = user.birthDate;
         _profileImageUrl = user.profileImageUrl;
+        _isNewProfile = false;
       },
     );
 
@@ -274,259 +289,402 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final brand = context.brand;
     final s = S.of(context);
 
-    return WebAuthScaffold(
-      card: WebGoldGlassPanel(
-        width: 480,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
-          child: _isLoading
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 80),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    WebAuthCardHeader(
-                      title: s.myProfile,
-                      onBack: Navigator.of(context).canPop()
-                          ? () => Navigator.of(context).pop()
-                          : null,
-                    ),
-                    const SizedBox(height: 22),
-                    Center(
-                      child: GestureDetector(
-                        onTap: (_isSaving || _isUploadingImage)
-                            ? null
-                            : _pickAndUploadProfileImage,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            CircleAvatar(
-                              radius: 48,
-                              backgroundColor: brand.primary.withOpacity(0.15),
-                              backgroundImage: _profileImageUrl.isNotEmpty
-                                  ? NetworkImage(_profileImageUrl)
-                                  : null,
-                              child: _profileImageUrl.isEmpty
-                                  ? Icon(Icons.person,
-                                      size: 48, color: brand.iconStrong)
-                                  : null,
-                            ),
-                            Positioned(
-                              right: -2,
-                              bottom: -2,
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  color: brand.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: brand.surfaceBright, width: 2),
-                                ),
-                                child: _isUploadingImage
-                                    ? Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: brand.onPrimary,
-                                        ),
-                                      )
-                                    : Icon(Icons.camera_alt_outlined,
-                                        color: brand.onPrimary, size: 17),
-                              ),
-                            ),
-                          ],
-                        ),
+    return WebScaffold(
+      section: WebSection.none,
+      body: WebScrollView(
+        children: [
+          const SizedBox(height: WebScaffold.headerHeight + 28),
+          WebMaxWidth(
+            child: _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 120),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      WebSectionTitle(
+                        title: s.myProfile,
+                        subtitle: s.profileSubtitle,
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      s.tapToChangePhoto,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: brand.muted),
-                    ),
-                    const SizedBox(height: 22),
-                    TextField(
-                      controller: _emailController,
-                      enabled: false,
-                      keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w600),
-                      decoration: webAuthInputDecoration(
-                        context,
-                        hintText: s.email,
-                        prefixIcon:
-                            Icon(Icons.email_outlined, color: brand.iconStrong),
-                        suffixIcon:
-                            Icon(Icons.lock_outline, color: brand.muted),
+                      if (_isNewProfile) ...[
+                        const SizedBox(height: 18),
+                        _infoBanner(brand, s.completeProfileHint),
+                      ],
+                      const SizedBox(height: 26),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final identity = _identityPanel(brand, s);
+                          final form = _formPanel(brand, s);
+                          if (constraints.maxWidth >= 900) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(width: 324, child: identity),
+                                const SizedBox(width: 26),
+                                Expanded(child: form),
+                              ],
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              identity,
+                              const SizedBox(height: 26),
+                              form,
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _nameController,
-                      keyboardType: TextInputType.name,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w600),
-                      decoration: webAuthInputDecoration(
-                        context,
-                        hintText: s.name,
-                        prefixIcon:
-                            Icon(Icons.person_outline, color: brand.iconStrong),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w600),
-                      decoration: webAuthInputDecoration(
-                        context,
-                        hintText: s.phone,
-                        prefixIcon:
-                            Icon(Icons.phone_outlined, color: brand.iconStrong),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      keyboardType: TextInputType.visiblePassword,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w600),
-                      decoration: webAuthInputDecoration(
-                        context,
-                        hintText: s.newPasswordOptional,
-                        prefixIcon: Icon(Icons.password_outlined,
-                            color: brand.iconStrong),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: brand.muted,
-                          ),
-                          onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _addressController,
-                      keyboardType: TextInputType.streetAddress,
-                      style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w600),
-                      decoration: webAuthInputDecoration(
-                        context,
-                        hintText: s.address,
-                        prefixIcon: Icon(Icons.location_on_outlined,
-                            color: brand.iconStrong),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        s.mostInterestedIn,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: ['Male', 'Female', 'Both'].map((gender) {
-                        final selected = _selectedGender == gender;
-                        return ChoiceChip(
-                          label: Text(gender),
-                          selected: selected,
-                          onSelected: (_) =>
-                              setState(() => _selectedGender = gender),
-                          selectedColor: brand.primary,
-                          labelStyle: TextStyle(
-                            color: selected
-                                ? brand.onPrimary
-                                : brand.textPrimary,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        s.birthDate,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: brand.surfaceBright.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: brand.mutedSoft),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.cake_outlined, color: brand.muted),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '${_selectedDate.day.toString().padLeft(2, '0')}/'
-                                '${_selectedDate.month.toString().padLeft(2, '0')}/'
-                                '${_selectedDate.year}',
-                                style: TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: brand.textPrimary,
-                                ),
-                              ),
-                            ),
-                            Icon(Icons.arrow_drop_down, color: brand.muted),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 52,
-                      child: FilledButton(
-                        onPressed: _isSaving ? null : _saveProfile,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: brand.iconStrong,
-                          foregroundColor: brand.textInverse,
-                          textStyle: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w800),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: _isSaving
-                            ? SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      brand.textInverse),
-                                ),
-                              )
-                            : Text(s.saveChanges),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 64),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _panelDecoration(BrandTokens brand) {
+    return BoxDecoration(
+      color: brand.surfaceBright,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+      boxShadow: [
+        BoxShadow(
+          color: brand.iconStrong.withOpacity(0.06),
+          blurRadius: 26,
+          offset: const Offset(0, 12),
         ),
+      ],
+    );
+  }
+
+  Widget _infoBanner(BrandTokens brand, String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: brand.primary.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: brand.primary.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 19, color: brand.iconStrong),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: brand.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Left column: avatar + identity summary in a floating card.
+  Widget _identityPanel(BrandTokens brand, AppStrings s) {
+    final displayName = _nameController.text.trim().isNotEmpty
+        ? _nameController.text.trim()
+        : (_registeredEmail.contains('@')
+            ? _registeredEmail.split('@').first
+            : s.myProfile);
+
+    return Container(
+      decoration: _panelDecoration(brand),
+      padding: const EdgeInsets.symmetric(vertical: 34, horizontal: 22),
+      child: Column(
+        children: [
+          _webAvatar(brand),
+          const SizedBox(height: 18),
+          Text(
+            displayName,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: brand.iconStrong,
+            ),
+          ),
+          if (_registeredEmail.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              _registeredEmail,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13.5, color: brand.muted),
+            ),
+          ],
+          const SizedBox(height: 18),
+          Text(
+            s.tapToChangePhoto,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.5, color: brand.muted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _webAvatar(BrandTokens brand) {
+    return GestureDetector(
+      onTap:
+          (_isSaving || _isUploadingImage) ? null : _pickAndUploadProfileImage,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CircleAvatar(
+            radius: 52,
+            backgroundColor: brand.primary.withOpacity(0.15),
+            backgroundImage: _profileImageUrl.isNotEmpty
+                ? NetworkImage(_profileImageUrl)
+                : null,
+            child: _profileImageUrl.isEmpty
+                ? Icon(Icons.person, size: 52, color: brand.iconStrong)
+                : null,
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: brand.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: brand.surfaceBright, width: 2),
+              ),
+              child: _isUploadingImage
+                  ? Padding(
+                      padding: const EdgeInsets.all(9),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: brand.onPrimary),
+                    )
+                  : Icon(Icons.camera_alt_outlined,
+                      color: brand.onPrimary, size: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(BrandTokens brand, String label) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.0,
+        color: brand.muted,
+      ),
+    );
+  }
+
+  Widget _webField({
+    required BrandTokens brand,
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool enabled = true,
+    bool obscure = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
+      decoration: webAuthInputDecoration(
+        context,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: brand.iconStrong),
+        suffixIcon: suffixIcon,
+      ),
+    );
+  }
+
+  /// Right column: the editable form grouped into labelled sections.
+  Widget _formPanel(BrandTokens brand, AppStrings s) {
+    Widget divider() => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 26),
+          child: Divider(color: brand.iconStrong.withOpacity(0.08), height: 1),
+        );
+
+    return Container(
+      decoration: _panelDecoration(brand),
+      padding: const EdgeInsets.fromLTRB(30, 28, 30, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _sectionLabel(brand, s.accountDetails),
+          const SizedBox(height: 14),
+          _webField(
+            brand: brand,
+            controller: _emailController,
+            hint: s.email,
+            icon: Icons.email_outlined,
+            enabled: false,
+            keyboardType: TextInputType.emailAddress,
+            suffixIcon: Icon(Icons.lock_outline, color: brand.muted),
+          ),
+          const SizedBox(height: 14),
+          _webField(
+            brand: brand,
+            controller: _passwordController,
+            hint: s.newPasswordOptional,
+            icon: Icons.password_outlined,
+            obscure: _obscurePassword,
+            keyboardType: TextInputType.visiblePassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: brand.muted,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
+          divider(),
+          _sectionLabel(brand, s.personalDetails),
+          const SizedBox(height: 14),
+          _webField(
+            brand: brand,
+            controller: _nameController,
+            hint: s.name,
+            icon: Icons.person_outline,
+            keyboardType: TextInputType.name,
+          ),
+          const SizedBox(height: 14),
+          _webField(
+            brand: brand,
+            controller: _phoneController,
+            hint: s.phone,
+            icon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 14),
+          _webField(
+            brand: brand,
+            controller: _addressController,
+            hint: s.address,
+            icon: Icons.location_on_outlined,
+            keyboardType: TextInputType.streetAddress,
+          ),
+          divider(),
+          _sectionLabel(brand, s.preferencesSection),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              s.mostInterestedIn,
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: brand.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: ['Male', 'Female', 'Both'].map((gender) {
+              final selected = _selectedGender == gender;
+              return ChoiceChip(
+                label: Text(gender),
+                selected: selected,
+                onSelected: (_) => setState(() => _selectedGender = gender),
+                selectedColor: brand.primary,
+                labelStyle: TextStyle(
+                  color: selected ? brand.onPrimary : brand.textPrimary,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              s.birthDate,
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: brand.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _pickDate,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              decoration: BoxDecoration(
+                color: brand.background.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: brand.mutedSoft),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.cake_outlined, color: brand.muted),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${_selectedDate.day.toString().padLeft(2, '0')}/'
+                      '${_selectedDate.month.toString().padLeft(2, '0')}/'
+                      '${_selectedDate.year}',
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                        color: brand.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_drop_down, color: brand.muted),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            height: 54,
+            child: FilledButton(
+              onPressed: _isSaving ? null : _saveProfile,
+              style: FilledButton.styleFrom(
+                backgroundColor: brand.iconStrong,
+                foregroundColor: brand.textInverse,
+                textStyle: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w800),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _isSaving
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(brand.textInverse),
+                      ),
+                    )
+                  : Text(s.saveChanges),
+            ),
+          ),
+        ],
       ),
     );
   }
