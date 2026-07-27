@@ -24,6 +24,7 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
   final _primaryController = TextEditingController();
   final _secondaryController = TextEditingController();
   final _backgroundController = TextEditingController();
+  final _dashboardUrlController = TextEditingController();
 
   bool _loading = true;
   bool _saving = false;
@@ -66,6 +67,8 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
             (s.branding['secondaryColorHex'] ?? '').toString();
         _backgroundController.text =
             (s.branding['backgroundColorHex'] ?? '').toString();
+        _dashboardUrlController.text =
+            (s.branding['lookerEmbedUrl'] ?? '').toString();
         setState(() => _loading = false);
       },
     );
@@ -81,6 +84,7 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
           'primaryColorHex': _primaryController.text.trim(),
           'secondaryColorHex': _secondaryController.text.trim(),
           'backgroundColorHex': _backgroundController.text.trim(),
+          'lookerEmbedUrl': _dashboardUrlController.text.trim(),
         },
       ),
     );
@@ -101,6 +105,7 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     _primaryController.dispose();
     _secondaryController.dispose();
     _backgroundController.dispose();
+    _dashboardUrlController.dispose();
     super.dispose();
   }
 
@@ -175,6 +180,18 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
                           label: s.backgroundColor,
                           hint: 'FFFFF9F0',
                           controller: _backgroundController,
+                        ),
+                        const SizedBox(height: 32),
+                        const Divider(),
+                        const SizedBox(height: 24),
+                        _SectionHeader(
+                          title: s.dashboardSection,
+                          body: s.dashboardSectionBody,
+                        ),
+                        const SizedBox(height: 16),
+                        _LabeledField(
+                          label: s.dashboardUrlLabel,
+                          controller: _dashboardUrlController,
                         ),
                       ],
                     ),
