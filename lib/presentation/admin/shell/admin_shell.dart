@@ -20,6 +20,11 @@ class AdminShell extends StatelessWidget {
     String Function(AppStrings) label,
   })>[
     (
+      route: '/dashboard',
+      icon: Icons.insights_outlined,
+      label: (s) => s.dashboard,
+    ),
+    (
       route: '/orders',
       icon: Icons.receipt_long_outlined,
       label: (s) => s.orders,

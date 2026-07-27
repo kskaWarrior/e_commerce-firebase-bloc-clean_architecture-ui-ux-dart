@@ -2,6 +2,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/auth/pages/admin_login_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/auth/pages/select_store_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/categories/pages/admin_categories_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/dashboard/pages/admin_dashboard_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/categories/pages/admin_category_form_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/orders/pages/admin_orders_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/products/pages/admin_product_form_page.dart';
@@ -38,6 +39,9 @@ GoRouter buildAdminRouter() {
       ShellRoute(
         builder: (context, state, child) => AdminShell(child: child),
         routes: [
+          GoRoute(
+              path: '/dashboard',
+              builder: (_, __) => const AdminDashboardPage()),
           GoRoute(
               path: '/orders', builder: (_, __) => const AdminOrdersPage()),
           GoRoute(

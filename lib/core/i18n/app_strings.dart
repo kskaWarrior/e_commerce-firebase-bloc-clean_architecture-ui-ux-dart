@@ -232,6 +232,14 @@ abstract class AppStrings {
   String get primaryColor;
   String get secondaryColor;
   String get backgroundColor;
+  String get dashboard;
+  String get dashboardSubtitle;
+  String get dashboardEmptyTitle;
+  String get dashboardEmptyHint;
+  String get dashboardOpenSettings;
+  String get dashboardSection;
+  String get dashboardSectionBody;
+  String get dashboardUrlLabel;
 
   // -------------------------------------------------- web storefront chrome
   String get shopNow;
@@ -806,6 +814,26 @@ class AppStringsEn extends AppStrings {
   String get secondaryColor => 'Secondary';
   @override
   String get backgroundColor => 'Background';
+  @override
+  String get dashboard => 'Dashboard';
+  @override
+  String get dashboardSubtitle => 'Sales analytics for your store';
+  @override
+  String get dashboardEmptyTitle => 'No dashboard yet';
+  @override
+  String get dashboardEmptyHint =>
+      'Add your Looker Studio embed URL in Settings to see sales '
+      'analytics here.';
+  @override
+  String get dashboardOpenSettings => 'Open Settings';
+  @override
+  String get dashboardSection => 'Analytics dashboard';
+  @override
+  String get dashboardSectionBody =>
+      "Paste a Looker Studio 'Embed report' URL. The current store is "
+      'passed as a filter automatically.';
+  @override
+  String get dashboardUrlLabel => 'Dashboard embed URL';
 
   // -------------------------------------------------- web storefront chrome
   @override
@@ -1517,6 +1545,26 @@ class AppStringsPtBr extends AppStrings {
   String get secondaryColor => 'Secundária';
   @override
   String get backgroundColor => 'Fundo';
+  @override
+  String get dashboard => 'Painel';
+  @override
+  String get dashboardSubtitle => 'Análises de vendas da sua loja';
+  @override
+  String get dashboardEmptyTitle => 'Nenhum painel ainda';
+  @override
+  String get dashboardEmptyHint =>
+      'Adicione a URL de incorporação do Looker Studio nas Configurações '
+      'para ver as análises de vendas aqui.';
+  @override
+  String get dashboardOpenSettings => 'Abrir Configurações';
+  @override
+  String get dashboardSection => 'Painel de análises';
+  @override
+  String get dashboardSectionBody =>
+      "Cole a URL de 'Incorporar relatório' do Looker Studio. A loja atual "
+      'é aplicada como filtro automaticamente.';
+  @override
+  String get dashboardUrlLabel => 'URL de incorporação do painel';
 
   // -------------------------------------------------- web storefront chrome
   @override
