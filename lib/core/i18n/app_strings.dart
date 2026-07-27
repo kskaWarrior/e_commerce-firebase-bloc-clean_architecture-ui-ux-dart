@@ -357,6 +357,7 @@ abstract class AppStrings {
   String get colorsHint;
   String get addColor;
   String get editColor;
+  String get pickColor;
   String get colorName;
   String get colorValueHex;
   String get images;
@@ -1044,6 +1045,8 @@ class AppStringsEn extends AppStrings {
   String get addColor => 'Add color';
   @override
   String get editColor => 'Edit color';
+  @override
+  String get pickColor => 'Pick a color';
   @override
   String get colorName => 'Color name';
   @override
@@ -1761,6 +1764,8 @@ class AppStringsPtBr extends AppStrings {
   String get addColor => 'Adicionar cor';
   @override
   String get editColor => 'Editar cor';
+  @override
+  String get pickColor => 'Escolher cor';
   @override
   String get colorName => 'Nome da cor';
   @override
