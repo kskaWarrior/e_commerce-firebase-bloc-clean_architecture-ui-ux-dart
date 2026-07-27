@@ -12,6 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/bloc/favorites_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/products/page/product_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/cart_page.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_image_viewer.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_product_rail.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scaffold.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/widgets/web_scroll_view.dart';
@@ -655,23 +656,47 @@ class _Gallery extends StatelessWidget {
 
     return Column(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: brand.surfaceBright,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: current == null
-                ? _placeholder(brand)
-                : CachedNetworkImage(
-                    imageUrl: current,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(brand),
-                    errorWidget: (_, __, ___) => _placeholder(brand),
-                  ),
+        MouseRegion(
+          cursor: current == null
+              ? MouseCursor.defer
+              : SystemMouseCursors.zoomIn,
+          child: GestureDetector(
+            onTap: current == null
+                ? null
+                : () => showWebImageViewer(
+                      context,
+                      imagePaths: imagePaths,
+                      initialIndex: imageIndex.clamp(0, imagePaths.length - 1),
+                    ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: brand.surfaceBright,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: brand.iconStrong.withOpacity(0.08)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: current == null
+                    ? _placeholder(brand)
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: current,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => _placeholder(brand),
+                            errorWidget: (_, __, ___) => _placeholder(brand),
+                          ),
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: _ZoomHint(label: S.of(context).viewLarger),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
           ),
         ),
         if (imagePaths.length > 1) ...[
@@ -723,6 +748,40 @@ class _Gallery extends StatelessWidget {
       color: brand.mutedSoft.withOpacity(0.5),
       alignment: Alignment.center,
       child: Icon(Icons.image_outlined, size: 44, color: brand.muted),
+    );
+  }
+}
+
+/// The small "View larger" pill overlaid on the gallery's main image to
+/// signal that clicking opens the zoomable fullscreen viewer.
+class _ZoomHint extends StatelessWidget {
+  const _ZoomHint({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.zoom_in, size: 18, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

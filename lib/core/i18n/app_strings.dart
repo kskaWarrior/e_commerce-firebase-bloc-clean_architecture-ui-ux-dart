@@ -92,6 +92,14 @@ abstract class AppStrings {
   String get goToCart;
   String get noSizesAvailable;
   String get noColorsAvailable;
+  // Fullscreen image viewer (web zoom)
+  String get viewLarger;
+  String get zoomIn;
+  String get zoomOut;
+  String get resetZoom;
+  String get closeViewer;
+  String get previousImage;
+  String get nextImage;
   String soldAndCode(int sold, String code);
   String salesCount(int count);
   String codeLabel(String code);
@@ -479,6 +487,20 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get productDetails => 'Product details';
+  @override
+  String get viewLarger => 'View larger';
+  @override
+  String get zoomIn => 'Zoom in';
+  @override
+  String get zoomOut => 'Zoom out';
+  @override
+  String get resetZoom => 'Reset zoom';
+  @override
+  String get closeViewer => 'Close';
+  @override
+  String get previousImage => 'Previous image';
+  @override
+  String get nextImage => 'Next image';
   @override
   String get description => 'Description';
   @override
@@ -1142,6 +1164,20 @@ class AppStringsPtBr extends AppStrings {
 
   @override
   String get productDetails => 'Detalhes do produto';
+  @override
+  String get viewLarger => 'Ver maior';
+  @override
+  String get zoomIn => 'Ampliar';
+  @override
+  String get zoomOut => 'Reduzir';
+  @override
+  String get resetZoom => 'Redefinir zoom';
+  @override
+  String get closeViewer => 'Fechar';
+  @override
+  String get previousImage => 'Imagem anterior';
+  @override
+  String get nextImage => 'Próxima imagem';
   @override
   String get description => 'Descrição';
   @override
