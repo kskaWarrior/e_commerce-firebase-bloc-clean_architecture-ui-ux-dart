@@ -27,22 +27,33 @@ it quick, and every chart maps to a concrete field.
 ## 1. Bootstrap the report (one click)
 
 Open this URL — it creates a **new** report with `v_orders` (alias *Orders*) and
-`v_line_items` (alias *Line items*) already wired as BigQuery sources, in edit
-mode:
+`v_orders` already wired as the BigQuery source, in edit mode:
 
 ```
-https://lookerstudio.google.com/reporting/create?c.mode=edit&r.reportName=Store%20Analytics&ds.ds0.connector=bigQuery&ds.ds0.type=TABLE&ds.ds0.projectId=ecommerceapp-auth-db-cleana&ds.ds0.datasetId=sales_analytics&ds.ds0.tableId=v_orders&ds.ds0.datasourceName=Orders&ds.ds1.connector=bigQuery&ds.ds1.type=TABLE&ds.ds1.projectId=ecommerceapp-auth-db-cleana&ds.ds1.datasetId=sales_analytics&ds.ds1.tableId=v_line_items&ds.ds1.datasourceName=Line%20items
+https://lookerstudio.google.com/reporting/create?c.mode=edit&r.reportName=Store%20Analytics&ds.connector=bigQuery&ds.type=TABLE&ds.projectId=ecommerceapp-auth-db-cleana&ds.datasetId=sales_analytics&ds.tableId=v_orders&ds.datasourceName=Orders
 ```
 
-If you haven't run the SQL yet, this fallback wires the **raw tables** instead
-(`sales` / `sales_products`) so you can start immediately:
+> **Why one data source, and no `ds0`/`ds1` alias?** For a from-scratch report
+> the Linking API uses the default report's single embedded source, addressed as
+> plain `ds.` (no alias). The aliased `ds.ds0.` / `ds.ds1.` form only works when
+> a **template report** already defines those aliases — using it on a blank
+> create fails with *"ds0 is not a valid data source alias for this report."*
+> So we wire `v_orders` here and add `v_line_items` in the editor (next step).
 
-```
-https://lookerstudio.google.com/reporting/create?c.mode=edit&r.reportName=Store%20Analytics&ds.ds0.connector=bigQuery&ds.ds0.type=TABLE&ds.ds0.projectId=ecommerceapp-auth-db-cleana&ds.ds0.datasetId=sales_analytics&ds.ds0.tableId=sales&ds.ds0.datasourceName=Sales&ds.ds1.connector=bigQuery&ds.ds1.type=TABLE&ds.ds1.projectId=ecommerceapp-auth-db-cleana&ds.ds1.datasetId=sales_analytics&ds.ds1.tableId=sales_products&ds.ds1.datasourceName=Sales%20products
-```
+Then add the **second** data source inside the editor: **Resource → Manage
+added data sources → Add a data source → BigQuery →** project
+`ecommerceapp-auth-db-cleana` → dataset `sales_analytics` → table
+**`v_line_items`** → Add.
+
+**Fully manual alternative** (no URL — always works): go to
+[lookerstudio.google.com](https://lookerstudio.google.com) → **Create → Report**
+→ pick **BigQuery** → `ecommerceapp-auth-db-cleana` → `sales_analytics` →
+**`v_orders`** → Add; then **Add data** again for **`v_line_items`**. If you
+haven't run the views yet, pick the raw `sales` / `sales_products` tables
+instead.
 
 On first open, Looker Studio asks you to authorize the BigQuery connection —
-approve it. (Replace `ecommerceapp-auth-db-cleana` in the URL if your project id
+approve it. (Replace `ecommerceapp-auth-db-cleana` above if your project id
 differs.)
 
 ---
