@@ -14,9 +14,9 @@ White-label multi-tenant e-commerce SaaS. Flutter (Cubits, clean architecture) +
 - **i18n:** hand-rolled en/pt-BR `lib/core/i18n/app_strings.dart` (no ARB/gen-l10n).
 - **CI:** Codemagic only (`codemagic.yaml`): analyze → tests → Firebase Test Lab → App Distribution. No backend CI; rules tests (`rules_tests/firestore.rules.test.mjs`) run manually.
 
-## Current state / known gaps (see full audit artifact)
+## Current state / known gaps
 
-Full audit: https://claude.ai/code/artifact/3c16449a-6720-4278-9471-dd5a9d4d8c16
+Full audit: `docs/go-live-audit.md` (keep it and this file updated as the project changes).
 
 - **No payment integration** — checkout is simulated (`cart_page.dart`); Mercado Pago planned but no code exists. Owners manually set status `paid`.
 - **Prices never server-validated** — totals/freight/line items are client-written; `sales_products` create rule has no field validation.

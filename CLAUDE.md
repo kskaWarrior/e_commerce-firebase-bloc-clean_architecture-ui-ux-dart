@@ -1,8 +1,10 @@
 # CLAUDE.md
 
-Read `context.md` for architecture and the current gap list.
+Read `context.md` for architecture and the current gap list; full audit in `docs/go-live-audit.md`.
 
 ## Directives
+
+- **Living docs:** `context.md` and `docs/go-live-audit.md` are local to the repo (no external artifacts). Whenever you make or notice a change that affects architecture or the gap list — a gap fixed, a new gap found, a structural change — update these files in the same commit.
 
 - **Tenancy:** never call `FirebaseFirestore.instance.collection()` directly — go through `TenantCollections` (`lib/core/tenant/tenant_collections.dart`). All data lives under `stores/{storeId}/`. Line-item collection is `sales_products` (snake_case).
 - **Sale status values** (rules-enforced): `pending|paid|shipped|delivered|cancelled` — nothing else.
