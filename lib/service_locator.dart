@@ -16,6 +16,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/addres
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/source/viacep_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/address/repository/address_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/address/usecases/lookup_cep.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/payment/repository/payment_repository_impl.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/payment/source/payment_functions_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/repository/payment_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/create_payment_preference.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/set_store_payment_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/repository/sales_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/source/sales_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
@@ -98,6 +103,8 @@ Future<void> init() async {
 
   sl.registerSingleton<ViaCepService>(ViaCepServiceImpl());
 
+  sl.registerSingleton<PaymentFunctionsService>(PaymentFunctionsServiceImpl());
+
   //repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
 
@@ -112,6 +119,8 @@ Future<void> init() async {
   sl.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl());
 
   sl.registerLazySingleton<AddressRepository>(() => AddressRepositoryImpl());
+
+  sl.registerLazySingleton<PaymentRepository>(() => PaymentRepositoryImpl());
 
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
@@ -141,6 +150,10 @@ Future<void> init() async {
       () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
   sl.registerLazySingleton<LookupCepUseCase>(() => LookupCepUseCase());
+  sl.registerLazySingleton<CreatePaymentPreferenceUseCase>(
+      () => CreatePaymentPreferenceUseCase());
+  sl.registerLazySingleton<SetStorePaymentConfigUseCase>(
+      () => SetStorePaymentConfigUseCase());
 
   //admin usecases
   sl.registerLazySingleton<GetStoreUseCase>(() => GetStoreUseCase());
