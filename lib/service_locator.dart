@@ -12,6 +12,10 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/favori
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/favorites/source/favorites_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/repository_impl/products_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/products/source/products_firebase_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/repository/address_repository_impl.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/source/viacep_service.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/address/repository/address_repository.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/address/usecases/lookup_cep.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/repository/sales_repository_impl.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/sales/source/sales_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/repository/auth_repository.dart';
@@ -91,6 +95,8 @@ Future<void> init() async {
   sl.registerSingleton<StoreFirebaseService>(
       StoreFirebaseServiceImpl(sl<TenantCollections>()));
 
+  sl.registerSingleton<ViaCepService>(ViaCepServiceImpl());
+
   //repositories
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
 
@@ -103,6 +109,8 @@ Future<void> init() async {
   sl.registerLazySingleton<SalesRepository>(() => SalesRepositoryImpl());
 
   sl.registerLazySingleton<StoreRepository>(() => StoreRepositoryImpl());
+
+  sl.registerLazySingleton<AddressRepository>(() => AddressRepositoryImpl());
 
   //usecases
   sl.registerLazySingleton<SignupUseCase>(() => SignupUseCase());
@@ -131,6 +139,7 @@ Future<void> init() async {
   sl.registerLazySingleton<GetSalesByUserIdUseCase>(
       () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
+  sl.registerLazySingleton<LookupCepUseCase>(() => LookupCepUseCase());
 
   //admin usecases
   sl.registerLazySingleton<GetStoreUseCase>(() => GetStoreUseCase());
