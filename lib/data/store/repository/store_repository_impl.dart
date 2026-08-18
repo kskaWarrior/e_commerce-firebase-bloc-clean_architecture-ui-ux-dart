@@ -23,4 +23,9 @@ class StoreRepositoryImpl extends StoreRepository {
       Map<String, dynamic> branding, String name) async {
     return await sl<StoreFirebaseService>().updateStoreBranding(branding, name);
   }
+
+  @override
+  Future<Either> updateStoreShipping(Map<String, dynamic> shipping) async {
+    return await sl<StoreFirebaseService>().updateStoreShipping(shipping);
+  }
 }

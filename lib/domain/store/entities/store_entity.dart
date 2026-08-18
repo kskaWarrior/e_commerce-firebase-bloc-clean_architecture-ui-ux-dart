@@ -1,3 +1,5 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/shipping_config_entity.dart';
+
 class StoreEntity {
   final String id;
   final String name;
@@ -5,6 +7,7 @@ class StoreEntity {
   final String plan;
   final String ownerUid;
   final Map<String, dynamic> branding;
+  final ShippingConfig shipping;
 
   StoreEntity({
     required this.id,
@@ -13,5 +16,6 @@ class StoreEntity {
     this.plan = 'free',
     this.ownerUid = '',
     this.branding = const {},
+    this.shipping = ShippingConfig.empty,
   });
 }

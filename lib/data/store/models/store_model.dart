@@ -1,3 +1,4 @@
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/shipping_config_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
 
 class StoreModel {
@@ -7,6 +8,7 @@ class StoreModel {
   final String plan;
   final String ownerUid;
   final Map<String, dynamic> branding;
+  final ShippingConfig shipping;
 
   StoreModel({
     required this.id,
@@ -15,10 +17,12 @@ class StoreModel {
     required this.plan,
     required this.ownerUid,
     required this.branding,
+    this.shipping = ShippingConfig.empty,
   });
 
   factory StoreModel.fromMap(Map<String, dynamic> map) {
     final brandingRaw = map['branding'];
+    final shippingRaw = map['shipping'];
     return StoreModel(
       id: (map['id'] ?? '').toString(),
       name: (map['name'] ?? '').toString(),
@@ -28,6 +32,9 @@ class StoreModel {
       branding: brandingRaw is Map
           ? Map<String, dynamic>.from(brandingRaw)
           : <String, dynamic>{},
+      shipping: ShippingConfig.fromMap(shippingRaw is Map
+          ? Map<String, dynamic>.from(shippingRaw)
+          : null),
     );
   }
 }
@@ -41,6 +48,7 @@ extension StoreXModel on StoreModel {
       plan: plan,
       ownerUid: ownerUid,
       branding: branding,
+      shipping: shipping,
     );
   }
 }

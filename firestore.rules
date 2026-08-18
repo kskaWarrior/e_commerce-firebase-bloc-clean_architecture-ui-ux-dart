@@ -36,9 +36,18 @@ service cloud.firestore {
       allow get: if true;
       allow list: if isSuper();
       allow create, delete: if isSuper();
-      // Owners may edit their branding/name; everything else is platform-managed.
+      // Owners may edit their branding/name/shipping; everything else is
+      // platform-managed.
       allow update: if isSuper()
-        || (isOwner(storeId) && onlyChanges(['branding', 'name']));
+        || (isOwner(storeId) && onlyChanges(['branding', 'name', 'shipping']));
+
+      // Store secrets (payment credentials); never client-readable, read by
+      // Cloud Functions via Admin SDK. Owner write is temporary until the
+      // setStorePaymentConfig callable lands.
+      match /private/{docId} {
+        allow read: if false;
+        allow write: if isOwner(storeId) || isSuper();
+      }
 
       match /products/{productId} {
         allow read: if signedIn();

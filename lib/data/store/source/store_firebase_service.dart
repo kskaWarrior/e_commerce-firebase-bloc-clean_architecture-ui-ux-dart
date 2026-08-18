@@ -6,6 +6,7 @@ abstract class StoreFirebaseService {
   Future<Either> getStore();
   Future<Either> updateStoreBranding(
       Map<String, dynamic> branding, String name);
+  Future<Either> updateStoreShipping(Map<String, dynamic> shipping);
 }
 
 class StoreFirebaseServiceImpl implements StoreFirebaseService {
@@ -39,6 +40,17 @@ class StoreFirebaseServiceImpl implements StoreFirebaseService {
       return const Right('Store updated successfully!');
     } catch (e) {
       return Left('Failed to update store: $e');
+    }
+  }
+
+  @override
+  Future<Either> updateStoreShipping(Map<String, dynamic> shipping) async {
+    try {
+      // Rules allow owners to change the shipping key on the store doc.
+      await _tenant.storeDoc.set({'shipping': shipping}, SetOptions(merge: true));
+      return const Right('Shipping settings updated!');
+    } catch (e) {
+      return Left('Failed to update shipping settings: $e');
     }
   }
 }
