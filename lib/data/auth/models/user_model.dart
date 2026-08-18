@@ -2,12 +2,14 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 
 class UserModel {
   final String id;
   final String email;
   final String address;
+  final AddressModel? addressData;
   final String phone;
   final String name;
   final DateTime birthDate;
@@ -18,6 +20,7 @@ class UserModel {
       {required this.id,
       required this.email,
       required this.address,
+      this.addressData,
       required this.phone,
       required this.name,
       required this.birthDate,
@@ -40,6 +43,7 @@ class UserModel {
       'id': id,
       'email': email,
       'address': address,
+      'addressData': addressData?.toMap(),
       'phone': phone,
       'name': name,
       'birthDate': birthDate.millisecondsSinceEpoch,
@@ -66,6 +70,10 @@ class UserModel {
       id: map['id'] as String? ?? '',
       email: map['email'] as String? ?? '',
       address: map['address'] as String? ?? '',
+      addressData: map['addressData'] is Map
+          ? AddressModel.fromMap(
+              Map<String, dynamic>.from(map['addressData'] as Map))
+          : null,
       phone: map['phone'] as String? ?? '',
       name: map['name'] as String? ?? '',
       birthDate: parsedBirthDate,
@@ -86,6 +94,7 @@ extension UserXModel on UserModel {
       id: id,
       email: email,
       address: address,
+      addressData: addressData,
       phone: phone,
       name: name,
       birthDate: birthDate,

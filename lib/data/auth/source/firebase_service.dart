@@ -166,6 +166,8 @@ class FirebaseServiceImpl implements FirebaseService {
         'name': userCreationReq.name,
         'phone': userCreationReq.phone,
         'address': userCreationReq.address,
+        if (userCreationReq.addressData != null)
+          'addressData': userCreationReq.addressData!.toMap(),
         'birthDate': normalizedBirthDate != null
             ? Timestamp.fromDate(normalizedBirthDate)
             : null,

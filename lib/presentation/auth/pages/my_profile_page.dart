@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart' show Either;
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/address/address_form.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/widgets/my_app_bar.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
@@ -34,7 +36,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+  final AddressFormController _addressForm = AddressFormController();
 
   String _selectedGender = 'Male';
   DateTime _selectedDate = DateTime(2000, 1, 1);
@@ -58,7 +60,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _addressController.dispose();
+    _addressForm.dispose();
     super.dispose();
   }
 
@@ -98,7 +100,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         _phoneController.text = user.phone;
         _emailController.text = user.email;
         _registeredEmail = user.email;
-        _addressController.text = user.address;
+        _addressForm.setFromEntity(user.addressData);
         _selectedGender = user.gender.isNotEmpty ? user.gender : 'Male';
         _selectedDate = user.birthDate;
         _profileImageUrl = user.profileImageUrl;
@@ -217,11 +219,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty ||
-        _phoneController.text.trim().isEmpty ||
-        _addressController.text.trim().isEmpty) {
+        _phoneController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(S.of(context).fillAllEditableFields),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+      return;
+    }
+    if (!_addressForm.isComplete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).pleaseCompleteAddress),
           backgroundColor: context.brand.danger,
         ),
       );
@@ -232,6 +242,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       _isSaving = true;
     });
 
+    final addressEntity = _addressForm.toEntity();
     final UserCreationReq params = UserCreationReq(
       email: _registeredEmail,
       password: _passwordController.text.trim().isEmpty
@@ -239,7 +250,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
           : _passwordController.text.trim(),
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
+      address: addressEntity.toDisplayString(),
+      addressData: AddressModel.fromEntity(addressEntity),
       birthDate: _selectedDate,
       gender: _selectedGender,
     );
@@ -575,12 +587,25 @@ class _MyProfilePageState extends State<MyProfilePage> {
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 14),
-          _webField(
-            brand: brand,
-            controller: _addressController,
-            hint: s.address,
-            icon: Icons.location_on_outlined,
-            keyboardType: TextInputType.streetAddress,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              s.deliveryAddressTitle,
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: brand.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          AddressForm(
+            controller: _addressForm,
+            decorationBuilder: (label, icon) => webAuthInputDecoration(
+              context,
+              hintText: label,
+              prefixIcon: Icon(icon, color: brand.iconStrong),
+            ),
           ),
           divider(),
           _sectionLabel(brand, s.preferencesSection),
@@ -822,12 +847,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        _ProfileInputField(
-                          controller: _addressController,
-                          labelText: S.of(context).address,
-                          icon: Icons.location_on_outlined,
-                          keyboardType: TextInputType.streetAddress,
+                        Text(
+                          S.of(context).deliveryAddressTitle,
+                          style: _profileSectionLabelStyle(context),
                         ),
+                        const SizedBox(height: 12),
+                        AddressForm(controller: _addressForm),
                         const SizedBox(height: 24),
                         const _ProfileSectionSeparator(),
                         const SizedBox(height: 24),

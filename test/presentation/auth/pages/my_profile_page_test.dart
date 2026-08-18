@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/error/failure.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/auth/models/user_creation_req.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/entity/user_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/auth/usecases/get_user.dart';
@@ -29,6 +30,14 @@ void main() {
       id: 'u1',
       email: 'john@doe.com',
       address: 'Street 1',
+      addressData: const AddressModel(
+        cep: '01310100',
+        street: 'Avenida Paulista',
+        number: '1000',
+        neighborhood: 'Bela Vista',
+        city: 'São Paulo',
+        state: 'SP',
+      ),
       phone: '999999',
       name: 'John',
       birthDate: DateTime(1995, 1, 10),
@@ -100,7 +109,6 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(1), 'John Updated');
     await tester.enterText(fields.at(2), '123456');
-    await tester.enterText(fields.at(4), 'New Address');
 
     await tester.dragUntilVisible(
       find.text('Save changes'),
@@ -145,7 +153,6 @@ void main() {
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(1), 'John Updated');
     await tester.enterText(fields.at(2), '123456');
-    await tester.enterText(fields.at(4), 'New Address');
 
     await tester.dragUntilVisible(
       find.text('Save changes'),
@@ -182,7 +189,6 @@ void main() {
     await tester.enterText(fields.at(1), 'Jane Updated');
     await tester.enterText(fields.at(2), '123456');
     await tester.enterText(fields.at(3), '');
-    await tester.enterText(fields.at(4), 'New Address');
 
     await tester.dragUntilVisible(
       find.text('Save changes'),
