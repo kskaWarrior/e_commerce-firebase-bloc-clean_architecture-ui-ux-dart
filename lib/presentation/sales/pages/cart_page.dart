@@ -3,6 +3,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/favorites/page/favorites_page.dart';
@@ -210,6 +211,22 @@ class _CartPageState extends State<CartPage> {
       return;
     }
 
+    final userAddress = userState.user.addressData;
+    if (userAddress == null || !userAddress.isComplete) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).pleaseCompleteAddress),
+            backgroundColor: context.brand.danger,
+          ),
+        );
+      setState(() {
+        _isConfirmingPurchase = false;
+      });
+      return;
+    }
+
     final userName = userState.user.name.trim();
     final userBirthDate = Timestamp.fromDate(userState.user.birthDate);
     final userGender = userState.user.gender.trim();
@@ -258,6 +275,8 @@ class _CartPageState extends State<CartPage> {
       userGender: userGender,
       userId: userId,
       userName: userName,
+      deliveryMethod: 'delivery',
+      address: AddressModel.fromEntity(userAddress).toMap(),
     );
 
     final result = await sl<RegisterSaleUseCase>().call(finalSale);

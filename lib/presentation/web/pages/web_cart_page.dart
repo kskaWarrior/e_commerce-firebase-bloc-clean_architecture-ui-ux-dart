@@ -5,6 +5,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
@@ -176,6 +177,13 @@ class _WebCartPageState extends State<WebCartPage> {
       return;
     }
 
+    final userAddress = userState.user.addressData;
+    if (userAddress == null || !userAddress.isComplete) {
+      _snack(S.of(context).pleaseCompleteAddress, context.brand.danger);
+      setState(() => _isConfirmingPurchase = false);
+      return;
+    }
+
     final mergedProducts = <Map<String, dynamic>>[];
     for (final draft in drafts) {
       mergedProducts.addAll(draft.productsList);
@@ -215,6 +223,8 @@ class _WebCartPageState extends State<WebCartPage> {
       userGender: userState.user.gender.trim(),
       userId: userId,
       userName: userState.user.name.trim(),
+      deliveryMethod: 'delivery',
+      address: AddressModel.fromEntity(userAddress).toMap(),
     );
 
     final result = await sl<RegisterSaleUseCase>().call(finalSale);

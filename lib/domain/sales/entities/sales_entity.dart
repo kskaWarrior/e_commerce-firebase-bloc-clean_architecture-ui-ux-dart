@@ -18,6 +18,12 @@ class SalesEntity {
   /// Order lifecycle: pending | paid | shipped | delivered | cancelled.
   final String status;
 
+  /// 'delivery' | 'pickup'.
+  final String deliveryMethod;
+
+  /// Structured delivery address map (null for pickup).
+  final Map<String, dynamic>? address;
+
   SalesEntity({
     required this.createdDate,
     required this.discountedPrice,
@@ -33,5 +39,7 @@ class SalesEntity {
     required this.userId,
     required this.userName,
     this.status = 'pending',
+    this.deliveryMethod = 'delivery',
+    this.address,
   });
 }
