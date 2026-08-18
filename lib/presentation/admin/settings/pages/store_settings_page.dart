@@ -2,7 +2,10 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/a
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/shipping_config_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_shipping.dart';
+import 'package:flutter/services.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/theme/admin_theme.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/widgets/admin_color_picker.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
@@ -25,6 +28,9 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
   final _secondaryController = TextEditingController();
   final _backgroundController = TextEditingController();
   final _dashboardUrlController = TextEditingController();
+  final _thresholdController = TextEditingController();
+  final List<_ZoneRow> _zoneRows = [];
+  bool _pickupEnabled = false;
 
   bool _loading = true;
   bool _saving = false;
@@ -69,6 +75,13 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
             (s.branding['backgroundColorHex'] ?? '').toString();
         _dashboardUrlController.text =
             (s.branding['lookerEmbedUrl'] ?? '').toString();
+        _pickupEnabled = s.shipping.pickupEnabled;
+        _thresholdController.text = s.shipping.freeShippingThreshold == null
+            ? ''
+            : s.shipping.freeShippingThreshold!.toStringAsFixed(2);
+        for (final zone in s.shipping.zones) {
+          _zoneRows.add(_ZoneRow.fromZone(zone));
+        }
         setState(() => _loading = false);
       },
     );
@@ -89,13 +102,35 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
       ),
     );
     if (!mounted) return;
+
+    final shippingResult =
+        await sl<UpdateStoreShippingUseCase>().call(_buildShippingConfig());
+    if (!mounted) return;
+
     setState(() => _saving = false);
     final message = result.fold(
       (error) => error.toString(),
-      (success) => success.toString(),
+      (_) => shippingResult.fold(
+        (error) => error.toString(),
+        (success) => success.toString(),
+      ),
     );
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  ShippingConfig _buildShippingConfig() {
+    final threshold =
+        double.tryParse(_thresholdController.text.trim().replaceAll(',', '.'));
+    return ShippingConfig(
+      pickupEnabled: _pickupEnabled,
+      freeShippingThreshold: threshold,
+      zones: _zoneRows
+          .map((row) => row.toZone())
+          .where((zone) =>
+              zone.cepStart.length == 8 && zone.cepEnd.length == 8)
+          .toList(),
+    );
   }
 
   @override
@@ -106,6 +141,10 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     _secondaryController.dispose();
     _backgroundController.dispose();
     _dashboardUrlController.dispose();
+    _thresholdController.dispose();
+    for (final row in _zoneRows) {
+      row.dispose();
+    }
     super.dispose();
   }
 
@@ -193,6 +232,60 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
                           label: s.dashboardUrlLabel,
                           controller: _dashboardUrlController,
                         ),
+                        const SizedBox(height: 32),
+                        const Divider(),
+                        const SizedBox(height: 24),
+                        _SectionHeader(
+                          title: s.shippingSection,
+                          body: s.shippingSectionBody,
+                        ),
+                        const SizedBox(height: 16),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            s.pickupEnabledLabel,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                          value: _pickupEnabled,
+                          onChanged: (value) =>
+                              setState(() => _pickupEnabled = value),
+                        ),
+                        const SizedBox(height: 8),
+                        _LabeledField(
+                          label: s.freeShippingThresholdLabel,
+                          controller: _thresholdController,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          s.deliveryZonesLabel,
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          s.deliveryZonesBody,
+                          style: const TextStyle(
+                              fontSize: 12.5,
+                              color: AdminColors.textSecondary),
+                        ),
+                        const SizedBox(height: 12),
+                        for (var i = 0; i < _zoneRows.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ZoneEditor(
+                              row: _zoneRows[i],
+                              onRemove: () => setState(() {
+                                _zoneRows.removeAt(i).dispose();
+                              }),
+                            ),
+                          ),
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              setState(() => _zoneRows.add(_ZoneRow())),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(s.addZone),
+                        ),
                       ],
                     ),
                   ),
@@ -245,6 +338,111 @@ class _LabeledField extends StatelessWidget {
         const SizedBox(height: 7),
         TextField(controller: controller),
       ],
+    );
+  }
+}
+
+class _ZoneRow {
+  final label = TextEditingController();
+  final cepStart = TextEditingController();
+  final cepEnd = TextEditingController();
+  final fee = TextEditingController();
+
+  _ZoneRow();
+
+  factory _ZoneRow.fromZone(ShippingZone zone) {
+    final row = _ZoneRow();
+    row.label.text = zone.label;
+    row.cepStart.text = zone.cepStart;
+    row.cepEnd.text = zone.cepEnd;
+    row.fee.text = zone.fee.toStringAsFixed(2);
+    return row;
+  }
+
+  ShippingZone toZone() {
+    return ShippingZone(
+      label: label.text.trim(),
+      cepStart: cepStart.text.trim(),
+      cepEnd: cepEnd.text.trim(),
+      fee: double.tryParse(fee.text.trim().replaceAll(',', '.')) ?? 0,
+    );
+  }
+
+  void dispose() {
+    label.dispose();
+    cepStart.dispose();
+    cepEnd.dispose();
+    fee.dispose();
+  }
+}
+
+class _ZoneEditor extends StatelessWidget {
+  const _ZoneEditor({required this.row, required this.onRemove});
+
+  final _ZoneRow row;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final cepFormatters = [
+      FilteringTextInputFormatter.digitsOnly,
+      LengthLimitingTextInputFormatter(8),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: AdminColors.border),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: row.label,
+              decoration: InputDecoration(labelText: s.zoneLabelField),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: row.cepStart,
+              inputFormatters: cepFormatters,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: s.cepStartLabel),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: row.cepEnd,
+              inputFormatters: cepFormatters,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: s.cepEndLabel),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: row.fee,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: s.zoneFeeLabel),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            tooltip: s.removeZone,
+            onPressed: onRemove,
+            icon: const Icon(Icons.delete_outline, size: 20),
+          ),
+        ],
+      ),
     );
   }
 }

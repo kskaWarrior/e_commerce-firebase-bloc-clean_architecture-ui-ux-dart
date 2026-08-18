@@ -52,6 +52,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/store/
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/repository/store_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_shipping.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_all_products_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/upsert_product_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/delete_product_usecase.dart';
@@ -145,6 +146,8 @@ Future<void> init() async {
   sl.registerLazySingleton<GetStoreUseCase>(() => GetStoreUseCase());
   sl.registerLazySingleton<UpdateStoreBrandingUseCase>(
       () => UpdateStoreBrandingUseCase());
+  sl.registerLazySingleton<UpdateStoreShippingUseCase>(
+      () => UpdateStoreShippingUseCase());
   sl.registerLazySingleton<GetAllProductsUseCase>(
       () => GetAllProductsUseCase());
   sl.registerLazySingleton<UpsertProductUseCase>(() => UpsertProductUseCase());
