@@ -286,6 +286,18 @@ abstract class AppStrings {
   String get pleaseEnterAddress;
   String get mustBeAtLeastTwelve;
 
+  // Structured address
+  String get cepLabel;
+  String get streetLabel;
+  String get numberLabel;
+  String get complementLabel;
+  String get neighborhoodLabel;
+  String get cityLabel;
+  String get stateLabel;
+  String get cepNotFound;
+  String get deliveryAddressTitle;
+  String get pleaseCompleteAddress;
+
   // Profile
   String get tapToChangePhoto;
   String get profileSubtitle;
@@ -919,6 +931,28 @@ class AppStringsEn extends AppStrings {
   @override
   String get mustBeAtLeastTwelve =>
       'You must be at least 12 years old to create an account.';
+
+  @override
+  String get cepLabel => 'CEP';
+  @override
+  String get streetLabel => 'Street';
+  @override
+  String get numberLabel => 'Number';
+  @override
+  String get complementLabel => 'Complement';
+  @override
+  String get neighborhoodLabel => 'Neighborhood';
+  @override
+  String get cityLabel => 'City';
+  @override
+  String get stateLabel => 'State';
+  @override
+  String get cepNotFound => 'CEP not found. Fill in the address manually.';
+  @override
+  String get deliveryAddressTitle => 'Delivery address';
+  @override
+  String get pleaseCompleteAddress =>
+      'Please complete your delivery address (CEP, street, city and state).';
 
   @override
   String get tapToChangePhoto => 'Tap to change photo';
@@ -1652,6 +1686,28 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get mustBeAtLeastTwelve =>
       'Você precisa ter pelo menos 12 anos para criar uma conta.';
+
+  @override
+  String get cepLabel => 'CEP';
+  @override
+  String get streetLabel => 'Rua';
+  @override
+  String get numberLabel => 'Número';
+  @override
+  String get complementLabel => 'Complemento';
+  @override
+  String get neighborhoodLabel => 'Bairro';
+  @override
+  String get cityLabel => 'Cidade';
+  @override
+  String get stateLabel => 'UF';
+  @override
+  String get cepNotFound => 'CEP não encontrado. Preencha o endereço manualmente.';
+  @override
+  String get deliveryAddressTitle => 'Endereço de entrega';
+  @override
+  String get pleaseCompleteAddress =>
+      'Complete seu endereço de entrega (CEP, rua, cidade e UF).';
 
   @override
   String get tapToChangePhoto => 'Toque para trocar a foto';
