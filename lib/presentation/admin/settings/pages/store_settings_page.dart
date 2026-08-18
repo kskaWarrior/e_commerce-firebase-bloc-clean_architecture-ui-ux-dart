@@ -4,6 +4,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/stor
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/shipping_config_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/set_store_payment_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_shipping.dart';
 import 'package:flutter/services.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/theme/admin_theme.dart';
@@ -31,6 +32,9 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
   final _thresholdController = TextEditingController();
   final List<_ZoneRow> _zoneRows = [];
   bool _pickupEnabled = false;
+  final _mpTokenController = TextEditingController();
+  final _mpSecretController = TextEditingController();
+  bool _savingPayment = false;
 
   bool _loading = true;
   bool _saving = false;
@@ -119,6 +123,36 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _savePaymentConfig() async {
+    final token = _mpTokenController.text.trim();
+    if (token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).enterAccessToken)));
+      return;
+    }
+    setState(() => _savingPayment = true);
+    final result = await sl<SetStorePaymentConfigUseCase>().call(
+      SetStorePaymentConfigParams(
+        storeId: sl<StoreContext>().storeId,
+        mpAccessToken: token,
+        mpWebhookSecret: _mpSecretController.text.trim().isEmpty
+            ? null
+            : _mpSecretController.text.trim(),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _savingPayment = false);
+    final message =
+        result.fold((error) => error.toString(), (ok) => ok.toString());
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+    // Never keep the secret in the form after a successful save.
+    result.fold((_) {}, (_) {
+      _mpTokenController.clear();
+      _mpSecretController.clear();
+    });
+  }
+
   ShippingConfig _buildShippingConfig() {
     final threshold =
         double.tryParse(_thresholdController.text.trim().replaceAll(',', '.'));
@@ -142,6 +176,8 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
     _backgroundController.dispose();
     _dashboardUrlController.dispose();
     _thresholdController.dispose();
+    _mpTokenController.dispose();
+    _mpSecretController.dispose();
     for (final row in _zoneRows) {
       row.dispose();
     }
@@ -285,6 +321,37 @@ class _StoreSettingsPageState extends State<StoreSettingsPage> {
                               setState(() => _zoneRows.add(_ZoneRow())),
                           icon: const Icon(Icons.add, size: 18),
                           label: Text(s.addZone),
+                        ),
+                        const SizedBox(height: 32),
+                        const Divider(),
+                        const SizedBox(height: 24),
+                        _SectionHeader(
+                          title: s.paymentsSection,
+                          body: s.paymentsSectionBody,
+                        ),
+                        const SizedBox(height: 16),
+                        _LabeledField(
+                          label: s.mpAccessTokenLabel,
+                          controller: _mpTokenController,
+                        ),
+                        const SizedBox(height: 14),
+                        _LabeledField(
+                          label: s.mpWebhookSecretLabel,
+                          controller: _mpSecretController,
+                        ),
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed:
+                              _savingPayment ? null : _savePaymentConfig,
+                          icon: _savingPayment
+                              ? const SizedBox(
+                                  width: 15,
+                                  height: 15,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(Icons.credit_card, size: 18),
+                          label: Text(s.savePaymentSettings),
                         ),
                       ],
                     ),

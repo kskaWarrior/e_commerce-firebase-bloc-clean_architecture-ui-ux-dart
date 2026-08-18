@@ -41,12 +41,11 @@ service cloud.firestore {
       allow update: if isSuper()
         || (isOwner(storeId) && onlyChanges(['branding', 'name', 'shipping']));
 
-      // Store secrets (payment credentials); never client-readable, read by
-      // Cloud Functions via Admin SDK. Owner write is temporary until the
-      // setStorePaymentConfig callable lands.
+      // Store secrets (payment credentials); clients never touch this —
+      // reads and writes go through Cloud Functions (setStorePaymentConfig)
+      // with the Admin SDK, which bypasses rules.
       match /private/{docId} {
-        allow read: if false;
-        allow write: if isOwner(storeId) || isSuper();
+        allow read, write: if false;
       }
 
       match /products/{productId} {
