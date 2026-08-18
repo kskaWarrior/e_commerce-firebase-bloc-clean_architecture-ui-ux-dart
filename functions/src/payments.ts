@@ -12,9 +12,10 @@
  * the Checkout Pro preference.
  */
 
-import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
+import {createHmac, timingSafeEqual} from "crypto";
 
 const REGION = "southamerica-east1";
 const MP_API = "https://api.mercadopago.com";
@@ -368,3 +369,182 @@ export const setStorePaymentConfig = onCall(
     return {ok: true};
   },
 );
+
+/**
+ * Validates Mercado Pago's x-signature header (ts=...,v1=...) against the
+ * per-store webhook secret using the documented manifest format.
+ * @param {string} signatureHeader Raw x-signature header.
+ * @param {string} requestId x-request-id header value.
+ * @param {string} dataId Payment id from the notification.
+ * @param {string} secret Store's webhook secret.
+ * @return {boolean} True when the signature is authentic.
+ */
+export function isValidMpSignature(
+  signatureHeader: string,
+  requestId: string,
+  dataId: string,
+  secret: string,
+): boolean {
+  const parts = new Map<string, string>();
+  for (const piece of signatureHeader.split(",")) {
+    const [key, ...rest] = piece.split("=");
+    if (key && rest.length > 0) {
+      parts.set(key.trim(), rest.join("=").trim());
+    }
+  }
+  const ts = parts.get("ts");
+  const v1 = parts.get("v1");
+  if (!ts || !v1) {
+    return false;
+  }
+  const manifest =
+    `id:${dataId.toLowerCase()};request-id:${requestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret)
+    .update(manifest)
+    .digest("hex");
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Maps a Mercado Pago payment status onto the order lifecycle.
+ * @param {string} mpStatus Mercado Pago payment status.
+ * @return {string | null} Sale status, or null to leave it untouched.
+ */
+export function saleStatusForPayment(mpStatus: string): string | null {
+  switch (mpStatus) {
+  case "approved":
+    return "paid";
+  case "rejected":
+  case "cancelled":
+  case "expired":
+    return "cancelled";
+  default:
+    // pending / in_process / authorized keep the order pending.
+    return null;
+  }
+}
+
+export const mpWebhook = onRequest({region: REGION}, async (req, res) => {
+  // Always answer 2xx for handled-but-ignored events; MP retries anything
+  // else aggressively.
+  if (req.method !== "POST") {
+    res.status(200).send("ignored");
+    return;
+  }
+
+  const storeId = String(req.query.storeId ?? "");
+  const body = (req.body ?? {}) as {
+    type?: string;
+    action?: string;
+    data?: {id?: string | number};
+  };
+  const dataId = String(body.data?.id ?? "");
+
+  if (!storeId || body.type !== "payment" || !dataId) {
+    res.status(200).send("ignored");
+    return;
+  }
+
+  const {mpAccessToken, mpWebhookSecret} = await getPaymentConfig(storeId);
+  if (!mpAccessToken) {
+    logger.warn("Webhook for store without payment config", {storeId});
+    res.status(200).send("ignored");
+    return;
+  }
+
+  // Signature check (only enforceable when the store configured a secret).
+  if (mpWebhookSecret) {
+    const signature = String(req.headers["x-signature"] ?? "");
+    const requestId = String(req.headers["x-request-id"] ?? "");
+    if (!isValidMpSignature(signature, requestId, dataId, mpWebhookSecret)) {
+      logger.warn("Webhook signature mismatch", {storeId, dataId});
+      res.status(401).send("invalid signature");
+      return;
+    }
+  }
+
+  // Never trust the notification body: fetch the payment from MP.
+  const response = await fetch(`${MP_API}/v1/payments/${dataId}`, {
+    headers: {Authorization: `Bearer ${mpAccessToken}`},
+  });
+  if (!response.ok) {
+    logger.error("Failed to fetch payment from Mercado Pago", {
+      storeId,
+      dataId,
+      status: response.status,
+    });
+    // 500 so MP retries later (the payment may not be queryable yet).
+    res.status(500).send("payment fetch failed");
+    return;
+  }
+  const payment = (await response.json()) as {
+    id: string | number;
+    status?: string;
+    status_detail?: string;
+    external_reference?: string;
+  };
+
+  const [refStoreId, saleId] =
+    String(payment.external_reference ?? "").split("|");
+  if (refStoreId !== storeId || !saleId) {
+    logger.warn("Webhook external_reference mismatch", {
+      storeId,
+      dataId,
+      externalReference: payment.external_reference,
+    });
+    res.status(200).send("ignored");
+    return;
+  }
+
+  const saleRef = admin
+    .firestore()
+    .doc(`stores/${storeId}/sales/${saleId}`);
+  const mpStatus = String(payment.status ?? "");
+  const nextStatus = saleStatusForPayment(mpStatus);
+
+  await admin.firestore().runTransaction(async (tx) => {
+    const saleDoc = await tx.get(saleRef);
+    if (!saleDoc.exists) {
+      logger.warn("Webhook for unknown sale", {storeId, saleId});
+      return;
+    }
+    const sale = saleDoc.data() ?? {};
+
+    // Idempotency: same payment id + same MP status already recorded.
+    if (
+      sale.payment?.paymentId === String(payment.id) &&
+      sale.payment?.mpStatus === mpStatus
+    ) {
+      return;
+    }
+
+    // Never regress terminal states (shipped/delivered stay put).
+    const currentStatus = String(sale.status ?? "pending");
+    const canTransition =
+      currentStatus === "pending" ||
+      (currentStatus === "paid" && nextStatus === "cancelled");
+
+    tx.set(
+      saleRef,
+      {
+        ...(nextStatus && canTransition ? {status: nextStatus} : {}),
+        payment: {
+          provider: "mercadopago",
+          preferenceId: sale.payment?.preferenceId ?? null,
+          paymentId: String(payment.id),
+          mpStatus,
+          statusDetail: String(payment.status_detail ?? ""),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      },
+      {merge: true},
+    );
+  });
+
+  logger.info("Webhook processed", {storeId, saleId, mpStatus, nextStatus});
+  res.status(200).send("ok");
+});
