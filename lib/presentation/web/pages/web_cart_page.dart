@@ -3,6 +3,9 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/help
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/entities/payment_preference_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/create_payment_preference.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/address/models/address_model.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/favorites/entities/favorite_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
@@ -28,13 +31,11 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-enum _PaymentMethod { creditCard, debitCard }
-
-/// Desktop-web cart & checkout: line items on the left, order summary and
-/// (mocked) payment on the right. Mirrors the mobile cart's purchase flow.
+/// Desktop-web cart & checkout: line items on the left, order summary on the
+/// right. Payment is completed via Mercado Pago Checkout Pro.
 class WebCartPage extends StatefulWidget {
   const WebCartPage({super.key, this.userIdOverride});
 
@@ -46,14 +47,7 @@ class WebCartPage extends StatefulWidget {
 
 class _WebCartPageState extends State<WebCartPage> {
   bool _isConfirmingPurchase = false;
-  _PaymentMethod _selectedPaymentMethod = _PaymentMethod.debitCard;
-  int _creditInstallments = 1;
   late final UserCubit _userCubit;
-
-  final _cardholderNameController = TextEditingController();
-  final _cardNumberController = TextEditingController();
-  final _cardExpiryController = TextEditingController();
-  final _cardCvvController = TextEditingController();
 
   @override
   void initState() {
@@ -64,59 +58,12 @@ class _WebCartPageState extends State<WebCartPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _cardholderNameController.dispose();
-    _cardNumberController.dispose();
-    _cardExpiryController.dispose();
-    _cardCvvController.dispose();
-    super.dispose();
-  }
-
   void _snack(String message, Color color) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(content: Text(message), backgroundColor: color),
       );
-  }
-
-  bool _hasValidPaymentData() {
-    final s = S.of(context);
-    final cardholderName = _cardholderNameController.text.trim();
-    final cardDigits =
-        _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
-    final expiry = _cardExpiryController.text.trim();
-    final cvvDigits = _cardCvvController.text.replaceAll(RegExp(r'\D'), '');
-
-    if (cardholderName.isEmpty) {
-      _snack(s.enterCardholderName, context.brand.danger);
-      return false;
-    }
-    if (cardDigits.length < 13 || cardDigits.length > 19) {
-      _snack(s.enterValidCardNumber, context.brand.danger);
-      return false;
-    }
-    final expiryPattern = RegExp(r'^(0[1-9]|1[0-2])\/(\d{2})$');
-    final expiryMatch = expiryPattern.firstMatch(expiry);
-    if (expiryMatch == null) {
-      _snack(s.enterExpiryAsMmYy, context.brand.danger);
-      return false;
-    }
-    final expiryMonth = int.parse(expiryMatch.group(1)!);
-    final expiryYear = 2000 + int.parse(expiryMatch.group(2)!);
-    final now = DateTime.now();
-    final isExpired = expiryYear < now.year ||
-        (expiryYear == now.year && expiryMonth < now.month);
-    if (isExpired) {
-      _snack(s.cardExpired, context.brand.danger);
-      return false;
-    }
-    if (cvvDigits.length < 3 || cvvDigits.length > 4) {
-      _snack(s.enterValidCvv, context.brand.danger);
-      return false;
-    }
-    return true;
   }
 
   Future<void> _openProductDetails(SalesEntity draft) async {
@@ -216,7 +163,6 @@ class _WebCartPageState extends State<WebCartPage> {
 
     final drafts = CartDraftStore.instance.drafts;
     if (drafts.isEmpty) return;
-    if (!_hasValidPaymentData()) return;
 
     setState(() => _isConfirmingPurchase = true);
 
@@ -269,20 +215,14 @@ class _WebCartPageState extends State<WebCartPage> {
     final firstItem =
         mergedProducts.isNotEmpty ? mergedProducts.first : <String, dynamic>{};
     final productId = (firstItem['id'] ?? '').toString();
-    final installments = _selectedPaymentMethod == _PaymentMethod.creditCard
-        ? _creditInstallments
-        : 1;
-    final paymentMethod = _selectedPaymentMethod == _PaymentMethod.creditCard
-        ? 'Credit card'
-        : 'Debit card';
 
     final finalSale = SalesEntity(
       createdDate: Timestamp.now(),
       discountedPrice: totalDiscountedPrice,
       freight: freight,
       id: productId,
-      installmentsNumber: installments,
-      paymentMethod: paymentMethod,
+      installmentsNumber: 1,
+      paymentMethod: 'Mercado Pago',
       price: totalPriceWithoutDiscount,
       productsList: mergedProducts,
       totalPrice: totalPriceWithoutDiscount + freight - totalDiscount,
@@ -298,17 +238,54 @@ class _WebCartPageState extends State<WebCartPage> {
 
     final result = await sl<RegisterSaleUseCase>().call(finalSale);
     if (!mounted) return;
+
+    final saleId = result.fold<String?>(
+      (error) {
+        _snack(error.toString(), context.brand.danger);
+        return null;
+      },
+      (id) => id as String,
+    );
+    if (saleId == null) {
+      setState(() => _isConfirmingPurchase = false);
+      return;
+    }
+
+    final preferenceResult = await sl<CreatePaymentPreferenceUseCase>().call(
+      CreatePaymentPreferenceParams(
+        storeId: sl<StoreContext>().storeId,
+        saleId: saleId,
+      ),
+    );
+    if (!mounted) return;
     setState(() => _isConfirmingPurchase = false);
 
-    result.fold(
-      (error) => _snack(error.toString(), context.brand.danger),
-      (_) {
-        CartDraftStore.instance.clear();
-        _snack(S.of(context).purchaseConfirmed, context.brand.success);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MyPurchasesPage()),
-        );
+    final preference = preferenceResult.fold<PaymentPreferenceEntity?>(
+      (error) {
+        _snack(error.toString(), context.brand.danger);
+        return null;
       },
+      (pref) => pref as PaymentPreferenceEntity,
+    );
+    if (preference == null) return;
+
+    final checkoutUrl = preference.checkoutUrl;
+    if (checkoutUrl == null || checkoutUrl.isEmpty) {
+      _snack(S.of(context).paymentStartFailed, context.brand.danger);
+      return;
+    }
+
+    CartDraftStore.instance.clear();
+    _snack(S.of(context).redirectingToPayment, context.brand.success);
+
+    await launchUrl(
+      Uri.parse(checkoutUrl),
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MyPurchasesPage()),
     );
   }
 
@@ -421,22 +398,7 @@ class _WebCartPageState extends State<WebCartPage> {
           totalSavings: totalSavings,
         ),
         const SizedBox(height: 18),
-        _PaymentCard(
-          selectedPaymentMethod: _selectedPaymentMethod,
-          onPaymentMethodChanged: (value) => setState(() {
-            _selectedPaymentMethod = value;
-            if (value == _PaymentMethod.debitCard) {
-              _creditInstallments = 1;
-            }
-          }),
-          creditInstallments: _creditInstallments,
-          onCreditInstallmentsChanged: (value) =>
-              setState(() => _creditInstallments = value),
-          cardholderNameController: _cardholderNameController,
-          cardNumberController: _cardNumberController,
-          cardExpiryController: _cardExpiryController,
-          cardCvvController: _cardCvvController,
-        ),
+        const _PaymentCard(),
         const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
@@ -784,52 +746,7 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _PaymentCard extends StatelessWidget {
-  const _PaymentCard({
-    required this.selectedPaymentMethod,
-    required this.onPaymentMethodChanged,
-    required this.creditInstallments,
-    required this.onCreditInstallmentsChanged,
-    required this.cardholderNameController,
-    required this.cardNumberController,
-    required this.cardExpiryController,
-    required this.cardCvvController,
-  });
-
-  final _PaymentMethod selectedPaymentMethod;
-  final ValueChanged<_PaymentMethod> onPaymentMethodChanged;
-  final int creditInstallments;
-  final ValueChanged<int> onCreditInstallmentsChanged;
-  final TextEditingController cardholderNameController;
-  final TextEditingController cardNumberController;
-  final TextEditingController cardExpiryController;
-  final TextEditingController cardCvvController;
-
-  InputDecoration _decoration(
-      BuildContext context, String label, IconData icon) {
-    final brand = context.brand;
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(fontSize: 13.5, color: brand.muted),
-      floatingLabelStyle: TextStyle(color: brand.iconStrong),
-      prefixIcon: Icon(icon, size: 18, color: brand.muted),
-      filled: true,
-      fillColor: brand.background.withOpacity(0.6),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: brand.iconStrong.withOpacity(0.14)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: brand.iconStrong.withOpacity(0.14)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: brand.iconStrong, width: 1.5),
-      ),
-    );
-  }
+  const _PaymentCard();
 
   @override
   Widget build(BuildContext context) {
@@ -850,117 +767,16 @@ class _PaymentCard extends StatelessWidget {
             s.payment,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 16),
-          SegmentedButton<_PaymentMethod>(
-            segments: [
-              ButtonSegment<_PaymentMethod>(
-                value: _PaymentMethod.creditCard,
-                icon: const Icon(Icons.credit_card, size: 17),
-                label: Text(s.credit),
-              ),
-              ButtonSegment<_PaymentMethod>(
-                value: _PaymentMethod.debitCard,
-                icon: const Icon(Icons.payments_outlined, size: 17),
-                label: Text(s.debit),
-              ),
-            ],
-            selected: <_PaymentMethod>{selectedPaymentMethod},
-            onSelectionChanged: (selection) {
-              if (selection.isNotEmpty) {
-                onPaymentMethodChanged(selection.first);
-              }
-            },
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return brand.iconStrong;
-                }
-                return brand.surfaceBright;
-              }),
-              foregroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return brand.textInverse;
-                }
-                return brand.textPrimary;
-              }),
-              side: WidgetStateProperty.all(
-                BorderSide(color: brand.iconStrong.withOpacity(0.2)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          if (selectedPaymentMethod == _PaymentMethod.creditCard) ...[
-            DropdownButtonFormField<int>(
-              value: creditInstallments,
-              decoration: _decoration(
-                  context, s.installments, Icons.calendar_view_week_outlined),
-              items: List.generate(
-                12,
-                (index) => DropdownMenuItem<int>(
-                  value: index + 1,
-                  child: Text('${index + 1}x'),
-                ),
-              ),
-              onChanged: (value) {
-                if (value != null) onCreditInstallmentsChanged(value);
-              },
-            ),
-            const SizedBox(height: 14),
-          ],
-          TextField(
-            controller: cardholderNameController,
-            textInputAction: TextInputAction.next,
-            decoration: _decoration(
-                context, s.cardholderName, Icons.badge_outlined),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: cardNumberController,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.next,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration:
-                _decoration(context, s.cardNumber, Icons.credit_card),
-          ),
           const SizedBox(height: 14),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: cardExpiryController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
-                    _ExpiryDateInputFormatter(),
-                  ],
-                  decoration: _decoration(
-                      context, s.expiryMmYy, Icons.date_range_outlined),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: cardCvvController,
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
-                  ],
-                  decoration: _decoration(context, s.cvv, Icons.lock_outline),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.info_outline, size: 15, color: brand.muted),
-              const SizedBox(width: 6),
+              Icon(Icons.lock_outline, size: 18, color: brand.iconStrong),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  s.demoCheckoutNote,
-                  style: TextStyle(fontSize: 12, color: brand.muted),
+                  s.paidViaMercadoPago,
+                  style: TextStyle(fontSize: 13.5, color: brand.textPrimary),
                 ),
               ),
             ],
@@ -1144,28 +960,6 @@ class _EmptyCartSuggestions extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _ExpiryDateInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digitsOnly = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final trimmed =
-        digitsOnly.length > 4 ? digitsOnly.substring(0, 4) : digitsOnly;
-
-    var formatted = trimmed;
-    if (trimmed.length > 2) {
-      formatted = '${trimmed.substring(0, 2)}/${trimmed.substring(2)}';
-    }
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

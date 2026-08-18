@@ -111,7 +111,9 @@ class SalesFirebaseServiceImpl implements SalesFirebaseService {
 
       await batch.commit();
 
-      return const Right('Sale registered successfully!');
+      // The created sale id lets checkout hand the order to the payment
+      // function (createPaymentPreference) right after registration.
+      return Right(saleId);
     } catch (e) {
       return Left('Failed to register sale. Please try again.');
     }

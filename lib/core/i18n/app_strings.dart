@@ -136,6 +136,9 @@ abstract class AppStrings {
   String get expiryMmYy;
   String get cvv;
   String get demoCheckoutNote;
+  String get paidViaMercadoPago;
+  String get redirectingToPayment;
+  String get paymentStartFailed;
   String get confirmPurchase;
   String get confirmingPurchase;
   String get purchaseConfirmed;
@@ -315,6 +318,14 @@ abstract class AppStrings {
   String get pickupOption;
   String get freeShippingApplied;
   String get deliveryUnavailableForCep;
+
+  // Payments settings (admin)
+  String get paymentsSection;
+  String get paymentsSectionBody;
+  String get mpAccessTokenLabel;
+  String get mpWebhookSecretLabel;
+  String get savePaymentSettings;
+  String get enterAccessToken;
 
   // Profile
   String get tapToChangePhoto;
@@ -644,6 +655,13 @@ class AppStringsEn extends AppStrings {
   String get cvv => 'CVV';
   @override
   String get demoCheckoutNote => 'Demo checkout — no real charge is made.';
+  @override
+  String get paidViaMercadoPago =>
+      "You'll complete the payment securely with Mercado Pago (card, PIX or boleto).";
+  @override
+  String get redirectingToPayment => 'Redirecting to Mercado Pago…';
+  @override
+  String get paymentStartFailed => 'Could not start the payment.';
   @override
   String get confirmPurchase => 'Confirm purchase';
   @override
@@ -1008,6 +1026,21 @@ class AppStringsEn extends AppStrings {
   @override
   String get deliveryUnavailableForCep =>
       'Delivery is not available for your CEP.';
+
+  @override
+  String get paymentsSection => 'Payments (Mercado Pago)';
+  @override
+  String get paymentsSectionBody =>
+      'Connect this store\'s own Mercado Pago account. The access token is '
+      'stored server-side and never exposed to shoppers.';
+  @override
+  String get mpAccessTokenLabel => 'Access token';
+  @override
+  String get mpWebhookSecretLabel => 'Webhook secret (optional)';
+  @override
+  String get savePaymentSettings => 'Save payment settings';
+  @override
+  String get enterAccessToken => 'Enter the Mercado Pago access token.';
 
   @override
   String get tapToChangePhoto => 'Tap to change photo';
@@ -1428,6 +1461,13 @@ class AppStringsPtBr extends AppStrings {
   String get demoCheckoutNote =>
       'Checkout de demonstração — nenhuma cobrança real é feita.';
   @override
+  String get paidViaMercadoPago =>
+      'Você concluirá o pagamento com segurança pelo Mercado Pago (cartão, PIX ou boleto).';
+  @override
+  String get redirectingToPayment => 'Redirecionando para o Mercado Pago…';
+  @override
+  String get paymentStartFailed => 'Não foi possível iniciar o pagamento.';
+  @override
   String get confirmPurchase => 'Confirmar compra';
   @override
   String get confirmingPurchase => 'Confirmando compra…';
@@ -1800,6 +1840,21 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get deliveryUnavailableForCep =>
       'Não entregamos no seu CEP.';
+
+  @override
+  String get paymentsSection => 'Pagamentos (Mercado Pago)';
+  @override
+  String get paymentsSectionBody =>
+      'Conecte a conta Mercado Pago desta loja. O access token fica '
+      'guardado no servidor e nunca é exposto aos clientes.';
+  @override
+  String get mpAccessTokenLabel => 'Access token';
+  @override
+  String get mpWebhookSecretLabel => 'Segredo do webhook (opcional)';
+  @override
+  String get savePaymentSettings => 'Salvar configurações de pagamento';
+  @override
+  String get enterAccessToken => 'Informe o access token do Mercado Pago.';
 
   @override
   String get tapToChangePhoto => 'Toque para trocar a foto';
