@@ -12,6 +12,9 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentatio
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_state.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_product_by_id_usecase.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/shipping_config_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/entities/store_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/pages/my_purchases_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/web/pages/web_cart_page.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
@@ -20,7 +23,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
 
 enum _PaymentMethod { creditCard, debitCard }
 
@@ -155,6 +157,63 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  /// Resolves freight + delivery method from the store's shipping config.
+  /// Returns null when the purchase should be aborted (config unavailable,
+  /// CEP unserviceable, or the user dismissed the choice dialog).
+  Future<_DeliveryChoice?> _resolveDelivery({
+    required String cep,
+    required double subtotal,
+  }) async {
+    final storeResult = await sl<GetStoreUseCase>().call(null);
+    if (!mounted) return null;
+
+    ShippingConfig config = ShippingConfig.empty;
+    final storeError = storeResult.fold(
+      (error) => error.toString(),
+      (store) {
+        config = (store as StoreEntity).shipping;
+        return null;
+      },
+    );
+    if (storeError != null) {
+      _showPaymentError(storeError);
+      return null;
+    }
+
+    final fee = config.feeFor(cep, subtotal: subtotal);
+    if (fee == null && !config.pickupEnabled) {
+      _showPaymentError(S.of(context).deliveryUnavailableForCep);
+      return null;
+    }
+    if (!config.pickupEnabled) {
+      return _DeliveryChoice(freight: fee!, method: 'delivery');
+    }
+
+    final s = S.of(context);
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(s.deliveryOption),
+        children: [
+          if (fee != null)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(dialogContext).pop('delivery'),
+              child: Text(
+                  '${s.deliveryOption} — ${_formatCurrency(fee)}'),
+            ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(dialogContext).pop('pickup'),
+            child: Text('${s.pickupOption} — ${_formatCurrency(0)}'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null) return null;
+    return choice == 'pickup'
+        ? _DeliveryChoice(freight: 0, method: 'pickup')
+        : _DeliveryChoice(freight: fee!, method: 'delivery');
+  }
+
   Future<void> _confirmPurchase() async {
     final userId =
         widget.userIdOverride ?? FirebaseAuth.instance.currentUser?.uid;
@@ -249,7 +308,20 @@ class _CartPageState extends State<CartPage> {
       (runningTotal, draft) =>
           runningTotal + (draft.price - draft.discountedPrice),
     );
-    final freight = _randomFreight();
+
+    final delivery = await _resolveDelivery(
+      cep: userAddress.cep,
+      subtotal: totalPriceWithoutDiscount - totalDiscount,
+    );
+    if (delivery == null) {
+      if (mounted) {
+        setState(() {
+          _isConfirmingPurchase = false;
+        });
+      }
+      return;
+    }
+    final freight = delivery.freight;
 
     final firstItem =
         mergedProducts.isNotEmpty ? mergedProducts.first : <String, dynamic>{};
@@ -275,8 +347,10 @@ class _CartPageState extends State<CartPage> {
       userGender: userGender,
       userId: userId,
       userName: userName,
-      deliveryMethod: 'delivery',
-      address: AddressModel.fromEntity(userAddress).toMap(),
+      deliveryMethod: delivery.method,
+      address: delivery.method == 'pickup'
+          ? null
+          : AddressModel.fromEntity(userAddress).toMap(),
     );
 
     final result = await sl<RegisterSaleUseCase>().call(finalSale);
@@ -1251,10 +1325,11 @@ String _formatCurrency(double amount) {
   return '\$${amount.toStringAsFixed(2)}';
 }
 
-double _randomFreight() {
-  final random = Random();
-  final value = 10 + (random.nextDouble() * 13);
-  return double.parse(value.toStringAsFixed(2));
+class _DeliveryChoice {
+  const _DeliveryChoice({required this.freight, required this.method});
+
+  final double freight;
+  final String method;
 }
 
 double _toDouble(dynamic value) {

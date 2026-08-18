@@ -298,6 +298,24 @@ abstract class AppStrings {
   String get deliveryAddressTitle;
   String get pleaseCompleteAddress;
 
+  // Shipping settings (admin) + checkout freight
+  String get shippingSection;
+  String get shippingSectionBody;
+  String get pickupEnabledLabel;
+  String get freeShippingThresholdLabel;
+  String get deliveryZonesLabel;
+  String get deliveryZonesBody;
+  String get addZone;
+  String get zoneLabelField;
+  String get cepStartLabel;
+  String get cepEndLabel;
+  String get zoneFeeLabel;
+  String get removeZone;
+  String get deliveryOption;
+  String get pickupOption;
+  String get freeShippingApplied;
+  String get deliveryUnavailableForCep;
+
   // Profile
   String get tapToChangePhoto;
   String get profileSubtitle;
@@ -953,6 +971,43 @@ class AppStringsEn extends AppStrings {
   @override
   String get pleaseCompleteAddress =>
       'Please complete your delivery address (CEP, street, city and state).';
+
+  @override
+  String get shippingSection => 'Shipping';
+  @override
+  String get shippingSectionBody =>
+      'Delivery zones by CEP range, fees and pickup options for this store.';
+  @override
+  String get pickupEnabledLabel => 'Allow pickup in store (free)';
+  @override
+  String get freeShippingThresholdLabel =>
+      'Free shipping above (leave empty to disable)';
+  @override
+  String get deliveryZonesLabel => 'Delivery zones';
+  @override
+  String get deliveryZonesBody =>
+      'Ordered CEP ranges; the first matching zone sets the freight fee.';
+  @override
+  String get addZone => 'Add zone';
+  @override
+  String get zoneLabelField => 'Label';
+  @override
+  String get cepStartLabel => 'CEP start';
+  @override
+  String get cepEndLabel => 'CEP end';
+  @override
+  String get zoneFeeLabel => 'Fee';
+  @override
+  String get removeZone => 'Remove zone';
+  @override
+  String get deliveryOption => 'Delivery';
+  @override
+  String get pickupOption => 'Pickup in store';
+  @override
+  String get freeShippingApplied => 'Free shipping applied!';
+  @override
+  String get deliveryUnavailableForCep =>
+      'Delivery is not available for your CEP.';
 
   @override
   String get tapToChangePhoto => 'Tap to change photo';
@@ -1708,6 +1763,43 @@ class AppStringsPtBr extends AppStrings {
   @override
   String get pleaseCompleteAddress =>
       'Complete seu endereço de entrega (CEP, rua, cidade e UF).';
+
+  @override
+  String get shippingSection => 'Frete';
+  @override
+  String get shippingSectionBody =>
+      'Zonas de entrega por faixa de CEP, taxas e opção de retirada da loja.';
+  @override
+  String get pickupEnabledLabel => 'Permitir retirada na loja (grátis)';
+  @override
+  String get freeShippingThresholdLabel =>
+      'Frete grátis acima de (vazio para desativar)';
+  @override
+  String get deliveryZonesLabel => 'Zonas de entrega';
+  @override
+  String get deliveryZonesBody =>
+      'Faixas de CEP ordenadas; a primeira zona correspondente define o frete.';
+  @override
+  String get addZone => 'Adicionar zona';
+  @override
+  String get zoneLabelField => 'Nome';
+  @override
+  String get cepStartLabel => 'CEP inicial';
+  @override
+  String get cepEndLabel => 'CEP final';
+  @override
+  String get zoneFeeLabel => 'Taxa';
+  @override
+  String get removeZone => 'Remover zona';
+  @override
+  String get deliveryOption => 'Entrega';
+  @override
+  String get pickupOption => 'Retirar na loja';
+  @override
+  String get freeShippingApplied => 'Frete grátis aplicado!';
+  @override
+  String get deliveryUnavailableForCep =>
+      'Não entregamos no seu CEP.';
 
   @override
   String get tapToChangePhoto => 'Toque para trocar a foto';
