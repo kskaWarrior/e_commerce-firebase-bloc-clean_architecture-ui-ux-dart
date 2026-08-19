@@ -4,7 +4,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 **Keep this document current:** update it whenever a gap below is fixed, a new gap is found, or the architecture changes.
 
-**Verdict: not ready for production.** The architecture is solid — clean layering, well-executed tenant isolation, good rules — but the product cannot take money (no payment integration; prices client-supplied and never validated), and the analytics embed leaks revenue across tenants. Those, plus zero backend CI, are the blockers.
+**Verdict: not ready for production, but the payment blocker is now code-complete.** The architecture is solid — clean layering, well-executed tenant isolation, good rules. The Mercado Pago Checkout Pro stack (CEP-zone freight, server-validated totals, webhook status updates) landed 2026-08-18 but is **not deployed** (and `mpWebhook` has an export bug — see blocker 1). The analytics embed still leaks revenue across tenants, and there is still zero backend CI.
 
 ## How the system is put together
 
@@ -12,7 +12,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 |---|---|---|
 | Shopper app | `lib/main.dart` | Mobile + web storefront. Requires `--dart-define-from-file=brands/<brand>/brand.json`; hard-fails without a storeId. |
 | Admin console | `lib/main_admin.dart` | One shared web deployment for all tenants; go_router redirect guard; role from custom claims (`owner`/`super`). |
-| Backend | `functions/src/index.ts` | 3 functions (southamerica-east1): two Firestore→BigQuery ETL triggers on sale creation, plus `setStoreOwner` (onCall, super-only). |
+| Backend | `functions/src/index.ts`, `functions/src/payments.ts` | 6 functions (southamerica-east1): two Firestore→BigQuery ETL triggers on sale creation, `setStoreOwner` (onCall, super-only), `createPaymentPreference`, `setStorePaymentConfig`, `mpWebhook` (Mercado Pago). |
 | Tenancy | `lib/core/tenant/` | Everything under `stores/{storeId}/…`; `TenantCollections` is the single gateway. Shopper storeId compile-time; admin storeId from auth claim. |
 | Brands | `brands/{acme,buybuy}/` | Per-brand `brand.json` + assets; `tool/activate_brand.dart` materializes `brand.current.json`. Both share one Firebase project. |
 | Analytics | `analytics/looker_studio/` | 4 BigQuery views over `sales_analytics`; per-store Looker embed URL; 12-stage setup wizard. |
@@ -21,8 +21,8 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 ## Go-live blockers
 
-1. **No payment processing exists.** No gateway code anywhere. `cart_page.dart` is a local card form with client-side validation only, then writes the sale to Firestore ("Demo checkout — no real charge is made"). Owners manually set status `paid`. (Approved plan: CEP-zone freight + Mercado Pago Checkout Pro — see memory `freight-payment-plan`.)
-2. **Prices client-supplied, never verified.** `price`, `totalPrice`, `freight` (literally `_randomFreight()`), `discountedPrice` all client-written; `sales_products` create has no field validation and no link to a real sale. Fix: server-side checkout function pricing the cart from the catalog.
+1. **Payment stack implemented but not live.** Mercado Pago Checkout Pro landed 2026-08-18 (fake card form removed; checkout registers a pending sale → `createPaymentPreference` → opens init_point; `mpWebhook` flips pending→paid/cancelled). Remaining to go live: fix **`mpWebhook` missing from the `functions/src/index.ts` re-export** (it won't deploy as-is), deploy rules + functions, per-store MP tokens via the admin Payments section, sandbox E2E. Freight is real: CEP-range zones + free-shipping threshold + pickup from the store doc's `shipping` map.
+2. **Prices now server-validated at payment time; creation still open.** `createPaymentPreference` recomputes subtotal from live product docs and freight from the shipping config, overwriting the sale totals before charging. The initially client-written sale doc and `sales_products` line items still have no rules-level field validation, and rules tests for the new `shipping`/`private` rules are missing (CLAUDE.md directive).
 3. **Cross-tenant analytics leak.** Looker embed filtered only by a `storeId` URL parameter. Needs BigQuery RLS / signed embedding; `analytics/looker_studio/add_store_id_column.sql` is written but unapplied.
 4. **No backend CI/CD.** `.github/workflows/` empty; rules tests never run in CI; functions/rules/indexes/views deployed by hand.
 
@@ -45,7 +45,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 ## Suggested go-live order
 
-1. Server-side checkout function (price cart from catalog, create order + Mercado Pago preference, webhook sets `paid`) — kills blockers 1–2.
+1. ~~Server-side checkout function (price cart from catalog, create order + Mercado Pago preference, webhook sets `paid`)~~ — implemented 2026-08-18; finish go-live hardening: export `mpWebhook`, rules tests for `shipping`/`private`, deploy, sandbox E2E, retry-payment + live order-status streaming.
 2. Apply `add_store_id_column.sql`, then BigQuery RLS + signed Looker embedding — closes the tenant leak.
 3. GitHub Actions: rules tests + function tests on PR; deploy rules/functions/views on merge.
 4. Second Firebase project as staging; point emulators/seeds there by default.
