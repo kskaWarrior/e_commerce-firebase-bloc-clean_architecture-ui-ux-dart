@@ -30,6 +30,7 @@ const path = {
   favorite: (s, id) => `stores/${s}/favorites/${id}`,
   sale: (s, id) => `stores/${s}/sales/${id}`,
   saleProduct: (s, id) => `stores/${s}/sales_products/${id}`,
+  storePrivate: (s, id) => `stores/${s}/private/${id}`,
 };
 
 before(async () => {
@@ -95,6 +96,11 @@ beforeEach(async () => {
       userId: 'shopper-1',
       productId: 'p1',
     });
+    // Payment secrets: written only by Cloud Functions (Admin SDK).
+    await setDoc(doc(db, path.storePrivate(STORE_A, 'payment')), {
+      mpAccessToken: 'APP_USR-secret',
+      mpWebhookSecret: 'whsec',
+    });
     // Legacy global collection (pre-migration) must be sealed.
     await setDoc(doc(db, 'products/legacy1'), { id: 'legacy1' });
   });
@@ -121,12 +127,63 @@ describe('store docs', () => {
     await assertFails(updateDoc(doc(db, path.store(STORE_B)), { name: 'Hijack' }));
   });
 
+  it('owner can update shipping config of own store only', async () => {
+    const shipping = {
+      pickupEnabled: true,
+      freeShippingThreshold: 200,
+      zones: [{ label: 'Capital', cepStart: '01000000', cepEnd: '05999999', fee: 15.9 }],
+    };
+    await assertSucceeds(
+      updateDoc(doc(ownerA().firestore(), path.store(STORE_A)), { shipping }),
+    );
+    await assertFails(
+      updateDoc(doc(ownerA().firestore(), path.store(STORE_B)), { shipping }),
+    );
+    await assertFails(
+      updateDoc(doc(shopper().firestore(), path.store(STORE_A)), { shipping }),
+    );
+  });
+
+  it('owner cannot sneak other fields alongside shipping', async () => {
+    await assertFails(
+      updateDoc(doc(ownerA().firestore(), path.store(STORE_A)), {
+        shipping: { pickupEnabled: true },
+        plan: 'premium',
+      }),
+    );
+  });
+
   it('only super creates stores', async () => {
     await assertFails(
       setDoc(doc(ownerA().firestore(), path.store('new-store')), { name: 'X' }),
     );
     await assertSucceeds(
       setDoc(doc(superAdmin().firestore(), path.store('new-store')), { name: 'X' }),
+    );
+  });
+});
+
+describe('store private docs (payment secrets)', () => {
+  it('nobody reads them from a client — not even owner or super', async () => {
+    await assertFails(getDoc(doc(shopper().firestore(), path.storePrivate(STORE_A, 'payment'))));
+    await assertFails(getDoc(doc(ownerA().firestore(), path.storePrivate(STORE_A, 'payment'))));
+    await assertFails(getDoc(doc(superAdmin().firestore(), path.storePrivate(STORE_A, 'payment'))));
+    await assertFails(getDoc(doc(anon().firestore(), path.storePrivate(STORE_A, 'payment'))));
+  });
+
+  it('nobody writes them from a client', async () => {
+    const payload = { mpAccessToken: 'stolen' };
+    await assertFails(
+      setDoc(doc(shopper().firestore(), path.storePrivate(STORE_A, 'payment')), payload),
+    );
+    await assertFails(
+      setDoc(doc(ownerA().firestore(), path.storePrivate(STORE_A, 'payment')), payload),
+    );
+    await assertFails(
+      setDoc(doc(superAdmin().firestore(), path.storePrivate(STORE_A, 'payment')), payload),
+    );
+    await assertFails(
+      deleteDoc(doc(ownerA().firestore(), path.storePrivate(STORE_A, 'payment'))),
     );
   });
 });
@@ -236,6 +293,25 @@ describe('sales (orders)', () => {
     await assertSucceeds(getDoc(doc(db, path.sale(STORE_A, 's1'))));
     await assertFails(getDoc(doc(db, path.sale(STORE_A, 's2'))));
     await assertFails(updateDoc(doc(db, path.sale(STORE_A, 's1')), { status: 'paid' }));
+  });
+
+  it('sale create may carry checkout fields (address, deliveryMethod, null payment)', async () => {
+    await assertSucceeds(
+      setDoc(doc(shopper().firestore(), path.sale(STORE_A, 's7')), {
+        id: 's7', userId: 'shopper-1', storeId: STORE_A, status: 'pending', totalPrice: 5,
+        deliveryMethod: 'delivery',
+        address: { cep: '01310100', street: 'Av. Paulista', city: 'Sao Paulo', state: 'SP' },
+        payment: null,
+      }),
+    );
+  });
+
+  it('shopper cannot write a payment map onto a sale', async () => {
+    await assertFails(
+      updateDoc(doc(shopper().firestore(), path.sale(STORE_A, 's1')), {
+        payment: { preferenceId: 'forged' },
+      }),
+    );
   });
 
   it('owner updates only the status field, only in own store, only to valid values', async () => {
