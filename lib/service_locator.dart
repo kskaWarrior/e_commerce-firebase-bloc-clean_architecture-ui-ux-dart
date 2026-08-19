@@ -44,6 +44,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/repository/sales_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/get_sales_by_user_id.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/register_sale.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/usecases/watch_sales_by_user_id.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/user_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/auth/bloc/signout_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/splash/bloc/splash_cubit.dart';
@@ -149,6 +150,8 @@ Future<void> init() async {
   sl.registerLazySingleton<GetSalesByUserIdUseCase>(
       () => GetSalesByUserIdUseCase());
   sl.registerLazySingleton<RegisterSaleUseCase>(() => RegisterSaleUseCase());
+  sl.registerLazySingleton<WatchSalesByUserIdUseCase>(
+      () => WatchSalesByUserIdUseCase());
   sl.registerLazySingleton<LookupCepUseCase>(() => LookupCepUseCase());
   sl.registerLazySingleton<CreatePaymentPreferenceUseCase>(
       () => CreatePaymentPreferenceUseCase());
@@ -202,6 +205,7 @@ Future<void> init() async {
   sl.registerFactory<GetSalesByUserIdCubit>(
     () => GetSalesByUserIdCubit(
       getSalesByUserIdUseCase: sl<GetSalesByUserIdUseCase>(),
+      watchSalesByUserIdUseCase: sl<WatchSalesByUserIdUseCase>(),
     ),
   );
 }

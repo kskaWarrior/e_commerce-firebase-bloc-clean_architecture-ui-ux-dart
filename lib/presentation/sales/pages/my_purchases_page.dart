@@ -1,5 +1,8 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/common/helpr/navigator/app_navigator.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/entities/payment_preference_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/create_payment_preference.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/entities/product_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
@@ -13,6 +16,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
@@ -74,7 +78,7 @@ class MyPurchasesPage extends StatelessWidget {
       create: (_) {
         final cubit = sl<GetSalesByUserIdCubit>();
         if (userId != null && userId.isNotEmpty) {
-          cubit.getSalesByUserId(userId);
+          cubit.watchSalesByUserId(userId);
         }
         return cubit;
       },
@@ -219,6 +223,59 @@ class _PurchaseCard extends StatefulWidget {
 
 class _PurchaseCardState extends State<_PurchaseCard> {
   bool _expanded = false;
+  bool _paying = false;
+
+  bool get _canPayNow =>
+      widget.sale.status == 'pending' &&
+      widget.sale.paymentMethod == 'Mercado Pago';
+
+  Future<void> _payNow() async {
+    if (_paying) return;
+
+    final existing = widget.sale.payment?['initPoint'];
+    if (existing is String && existing.trim().isNotEmpty) {
+      await launchUrl(
+        Uri.parse(existing),
+        mode: LaunchMode.externalApplication,
+      );
+      return;
+    }
+
+    setState(() => _paying = true);
+    try {
+      final result = await sl<CreatePaymentPreferenceUseCase>().call(
+        CreatePaymentPreferenceParams(
+          storeId: sl<StoreContext>().storeId,
+          saleId: widget.sale.id,
+        ),
+      );
+
+      if (!mounted) return;
+
+      await result.fold(
+        (_) async => _showNavigationError(S.of(context).paymentStartFailed),
+        (preference) async {
+          final url = (preference as PaymentPreferenceEntity).checkoutUrl;
+          if (url == null || url.trim().isEmpty) {
+            _showNavigationError(S.of(context).paymentStartFailed);
+            return;
+          }
+          await launchUrl(
+            Uri.parse(url),
+            mode: LaunchMode.externalApplication,
+          );
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        _showNavigationError(S.of(context).paymentStartFailed);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _paying = false);
+      }
+    }
+  }
 
   Future<void> _openProductDetails(Map<String, dynamic> product) async {
     final productId = (product['id'] ?? '').toString().trim();
@@ -312,6 +369,23 @@ class _PurchaseCardState extends State<_PurchaseCard> {
               ),
             ],
           ),
+          if (_canPayNow) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _paying ? null : _payNow,
+                icon: _paying
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.payment),
+                label: Text(S.of(context).payNow),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerRight,

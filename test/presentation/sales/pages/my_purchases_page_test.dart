@@ -53,6 +53,7 @@ void main() {
     await sl.reset();
     mockCubit = MockGetSalesByUserIdCubit();
     when(() => mockCubit.getSalesByUserId(any())).thenAnswer((_) async {});
+    when(() => mockCubit.watchSalesByUserId(any())).thenAnswer((_) {});
     sl.registerSingleton<GetSalesByUserIdCubit>(mockCubit);
   });
 
@@ -70,7 +71,7 @@ void main() {
 
     expect(find.text('Please sign in'), findsOneWidget);
     expect(find.text('Sign in to view your purchases.'), findsOneWidget);
-    verifyNever(() => mockCubit.getSalesByUserId(any()));
+    verifyNever(() => mockCubit.watchSalesByUserId(any()));
   });
 
   testWidgets('shows loading state when signed in and cubit is loading',
@@ -81,7 +82,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    verify(() => mockCubit.getSalesByUserId('u1'))
+    verify(() => mockCubit.watchSalesByUserId('u1'))
         .called(greaterThanOrEqualTo(1));
   });
 

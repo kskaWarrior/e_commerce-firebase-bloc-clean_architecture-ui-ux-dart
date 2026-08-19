@@ -139,6 +139,7 @@ abstract class AppStrings {
   String get paidViaMercadoPago;
   String get redirectingToPayment;
   String get paymentStartFailed;
+  String get payNow;
   String get confirmPurchase;
   String get confirmingPurchase;
   String get purchaseConfirmed;
@@ -662,6 +663,8 @@ class AppStringsEn extends AppStrings {
   String get redirectingToPayment => 'Redirecting to Mercado Pago…';
   @override
   String get paymentStartFailed => 'Could not start the payment.';
+  @override
+  String get payNow => 'Pay now';
   @override
   String get confirmPurchase => 'Confirm purchase';
   @override
@@ -1467,6 +1470,8 @@ class AppStringsPtBr extends AppStrings {
   String get redirectingToPayment => 'Redirecionando para o Mercado Pago…';
   @override
   String get paymentStartFailed => 'Não foi possível iniciar o pagamento.';
+  @override
+  String get payNow => 'Pagar agora';
   @override
   String get confirmPurchase => 'Confirmar compra';
   @override

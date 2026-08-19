@@ -1,5 +1,8 @@
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/brand_tokens.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_strings.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant/store_context.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/entities/payment_preference_entity.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/usecases/create_payment_preference.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/sales/entities/sales_entity.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/sales/bloc/get_sales_by_user_id_state.dart';
@@ -9,6 +12,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_loc
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Desktop-web order history: one card per purchase with status, items
 /// and totals.
@@ -25,7 +29,7 @@ class WebPurchasesPage extends StatelessWidget {
       create: (_) {
         final cubit = sl<GetSalesByUserIdCubit>();
         if (userId != null && userId.isNotEmpty) {
-          cubit.getSalesByUserId(userId);
+          cubit.watchSalesByUserId(userId);
         }
         return cubit;
       },
@@ -150,10 +154,81 @@ Color _statusColor(BrandTokens brand, String status) {
   };
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends StatefulWidget {
   const _OrderCard({required this.sale});
 
   final SalesEntity sale;
+
+  @override
+  State<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<_OrderCard> {
+  bool _paying = false;
+
+  SalesEntity get sale => widget.sale;
+
+  bool get _canPayNow =>
+      sale.status == 'pending' && sale.paymentMethod == 'Mercado Pago';
+
+  void _showPaymentError() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).paymentStartFailed),
+          backgroundColor: context.brand.danger,
+        ),
+      );
+  }
+
+  Future<void> _payNow() async {
+    if (_paying) return;
+
+    final existing = sale.payment?['initPoint'];
+    if (existing is String && existing.trim().isNotEmpty) {
+      await launchUrl(
+        Uri.parse(existing),
+        mode: LaunchMode.externalApplication,
+      );
+      return;
+    }
+
+    setState(() => _paying = true);
+    try {
+      final result = await sl<CreatePaymentPreferenceUseCase>().call(
+        CreatePaymentPreferenceParams(
+          storeId: sl<StoreContext>().storeId,
+          saleId: sale.id,
+        ),
+      );
+
+      if (!mounted) return;
+
+      await result.fold(
+        (_) async => _showPaymentError(),
+        (preference) async {
+          final url = (preference as PaymentPreferenceEntity).checkoutUrl;
+          if (url == null || url.trim().isEmpty) {
+            _showPaymentError();
+            return;
+          }
+          await launchUrl(
+            Uri.parse(url),
+            mode: LaunchMode.externalApplication,
+          );
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        _showPaymentError();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _paying = false);
+      }
+    }
+  }
 
   String _formatDate(DateTime date) {
     String pad(int value) => value.toString().padLeft(2, '0');
@@ -299,6 +374,20 @@ class _OrderCard extends StatelessWidget {
                   color: brand.iconStrong,
                 ),
               ),
+              if (_canPayNow) ...[
+                const SizedBox(width: 18),
+                FilledButton.icon(
+                  onPressed: _paying ? null : _payNow,
+                  icon: _paying
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.payment, size: 16),
+                  label: Text(s.payNow),
+                ),
+              ],
             ],
           ),
         ),
