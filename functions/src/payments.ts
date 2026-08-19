@@ -189,10 +189,15 @@ export const createPaymentPreference = onCall(
       );
     }
     if (sale.payment?.preferenceId) {
-      throw new HttpsError(
-        "failed-precondition",
-        "A payment was already started for this order.",
-      );
+      // Idempotent retry: the order is still pending, so hand back the
+      // preference created earlier instead of failing.
+      return {
+        preferenceId: sale.payment.preferenceId,
+        initPoint: sale.payment.initPoint ?? null,
+        sandboxInitPoint: sale.payment.sandboxInitPoint ?? null,
+        total: Number(sale.totalPrice) || 0,
+        freight: Number(sale.freight) || 0,
+      };
     }
 
     // Server-authoritative totals.
@@ -294,6 +299,8 @@ export const createPaymentPreference = onCall(
         payment: {
           provider: "mercadopago",
           preferenceId: preference.id,
+          initPoint: preference.init_point ?? null,
+          sandboxInitPoint: preference.sandbox_init_point ?? null,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
       },

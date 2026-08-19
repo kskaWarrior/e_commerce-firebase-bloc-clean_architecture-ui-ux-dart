@@ -467,7 +467,11 @@ export const setStoreOwner = onCall(
   },
 );
 
-export {createPaymentPreference, setStorePaymentConfig} from "./payments";
+export {
+  createPaymentPreference,
+  setStorePaymentConfig,
+  mpWebhook,
+} from "./payments";
 
 // export const helloWorld = onRequest((request, response) => {
 //   logger.info("Hello logs!", {structuredData: true});
