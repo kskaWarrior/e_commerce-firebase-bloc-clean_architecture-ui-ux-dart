@@ -4,6 +4,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant
 
 abstract class SalesFirebaseService {
   Future<Either> getSalesByUserId(String userId);
+  Stream<Either> watchSalesByUserId(String userId);
   Future<Either> registerSale(Map<String, dynamic> sale);
 
   // Admin operations
@@ -26,6 +27,20 @@ class SalesFirebaseServiceImpl implements SalesFirebaseService {
       return Right(data.docs.map((doc) => doc.data()).toList());
     } catch (e) {
       return Left('Failed to load sales. Please try again.');
+    }
+  }
+
+  @override
+  Stream<Either> watchSalesByUserId(String userId) async* {
+    try {
+      // Live view so the webhook's pending->paid flip shows without refresh.
+      await for (final snapshot in _tenant.sales
+          .where('userId', isEqualTo: userId)
+          .snapshots()) {
+        yield Right(snapshot.docs.map((doc) => doc.data()).toList());
+      }
+    } catch (_) {
+      yield const Left('Failed to load sales. Please try again.');
     }
   }
 

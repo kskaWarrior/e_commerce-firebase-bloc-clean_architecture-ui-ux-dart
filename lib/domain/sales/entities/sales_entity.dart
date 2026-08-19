@@ -24,6 +24,11 @@ class SalesEntity {
   /// Structured delivery address map (null for pickup).
   final Map<String, dynamic>? address;
 
+  /// Gateway payment info written server-side by the payment functions
+  /// (provider, preferenceId, initPoint, paymentId, mpStatus...). Null until
+  /// a payment is started; never written by the client.
+  final Map<String, dynamic>? payment;
+
   SalesEntity({
     required this.createdDate,
     required this.discountedPrice,
@@ -41,5 +46,6 @@ class SalesEntity {
     this.status = 'pending',
     this.deliveryMethod = 'delivery',
     this.address,
+    this.payment,
   });
 }

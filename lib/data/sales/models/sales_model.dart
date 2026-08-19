@@ -18,6 +18,7 @@ class SalesModel {
   final String status;
   final String deliveryMethod;
   final Map<String, dynamic>? address;
+  final Map<String, dynamic>? payment;
 
   SalesModel({
     required this.createdDate,
@@ -36,6 +37,7 @@ class SalesModel {
     this.status = 'pending',
     this.deliveryMethod = 'delivery',
     this.address,
+    this.payment,
   });
 
   static double _toDouble(dynamic value, {double fallback = 0.0}) {
@@ -95,6 +97,9 @@ class SalesModel {
       address: map['address'] is Map
           ? Map<String, dynamic>.from(map['address'] as Map)
           : null,
+      payment: map['payment'] is Map
+          ? Map<String, dynamic>.from(map['payment'] as Map)
+          : null,
     );
   }
 
@@ -116,6 +121,7 @@ class SalesModel {
       status: entity.status,
       deliveryMethod: entity.deliveryMethod,
       address: entity.address,
+      payment: entity.payment,
     );
   }
 
@@ -137,6 +143,7 @@ class SalesModel {
       'status': status,
       'deliveryMethod': deliveryMethod,
       'address': address,
+      'payment': payment,
     };
   }
 }
@@ -160,6 +167,7 @@ extension SalesXModel on SalesModel {
       status: status,
       deliveryMethod: deliveryMethod,
       address: address,
+      payment: payment,
     );
   }
 }

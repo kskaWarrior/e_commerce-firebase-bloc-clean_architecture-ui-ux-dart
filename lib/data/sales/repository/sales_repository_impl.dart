@@ -29,6 +29,29 @@ class SalesRepositoryImpl extends SalesRepository {
   }
 
   @override
+  Stream<Either> watchSalesByUserId(String userId) {
+    return sl<SalesFirebaseService>().watchSalesByUserId(userId).map(
+          (data) => data.fold(
+            (error) => Left(error),
+            (sales) {
+              try {
+                final parsedSales = List.from(sales)
+                    .whereType<Map>()
+                    .map((e) => SalesModel.fromMap(Map<String, dynamic>.from(e))
+                        .toEntity())
+                    .toList();
+
+                return Right(parsedSales);
+              } catch (_) {
+                return const Left(
+                    'Failed to parse purchases data. Please try again.');
+              }
+            },
+          ),
+        );
+  }
+
+  @override
   Future<Either> registerSale(SalesEntity sale) async {
     final model = SalesModel.fromEntity(sale);
     return await sl<SalesFirebaseService>().registerSale(model.toMap());
