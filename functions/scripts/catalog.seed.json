@@ -1,10 +1,10 @@
 {
   "categories": [
-    { "id": "cat-accessories", "title": "Accessories", "file": "categories/acessories.jpg" },
+    { "id": "cat-accessories", "title": "Accessories", "file": "categories/accessories.jpg" },
     { "id": "cat-bags", "title": "Bags", "file": "categories/bags.jpg" },
     { "id": "cat-hoodies", "title": "Hoodies", "file": "categories/hoodies.jpg" },
     { "id": "cat-hoodies-women", "title": "Women's Hoodies", "file": "categories/hoodiesF.jpg" },
-    { "id": "cat-shoes", "title": "Shoes", "file": "categories/shoes.jpeg" },
+    { "id": "cat-shoes", "title": "Shoes", "file": "categories/shoes.jpg" },
     { "id": "cat-shorts", "title": "Shorts", "file": "categories/shorts.jpg" }
   ],
   "products": [
@@ -33,9 +33,28 @@
       ]
     },
     {
-      "id": "prod-nike-backpack",
-      "title": "Nike Sport Backpack",
-      "description": "Durable water-resistant backpack with a padded laptop sleeve and adjustable straps. Built for the commute and the gym.",
+      "id": "prod-knit-sweater",
+      "title": "Ribbed Knit Sweater",
+      "description": "Chunky ribbed knit in a relaxed cut, with a soft roll neck and drop shoulders. Warm without the bulk.",
+      "categoryId": "cat-hoodies-women",
+      "categoryName": "Women's Hoodies",
+      "gender": "female",
+      "price": 219.90,
+      "discountedPrice": 175.90,
+      "currentDiscount": 20,
+      "salesNumber": 22,
+      "createdDate": "2026-07-19T10:00:00Z",
+      "sizes": ["P", "M", "G"],
+      "colors": [
+        { "title": "Off-white", "hexCode": "EFEAE2" },
+        { "title": "Grey", "hexCode": "9A9A9A" }
+      ],
+      "images": ["products/knit-sweater/grey_knit.jpg"]
+    },
+    {
+      "id": "prod-daypack",
+      "title": "Leather Daypack",
+      "description": "Full-grain leather daypack with a padded laptop sleeve, side pockets and a wide-mouth zip. Built for the commute and everything after it.",
       "categoryId": "cat-bags",
       "categoryName": "Bags",
       "gender": "unisex",
@@ -43,181 +62,148 @@
       "discountedPrice": 212.40,
       "currentDiscount": 15,
       "salesNumber": 28,
-      "createdDate": "2026-07-19T10:00:00Z",
+      "createdDate": "2026-07-20T10:00:00Z",
       "sizes": ["One Size"],
       "colors": [
-        { "title": "Black", "hexCode": "1C1C1C" },
-        { "title": "Blue", "hexCode": "2B5FA8" },
-        { "title": "Orange", "hexCode": "F7A70C" }
+        { "title": "Brown", "hexCode": "8B5A3C" },
+        { "title": "Black", "hexCode": "1C1C1C" }
       ],
-      "images": [
-        "products/nike bags/black_bag.png",
-        "products/nike bags/blue_bag.png",
-        "products/nike bags/orange_bag.png"
-      ]
+      "images": ["products/daypack/brown_daypack.jpg"]
     },
     {
-      "id": "prod-nike-cap",
-      "title": "Nike Heritage Cap",
-      "description": "Classic six-panel cap with an embroidered logo and an adjustable strap for a clean, everyday fit.",
+      "id": "prod-classic-cap",
+      "title": "Classic Cap",
+      "description": "Six-panel cotton twill cap with a curved brim, breathable mesh back and an adjustable strap. Nothing printed on it.",
       "categoryId": "cat-accessories",
       "categoryName": "Accessories",
       "gender": "unisex",
       "price": 129.90,
-      "discountedPrice": 110.40,
-      "currentDiscount": 15,
+      "discountedPrice": 103.90,
+      "currentDiscount": 20,
       "salesNumber": 41,
       "createdDate": "2026-07-21T10:00:00Z",
       "sizes": ["One Size"],
       "colors": [
-        { "title": "Black", "hexCode": "1C1C1C" },
-        { "title": "White", "hexCode": "F5F5F5" }
+        { "title": "White", "hexCode": "F5F5F5" },
+        { "title": "Yellow", "hexCode": "E8A33D" }
       ],
       "images": [
-        "products/nike cap/black_cap_1.png",
-        "products/nike cap/black_cap_2.png",
-        "products/nike cap/white_cap_1.png",
-        "products/nike cap/white_cap_2.png"
+        "products/cap-classic/white_cap.jpg",
+        "products/cap-classic/yellow_cap.jpg",
+        "products/cap-classic/white_snapback.jpg"
       ]
     },
     {
-      "id": "prod-nike-hat",
-      "title": "Nike Bucket Hat",
-      "description": "Lightweight cotton bucket hat with a stitched brim for casual sun coverage.",
+      "id": "prod-trucker-cap",
+      "title": "Trucker Cap",
+      "description": "Foam-front trucker with a flat brim and a snapback closure. Structured crown that keeps its shape.",
       "categoryId": "cat-accessories",
       "categoryName": "Accessories",
       "gender": "unisex",
       "price": 139.90,
-      "discountedPrice": 118.90,
-      "currentDiscount": 15,
-      "salesNumber": 22,
-      "createdDate": "2026-07-16T10:00:00Z",
-      "sizes": ["One Size"],
-      "colors": [
-        { "title": "Black", "hexCode": "1C1C1C" }
-      ],
-      "images": [
-        "products/nike hat/black_hat_1.png",
-        "products/nike hat/black_hat_2.png"
-      ]
-    },
-    {
-      "id": "prod-nike-shoes-women",
-      "title": "Nike Air Runner (Women)",
-      "description": "Lightweight women's running shoe with a responsive foam midsole and breathable mesh upper for all-day comfort.",
-      "categoryId": "cat-shoes",
-      "categoryName": "Shoes",
-      "gender": "female",
-      "price": 599.90,
-      "discountedPrice": 479.90,
-      "currentDiscount": 20,
-      "salesNumber": 52,
+      "discountedPrice": 139.90,
+      "currentDiscount": 0,
+      "salesNumber": 17,
       "createdDate": "2026-07-22T10:00:00Z",
-      "sizes": ["36", "37", "38", "39", "40"],
-      "colors": [
-        { "title": "White", "hexCode": "F5F5F5" }
-      ],
-      "images": [
-        "products/nike shoes f/white_f_shoes_1.png",
-        "products/nike shoes f/white_f_shoes_2.png",
-        "products/nike shoes f/white_f_shoes_3.png",
-        "products/nike shoes f/white_f_shoes_4.png"
-      ]
+      "sizes": ["One Size"],
+      "colors": [{ "title": "Black", "hexCode": "1C1C1C" }],
+      "images": ["products/cap-trucker/black_trucker.jpg"]
     },
     {
-      "id": "prod-nike-shoes-men",
-      "title": "Nike Air Runner (Men)",
-      "description": "Men's daily trainer with a cushioned foam midsole and a durable rubber outsole built for the road.",
-      "categoryId": "cat-shoes",
-      "categoryName": "Shoes",
-      "gender": "male",
-      "price": 599.90,
-      "discountedPrice": 479.90,
-      "currentDiscount": 20,
-      "salesNumber": 47,
-      "createdDate": "2026-07-23T10:00:00Z",
-      "sizes": ["40", "41", "42", "43", "44"],
-      "colors": [
-        { "title": "Black", "hexCode": "1C1C1C" }
-      ],
-      "images": [
-        "products/nike shoes m/black_m_shoes_1.png",
-        "products/nike shoes m/black_m_shoes_2.png",
-        "products/nike shoes m/black_m_shoes_3.png",
-        "products/nike shoes m/black_m_shoes_4.png"
-      ]
-    },
-    {
-      "id": "prod-nike-shoes-uni",
-      "title": "Nike Air Runner",
-      "description": "Unisex everyday sneaker with a plush foam midsole and a knit upper. Available in two seasonal colorways.",
+      "id": "prod-court-sneaker",
+      "title": "Court Sneaker",
+      "description": "Low-profile suede court shoe on a gum sole, with a padded collar and a clean toe box. Wears in rather than out.",
       "categoryId": "cat-shoes",
       "categoryName": "Shoes",
       "gender": "unisex",
-      "price": 649.90,
-      "discountedPrice": 552.40,
-      "currentDiscount": 15,
-      "salesNumber": 60,
-      "createdDate": "2026-07-24T10:00:00Z",
+      "price": 599.90,
+      "discountedPrice": 479.90,
+      "currentDiscount": 20,
+      "salesNumber": 53,
+      "createdDate": "2026-07-23T10:00:00Z",
       "sizes": ["38", "39", "40", "41", "42", "43"],
       "colors": [
-        { "title": "Blue", "hexCode": "2B5FA8" },
-        { "title": "Green", "hexCode": "3BA55D" }
+        { "title": "Cream", "hexCode": "E8DCC8" },
+        { "title": "White", "hexCode": "F5F5F5" }
       ],
-      "images": [
-        "products/nike shoes uni/blue_uni_shoes_1.png",
-        "products/nike shoes uni/blue_uni_shoes_2.png",
-        "products/nike shoes uni/blue_uni_shoes_3.png",
-        "products/nike shoes uni/blue_uni_shoes_4.png",
-        "products/nike shoes uni/green_uni_shoes_1.png",
-        "products/nike shoes uni/green_uni_shoes_2.png",
-        "products/nike shoes uni/green_uni_shoes_3.png",
-        "products/nike shoes uni/green_uni_shoes_4.png"
-      ]
+      "images": ["products/sneaker-court/cream_court.jpg"]
     },
     {
-      "id": "prod-nike-shorts-women",
-      "title": "Nike Sport Shorts (Women)",
-      "description": "Women's lightweight training shorts with a soft elastic waistband and moisture-wicking fabric.",
-      "categoryId": "cat-shorts",
-      "categoryName": "Shorts",
+      "id": "prod-runner-sneaker",
+      "title": "Runner Sneaker",
+      "description": "Moulded running silhouette with a cushioned midsole and a ventilated upper. Light enough for daily kilometres.",
+      "categoryId": "cat-shoes",
+      "categoryName": "Shoes",
       "gender": "female",
-      "price": 149.90,
-      "discountedPrice": 127.40,
-      "currentDiscount": 15,
-      "salesNumber": 23,
-      "createdDate": "2026-07-17T10:00:00Z",
-      "sizes": ["S", "M", "L"],
+      "price": 649.90,
+      "discountedPrice": 519.90,
+      "currentDiscount": 20,
+      "salesNumber": 36,
+      "createdDate": "2026-07-24T10:00:00Z",
+      "sizes": ["35", "36", "37", "38", "39"],
       "colors": [
-        { "title": "Aqua", "hexCode": "2BB6B0" }
+        { "title": "Blue", "hexCode": "1E9BE0" },
+        { "title": "Orange", "hexCode": "F7A70C" }
       ],
-      "images": [
-        "products/nike shorts f/aqua_f_shorts_1.png",
-        "products/nike shorts f/aqua_f_shorts_2.png",
-        "products/nike shorts f/aqua_f_shorts_3.png"
-      ]
+      "images": ["products/sneaker-runner/blue_runner.jpg"]
     },
     {
-      "id": "prod-nike-shorts-men",
-      "title": "Nike Sport Shorts (Men)",
-      "description": "Men's training shorts with a relaxed fit, side pockets and breathable moisture-wicking fabric.",
+      "id": "prod-street-sneaker",
+      "title": "Street Sneaker",
+      "description": "Colour-blocked street silhouette in suede and mesh, with a chunky cupsole and contrast laces. Made to be noticed.",
+      "categoryId": "cat-shoes",
+      "categoryName": "Shoes",
+      "gender": "male",
+      "price": 579.90,
+      "discountedPrice": 579.90,
+      "currentDiscount": 0,
+      "salesNumber": 25,
+      "createdDate": "2026-07-25T10:00:00Z",
+      "sizes": ["39", "40", "41", "42", "43", "44"],
+      "colors": [
+        { "title": "Multi", "hexCode": "7ACFB4" },
+        { "title": "Off-white", "hexCode": "EFEAE2" }
+      ],
+      "images": ["products/sneaker-street/multi_street.jpg"]
+    },
+    {
+      "id": "prod-jersey-shorts",
+      "title": "Jersey Shorts",
+      "description": "Mid-length cotton jersey shorts with zip pockets, an elastic waist and a drawcord. Trains as well as it lounges.",
       "categoryId": "cat-shorts",
       "categoryName": "Shorts",
       "gender": "male",
       "price": 149.90,
       "discountedPrice": 127.40,
       "currentDiscount": 15,
-      "salesNumber": 30,
-      "createdDate": "2026-07-20T10:00:00Z",
-      "sizes": ["S", "M", "L", "XL"],
+      "salesNumber": 31,
+      "createdDate": "2026-07-26T10:00:00Z",
+      "sizes": ["P", "M", "G", "GG"],
       "colors": [
-        { "title": "Khaki", "hexCode": "B5A16B" }
+        { "title": "Navy", "hexCode": "26355E" },
+        { "title": "Khaki", "hexCode": "C3A882" },
+        { "title": "Off-white", "hexCode": "EFEAE2" }
       ],
       "images": [
-        "products/nike shorts m/khaki_m_shorts_1.png",
-        "products/nike shorts m/khaki_m_shorts_2.png",
-        "products/nike shorts m/khaki_m_shorts_3.png"
+        "products/shorts-jersey/jersey_shorts_1.jpg",
+        "products/shorts-jersey/jersey_shorts_2.jpg"
       ]
+    },
+    {
+      "id": "prod-denim-shorts",
+      "title": "High-Rise Denim Shorts",
+      "description": "High-rise denim shorts in a light stonewash, with a turned-up hem and distressed detailing. Rigid cotton that softens with wear.",
+      "categoryId": "cat-shorts",
+      "categoryName": "Shorts",
+      "gender": "female",
+      "price": 169.90,
+      "discountedPrice": 135.90,
+      "currentDiscount": 20,
+      "salesNumber": 44,
+      "createdDate": "2026-07-27T10:00:00Z",
+      "sizes": ["36", "38", "40", "42"],
+      "colors": [{ "title": "Light blue", "hexCode": "A8C4DE" }],
+      "images": ["products/shorts-denim/denim_shorts.jpg"]
     }
   ]
 }
