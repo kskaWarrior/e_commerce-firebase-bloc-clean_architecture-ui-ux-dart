@@ -31,7 +31,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 - **Single Firebase project** (`ecommerceapp-auth-db-cleana`) for all brands and environments; seed scripts default to prod unless `FIRESTORE_EMULATOR_HOST` is set.
 - **Fragile, unmonitored ETL:** two triggers on the same sale doc (double cost, desync on partial failure); no retries/idempotency; `ignoreUnknownValues: true` silently drops fields (how `storeId` went missing). Zero function tests. No alerting.
 - **Stale coverage:** `coverage/lcov.info` (71.9%) is from May, 89 of 162 files. Untested: all of `lib/presentation/admin/`, `lib/presentation/web/`, store feature, `TenantCollections`/`StoreContext`, `ThemeController`, admin-only use cases.
-- **`seedOrders.ts` bugs (uncommitted):** writes `salesProducts` (app/rules use `sales_products`); emits status `processing`, not in the rules whitelist `pending|paid|shipped|delivered|cancelled`.
+- ~~**`seedOrders.ts` bugs:** wrong collection (`salesProducts`) and invalid status `processing`~~ — fixed and committed 2026-08-23 (now writes `sales_products`, status whitelist only). It still defaults to prod without `FIRESTORE_EMULATOR_HOST`.
 
 ## Worth fixing, not blocking
 
@@ -41,7 +41,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 - `lookerEmbedUrl` stored inside `branding` map as a rules workaround; `AdminSession` errors English-only.
 - `user_key` in views is unsalted SHA-256 of uid.
 - Only one composite Firestore index defined.
-- Hygiene: `.env` not gitignored (report wizard writes to it); committed logs/artifacts at root; untracked `build-report-wizard.sh.bak` and `STAGES-REFERENCE.md`.
+- Hygiene: `.env` not gitignored (report wizard writes to it); committed logs/artifacts at root; untracked `STAGES-REFERENCE.md` (wizard-output transcript with unexpanded shell text — regenerate or drop, don't commit as-is). `build-report-wizard.sh.bak` deleted 2026-08-23; wizard script itself now committed.
 
 ## Suggested go-live order
 
