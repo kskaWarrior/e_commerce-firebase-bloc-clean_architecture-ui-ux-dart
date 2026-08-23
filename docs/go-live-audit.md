@@ -1,6 +1,6 @@
 # Go-Live Audit
 
-White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · last updated 2026-08-18.
+White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · last updated 2026-08-23.
 
 **Keep this document current:** update it whenever a gap below is fixed, a new gap is found, or the architecture changes.
 
@@ -32,6 +32,25 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 - **Fragile, unmonitored ETL:** two triggers on the same sale doc (double cost, desync on partial failure); no retries/idempotency; `ignoreUnknownValues: true` silently drops fields (how `storeId` went missing). Zero function tests. No alerting.
 - **Stale coverage:** `coverage/lcov.info` (71.9%) is from May, 89 of 162 files. Untested: all of `lib/presentation/admin/`, `lib/presentation/web/`, store feature, `TenantCollections`/`StoreContext`, `ThemeController`, admin-only use cases.
 - ~~**`seedOrders.ts` bugs:** wrong collection (`salesProducts`) and invalid status `processing`~~ — fixed and committed 2026-08-23 (now writes `sales_products`, status whitelist only). It still defaults to prod without `FIRESTORE_EMULATOR_HOST`.
+
+## Responsive + tooling gaps found during the 2026-08-23 screenshot pass
+
+Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844 and desktop 1440×900).
+
+- **Web storefront header overflows by 94 px below ~420 px wide.** A `RenderFlex` overflow stripe is visible on
+  every narrow-width frame and the cart button is pushed off-screen — the footer links are the only route to the
+  cart on a phone-width browser. The shopper web pages (`lib/presentation/web/`) are the untested layer.
+- **Cart table is not responsive.** Three nested overflows at 390 px; column headings render one letter per line.
+- **Order rows overflow at mobile width**, hiding the *Pagar agora* retry that renders correctly on desktop.
+- **`USE_EMULATORS` does not wire the Functions emulator.** `lib/main.dart` and `lib/main_admin.dart` redirect auth,
+  Firestore and Storage only, so `createPaymentPreference` / `setStorePaymentConfig` calls from an "emulator" run
+  still target production `southamerica-east1`. Checkout cannot be exercised end-to-end locally, and a careless
+  local test reaches prod functions.
+- **Super-admin store selection is a free-text store-id field,** not a list — even though the rules already allow
+  `list` on `stores` for a `super` claim. The platform owner must know the tenant id by heart.
+- **`seedCatalog.ts` never creates the `stores/{storeId}` doc**, only its subcollections; a freshly seeded store has
+  no name/branding/shipping until someone saves the settings form.
+- **Admin product list renders no thumbnails** although the edit form loads the same images.
 
 ## Worth fixing, not blocking
 

@@ -28,4 +28,10 @@ Full audit: `docs/go-live-audit.md` (keep it and this file updated as the projec
 - **ETL fragile** — two triggers on same doc, no retries/idempotency, `ignoreUnknownValues` drops fields (how `storeId` went missing). Zero function tests.
 - **Coverage stale** — `coverage/lcov.info` is from May; `lib/presentation/admin/`, `lib/presentation/web/`, store feature, tenant core all untested.
 - **`seedOrders.ts` (uncommitted) bugs** — writes `salesProducts` (app uses `sales_products`) and status `processing` (not in rules whitelist).
+- **Web storefront not responsive below ~420px** — header overflows 94px (cart button unreachable), cart table and order rows overflow; found 2026-08-23, see `docs/screenshots/`.
+- **`USE_EMULATORS` skips the Functions emulator** — only auth/Firestore/Storage are redirected, so callables from a local run hit production. Checkout can't be exercised end-to-end locally.
 - Sale status enum (rules-enforced): `pending|paid|shipped|delivered|cancelled`.
+
+## Screenshots
+
+`docs/screenshots/` holds a per-user-type walkthrough (shopper mobile + desktop, owner admin console, super-admin store selection) captured against the emulators on 2026-08-23; `docs/screenshots/README.md` indexes them and records how to reproduce the run.
