@@ -30,5 +30,10 @@ module.exports = {
     "quotes": ["error", "double"],
     "import/no-unresolved": 0,
     "indent": ["error", 2],
+    // Off: git stores these files with LF, but a Windows checkout with
+    // core.autocrlf=true writes CRLF into the working tree, so the rule
+    // inherited from "google" fails every file on Windows and blocks the
+    // deploy predeploy hook. Normalization is git's job here, not eslint's.
+    "linebreak-style": 0,
   },
 };
