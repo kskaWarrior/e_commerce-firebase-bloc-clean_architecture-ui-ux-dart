@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:dartz/dartz.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/firebase/functions_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/payment/entities/payment_preference_entity.dart';
 
 abstract class PaymentFunctionsService {
@@ -13,8 +14,7 @@ abstract class PaymentFunctionsService {
 
 class PaymentFunctionsServiceImpl implements PaymentFunctionsService {
   PaymentFunctionsServiceImpl({FirebaseFunctions? functions})
-      : _functions = functions ??
-            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
+      : _functions = functions ?? appFunctions;
 
   final FirebaseFunctions _functions;
 

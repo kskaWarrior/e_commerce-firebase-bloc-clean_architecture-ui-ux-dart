@@ -4,7 +4,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 **Keep this document current:** update it whenever a gap below is fixed, a new gap is found, or the architecture changes.
 
-**Verdict: not ready for production, but the payment blocker is now code-complete.** The architecture is solid — clean layering, well-executed tenant isolation, good rules. The Mercado Pago Checkout Pro stack (CEP-zone freight, server-validated totals, webhook status updates) landed 2026-08-18 but is **not deployed** (and `mpWebhook` has an export bug — see blocker 1). The analytics embed still leaks revenue across tenants, and there is still zero backend CI.
+**Verdict: not ready for production, but the payment blocker is now code-complete.** The architecture is solid — clean layering, well-executed tenant isolation, good rules. The Mercado Pago Checkout Pro stack (CEP-zone freight, server-validated totals, webhook status updates) landed 2026-08-18 but is **not deployed**. The analytics embed still leaks revenue across tenants, and there is still zero backend CI.
 
 ## How the system is put together
 
@@ -17,11 +17,11 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 | Brands | `brands/{acme,buybuy}/` | Per-brand `brand.json` + assets; `tool/activate_brand.dart` materializes `brand.current.json`. Both share one Firebase project. |
 | Analytics | `analytics/looker_studio/` | 4 BigQuery views over `sales_analytics`; per-store Looker embed URL; 12-stage setup wizard. |
 
-**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 18 rules tests (`rules_tests/firestore.rules.test.mjs`); ~250 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
+**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 26 rules tests (`rules_tests/firestore.rules.test.mjs`, including `shipping` and the sealed `private/` docs); ~250 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
 
 ## Go-live blockers
 
-1. **Payment stack implemented but not live.** Mercado Pago Checkout Pro landed 2026-08-18 (fake card form removed; checkout registers a pending sale → `createPaymentPreference` → opens init_point; `mpWebhook` flips pending→paid/cancelled). Remaining to go live: fix **`mpWebhook` missing from the `functions/src/index.ts` re-export** (it won't deploy as-is), deploy rules + functions, per-store MP tokens via the admin Payments section, sandbox E2E. Freight is real: CEP-range zones + free-shipping threshold + pickup from the store doc's `shipping` map.
+1. **Payment stack implemented but not live.** Mercado Pago Checkout Pro landed 2026-08-18 (fake card form removed; checkout registers a pending sale → `createPaymentPreference` → opens init_point; `mpWebhook` flips pending→paid/cancelled). Remaining to go live: deploy rules + functions, per-store MP tokens via the admin Payments section, sandbox E2E. Freight is real: CEP-range zones + free-shipping threshold + pickup from the store doc's `shipping` map.
 2. **Prices now server-validated at payment time; creation still open.** `createPaymentPreference` recomputes subtotal from live product docs and freight from the shipping config, overwriting the sale totals before charging. The initially client-written sale doc and `sales_products` line items still have no rules-level field validation, and rules tests for the new `shipping`/`private` rules are missing (CLAUDE.md directive).
 3. **Cross-tenant analytics leak.** Looker embed filtered only by a `storeId` URL parameter. Needs BigQuery RLS / signed embedding; `analytics/looker_studio/add_store_id_column.sql` is written but unapplied.
 4. **No backend CI/CD.** `.github/workflows/` empty; rules tests never run in CI; functions/rules/indexes/views deployed by hand.
@@ -47,10 +47,16 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
   phone.
 - The shopper web layer still has **no widget tests** — these three regressions were only caught by eye in the
   screenshot pass, and nothing would catch them again.
-- **`USE_EMULATORS` does not wire the Functions emulator.** `lib/main.dart` and `lib/main_admin.dart` redirect auth,
-  Firestore and Storage only, so `createPaymentPreference` / `setStorePaymentConfig` calls from an "emulator" run
-  still target production `southamerica-east1`. Checkout cannot be exercised end-to-end locally, and a careless
-  local test reaches prod functions.
+- ~~**`USE_EMULATORS` does not wire the Functions emulator.**~~ — fixed 2026-09-08: both entrypoints now call
+  `useFunctionsEmulator` (`lib/core/configs/firebase/functions_config.dart`), which redirects the *regional*
+  `southamerica-east1` instance the app actually resolves. Checkout can now be exercised locally.
+- **Sale analytics carry client-authored totals.** `exportSaleToBigQuery` / `exportSaleProductsToBigQuery` are
+  `onDocumentCreated` triggers, so they read the sale document as the *client* wrote it.
+  `createPaymentPreference` recomputes `discountedPrice` / `freight` / `totalPrice` and overwrites them
+  afterwards (`functions/src/payments.ts`), but the create-only ETL never re-runs — so `sales_analytics`, and
+  therefore the Looker dashboards, report unvalidated numbers. Revenue can be misstated without any rules
+  violation. Fix options: validate money fields in rules at create, move sale creation into the callable, or
+  move the ETL to `onDocumentWritten` with idempotency.
 - **Super-admin store selection is a free-text store-id field,** not a list — even though the rules already allow
   `list` on `stores` for a `super` claim. The platform owner must know the tenant id by heart.
 - **`seedCatalog.ts` never creates the `stores/{storeId}` doc**, only its subcollections; a freshly seeded store has
@@ -69,7 +75,7 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
 
 ## Suggested go-live order
 
-1. ~~Server-side checkout function (price cart from catalog, create order + Mercado Pago preference, webhook sets `paid`)~~ — implemented 2026-08-18; finish go-live hardening: export `mpWebhook`, rules tests for `shipping`/`private`, deploy, sandbox E2E, retry-payment + live order-status streaming.
+1. ~~Server-side checkout function (price cart from catalog, create order + Mercado Pago preference, webhook sets `paid`)~~ — implemented 2026-08-18; `mpWebhook` export and the `shipping`/`private` rules tests both landed since. Remaining go-live hardening: deploy, sandbox E2E, retry-payment + live order-status streaming.
 2. Apply `add_store_id_column.sql`, then BigQuery RLS + signed Looker embedding — closes the tenant leak.
 3. GitHub Actions: rules tests + function tests on PR; deploy rules/functions/views on merge.
 4. Second Firebase project as staging; point emulators/seeds there by default.

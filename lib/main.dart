@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/brand/brand_config.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/firebase/functions_config.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/app_theme.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/configs/theme/theme_controller.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/i18n/app_locale_controller.dart';
@@ -41,6 +42,7 @@ void main() {
         await FirebaseAuth.instance.useAuthEmulator(emulatorHost, 9099);
         FirebaseFirestore.instance.useFirestoreEmulator(emulatorHost, 8085);
         await FirebaseStorage.instance.useStorageEmulator(emulatorHost, 9199);
+        useFunctionsEmulator(emulatorHost);
       }
 
       // Keep app launch path lean to avoid startup stalls/ANR on CI devices.

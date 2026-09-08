@@ -21,7 +21,8 @@ Full audit: `docs/go-live-audit.md` (keep it and this file updated as the projec
 
 - **Payments implemented but NOT deployed** — Mercado Pago Checkout Pro (freight zones, callable, webhook) landed 2026-08-18; needs `firebase deploy --only firestore:rules,functions`, per-store MP tokens via the admin Payments section, and a sandbox E2E pass.
 - **Bug: `mpWebhook` not re-exported from `functions/src/index.ts`** — it will not deploy as-is; the preference's `notification_url` would 404. One-line fix pending.
-- **Rules tests stale** — firestore.rules gained the owner-editable `shipping` key and the sealed `private/{docId}` block, but `rules_tests/firestore.rules.test.mjs` has no coverage for either (CLAUDE.md directive violated; fix with the go-live hardening pass).
+- ~~**Rules tests stale**~~ — closed: `rules_tests/firestore.rules.test.mjs` now covers both the owner-editable `shipping` key and the sealed `private/{docId}` block (26 tests).
+- **Sale analytics carry client-authored totals** — the two BigQuery ETL triggers are `onDocumentCreated`, so they export the sale before `createPaymentPreference` overwrites the money fields with server-recomputed ones. Looker revenue is client-supplied. See `docs/go-live-audit.md`.
 - **Sale prices partially server-validated** — `createPaymentPreference` recomputes subtotal from live product docs + freight from the shipping config and overwrites the sale totals; but the initial client-written sale doc and `sales_products` line items still have no rules-level field validation.
 - **Analytics tenant leak** — Looker embed filtered only by `storeId` URL param; needs BigQuery RLS + applying `analytics/looker_studio/add_store_id_column.sql` (written, unapplied).
 - **Single Firebase project** `ecommerceapp-auth-db-cleana` for everything — no staging.
@@ -29,7 +30,7 @@ Full audit: `docs/go-live-audit.md` (keep it and this file updated as the projec
 - **Coverage stale** — `coverage/lcov.info` is from May; `lib/presentation/admin/`, `lib/presentation/web/`, store feature, tenant core all untested.
 - **`seedOrders.ts` (uncommitted) bugs** — writes `salesProducts` (app uses `sales_products`) and status `processing` (not in rules whitelist).
 - ~~**Web storefront not responsive below ~420px**~~ — fixed 2026-09-08: the web header, cart table and order footer now have compact layouts (660/560/520px breakpoints). The web layer still has no widget tests, so nothing guards against a repeat.
-- **`USE_EMULATORS` skips the Functions emulator** — only auth/Firestore/Storage are redirected, so callables from a local run hit production. Checkout can't be exercised end-to-end locally.
+- ~~**`USE_EMULATORS` skips the Functions emulator**~~ — closed 2026-09-08: `useFunctionsEmulator` in `lib/core/configs/firebase/functions_config.dart` redirects the regional (`southamerica-east1`) instance from both entrypoints, so callables from a local run stay local.
 - Sale status enum (rules-enforced): `pending|paid|shipped|delivered|cancelled`.
 
 ## Screenshots
