@@ -22,8 +22,8 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 ## Go-live blockers
 
 1. **Payment stack implemented but not live.** Mercado Pago Checkout Pro landed 2026-08-18 (fake card form removed; checkout registers a pending sale → `createPaymentPreference` → opens init_point; `mpWebhook` flips pending→paid/cancelled). Remaining to go live: deploy rules + functions, per-store MP tokens via the admin Payments section, sandbox E2E. Freight is real: CEP-range zones + free-shipping threshold + pickup from the store doc's `shipping` map.
-2. **Prices now server-validated at payment time; creation still open.** `createPaymentPreference` recomputes subtotal from live product docs and freight from the shipping config, overwriting the sale totals before charging. The initially client-written sale doc and `sales_products` line items still have no rules-level field validation, and rules tests for the new `shipping`/`private` rules are missing (CLAUDE.md directive).
-3. **Cross-tenant analytics leak.** Looker embed filtered only by a `storeId` URL parameter. Needs BigQuery RLS / signed embedding; `analytics/looker_studio/add_store_id_column.sql` is written but unapplied.
+2. **Prices now server-validated at payment time; creation still open.** `createPaymentPreference` recomputes subtotal from live product docs and freight from the shipping config, overwriting the sale totals before charging. The initially client-written sale doc and `sales_products` line items still have no rules-level field validation. (The `shipping`/`private` rules tests this used to list as missing do exist — 26 tests — and now run in CI.)
+3. **Cross-tenant analytics leak.** Looker embed filtered only by a `storeId` URL parameter, so a curious owner can read another tenant's revenue. Needs BigQuery RLS / signed embedding. Its groundwork is further along than this file claimed: `analytics/looker_studio/add_store_id_column.sql` **has been applied** — both `sales` and `sales_products` carry a native `storeId` column (confirmed 2026-09-08 via `INFORMATION_SCHEMA`), though that file and the view comments still describe it as pending. Verify the backfill actually ran before building RLS on it. The reporting views keep deriving `store_id` from `firestoreCollection`, which works either way.
 4. **Backend CI/CD, partly closed.** `.github/workflows/backend.yml` (added 2026-09-08) lints and builds the
    functions and runs the 26 rules tests against the Firestore emulator on every PR and master push that
    touches them — the CLAUDE.md "run the rules tests" directive is now enforced rather than remembered.
@@ -69,9 +69,13 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
   the create-only ETL never re-ran. Looker therefore reported unvalidated revenue. Both triggers are now
   `onDocumentWritten` and re-export whenever the exported content changes (writes that change nothing the
   table carries are skipped, so the payment-preference pin alone does not duplicate a row). The tables are
-  now append-only revision history, and `reporting_views.sql` keeps only the newest revision per sale (keyed on
-  `firestoreCollection` + `id`, and on `salesId` for line items — the live tables have no `saleDocumentId`
-  column, exactly like `storeId`). **`analytics/looker_studio/reporting_views.sql` must be re-run in BigQuery** for the
+  now append-only revision history, and `reporting_views.sql` keeps only the newest revision per sale. The two
+  tables need different revision keys, checked against `INFORMATION_SCHEMA` rather than assumed: `sales` has
+  `saleDocumentId` and `exportEventId`, but `sales_products` has **neither** — it is keyed on
+  `salesId` + `productIndex`, which is the row's identity across exports and also means a sale exported only
+  once keeps all its lines. The whole file was validated with `bq query --dry_run` against the live schema.
+  Before adding any column to these tables, confirm it exists there first: inserts use `ignoreUnknownValues`,
+  so a field the functions write is silently dropped until the column is created. **`analytics/looker_studio/reporting_views.sql` must be re-run in BigQuery** for the
   dashboards to pick this up — until then the views double-count re-exported sales.
 - **Sale prices are still client-authored at create.** Rules check only `userId` / `status` / `storeId`, so a
   crafted sale can carry any price. Nothing downstream trusts those numbers any more (the callable

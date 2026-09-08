@@ -21,10 +21,16 @@
 --   newest revision per sale (`exportedAt` is an ISO-8601 UTC string, so it
 --   sorts lexicographically; `exportEventId` identifies one export run and
 --   breaks ties). Query the raw tables directly only if you want history.
---   The revision key is `firestoreCollection` + `id` on `sales` and `salesId`
---   on `sales_products`, NOT `saleDocumentId` — like `storeId`, that column
---   does not exist on the live tables (they predate it and inserts use
---   ignoreUnknownValues, so it was silently dropped).
+--   The two tables need different revision keys, because their live schemas
+--   differ (verified against INFORMATION_SCHEMA, not assumed):
+--     sales           saleDocumentId              (exportEventId breaks ties)
+--     sales_products  salesId + productIndex      (it has NEITHER
+--                     saleDocumentId NOR exportEventId, so there is no batch
+--                     identity to rank by; one row per productIndex per
+--                     export makes this pair the row identity instead)
+--   Before adding a column to either table, check it exists there: inserts
+--   use ignoreUnknownValues, so a field the functions write is silently
+--   dropped unless the column was created first.
 --
 -- Why views:
 --   * Keep business logic (store_id derivation, date bucketing, age bands) in
@@ -82,11 +88,9 @@ WITH orders AS (
       ORDER BY createdDate
     ) AS customer_order_seq
   FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
-  -- Keep only the newest revision of each sale. `saleDocumentId` would be
-  -- the natural key but the live tables predate it and ignoreUnknownValues
-  -- dropped it, so partition on the tenant path plus the order id.
+  -- Keep only the newest revision of each sale.
   QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY firestoreCollection, id
+    PARTITION BY saleDocumentId
     ORDER BY exportedAt DESC, exportEventId DESC
   ) = 1
 )
@@ -137,28 +141,25 @@ SELECT
   sp.unitDiscounted                                  AS unit_discounted,
   sp.totalPrice                                      AS line_revenue
 FROM (
-  -- Keep only the newest exported batch of line items per sale: every row of
-  -- one batch shares its `exportEventId`, so rank batches, not rows.
-  SELECT * EXCEPT (batch_exported_at)
-  FROM (
-    SELECT
-      *,
-      -- Legacy rows (written before the batch-wide timestamp) can differ by a
-      -- millisecond within one batch, so rank on the batch maximum.
-      MAX(exportedAt) OVER (PARTITION BY salesId, exportEventId)
-        AS batch_exported_at
-    FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales_products`
-  )
-  QUALIFY DENSE_RANK() OVER (
-    PARTITION BY salesId
-    ORDER BY batch_exported_at DESC, exportEventId DESC
+  -- Keep only the newest revision of each line item. This table has neither
+  -- `saleDocumentId` nor `exportEventId`, so there is no batch identity to
+  -- rank by — but every export of a sale writes exactly one row per
+  -- `productIndex`, which makes (salesId, productIndex) the row's identity
+  -- across revisions. Keying on that rather than on a batch also means a
+  -- sale exported only once keeps all of its lines, whatever their
+  -- individual timestamps.
+  SELECT *
+  FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales_products`
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY salesId, productIndex
+    ORDER BY exportedAt DESC
   ) = 1
 ) sp
 LEFT JOIN (
   SELECT *
   FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
   QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY firestoreCollection, id
+    PARTITION BY saleDocumentId
     ORDER BY exportedAt DESC, exportEventId DESC
   ) = 1
 ) s

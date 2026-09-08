@@ -391,8 +391,10 @@ export const exportSaleProductsToBigQuery = onDocumentWritten(
       if (!Array.isArray(productsRaw)) {
         return [];
       }
-      // One timestamp for the whole batch: the views rank batches by it, so
-      // per-row timestamps could split a batch across revisions.
+      // One timestamp for the whole batch, so every row of an export agrees.
+      // (The views key line-item revisions on salesId + productIndex, not on
+      // this, because sales_products carries no exportEventId to identify a
+      // batch by — see analytics/looker_studio/reporting_views.sql.)
       const exportedAt = new Date().toISOString();
       return productsRaw.map((item, index) => {
         const product = typeof item === "object" && item !== null ?
