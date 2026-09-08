@@ -50,13 +50,20 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
 - ~~**`USE_EMULATORS` does not wire the Functions emulator.**~~ — fixed 2026-09-08: both entrypoints now call
   `useFunctionsEmulator` (`lib/core/configs/firebase/functions_config.dart`), which redirects the *regional*
   `southamerica-east1` instance the app actually resolves. Checkout can now be exercised locally.
-- **Sale analytics carry client-authored totals.** `exportSaleToBigQuery` / `exportSaleProductsToBigQuery` are
-  `onDocumentCreated` triggers, so they read the sale document as the *client* wrote it.
-  `createPaymentPreference` recomputes `discountedPrice` / `freight` / `totalPrice` and overwrites them
-  afterwards (`functions/src/payments.ts`), but the create-only ETL never re-runs — so `sales_analytics`, and
-  therefore the Looker dashboards, report unvalidated numbers. Revenue can be misstated without any rules
-  violation. Fix options: validate money fields in rules at create, move sale creation into the callable, or
-  move the ETL to `onDocumentWritten` with idempotency.
+- ~~**Sale analytics carry client-authored totals.**~~ — fixed 2026-09-08. Both ETL triggers were
+  `onDocumentCreated`, so they exported the sale as the *client* wrote it; `createPaymentPreference`
+  overwrites `discountedPrice` / `freight` / `totalPrice` with server-recomputed values only afterwards, and
+  the create-only ETL never re-ran. Looker therefore reported unvalidated revenue. Both triggers are now
+  `onDocumentWritten` and re-export whenever the exported content changes (writes that change nothing the
+  table carries are skipped, so the payment-preference pin alone does not duplicate a row). The tables are
+  now append-only revision history, and `reporting_views.sql` keeps only the newest revision per
+  `saleDocumentId`. **`analytics/looker_studio/reporting_views.sql` must be re-run in BigQuery** for the
+  dashboards to pick this up — until then the views double-count re-exported sales.
+- **Sale prices are still client-authored at create.** Rules check only `userId` / `status` / `storeId`, so a
+  crafted sale can carry any price. Nothing downstream trusts those numbers any more (the callable
+  recomputes before charging; analytics now follow the callable), but the write itself is still unvalidated.
+- **`functions/` has no test harness at all** — no runner, no tests. `isSameExport` and the freight/subtotal
+  maths in `payments.ts` are pure functions and would be cheap to cover once one exists.
 - **Super-admin store selection is a free-text store-id field,** not a list — even though the rules already allow
   `list` on `stores` for a `super` claim. The platform owner must know the tenant id by heart.
 - **`seedCatalog.ts` never creates the `stores/{storeId}` doc**, only its subcollections; a freshly seeded store has

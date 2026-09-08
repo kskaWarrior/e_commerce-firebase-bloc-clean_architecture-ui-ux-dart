@@ -12,6 +12,16 @@
 --   `sales_products` inherit it by joining on `salesId`. `sales_products` also
 --   uses `salesId` (not `orderId`). No table migration is required.
 --
+-- IMPORTANT — append-only history:
+--   The export triggers are `onDocumentWritten` (functions/src/index.ts), so a
+--   sale is re-exported whenever its exported content changes — notably when
+--   `createPaymentPreference` replaces the client-authored money fields with
+--   server-recomputed ones. The tables are therefore append-only revision
+--   history: several rows can share a `saleDocumentId`. Every view below keeps
+--   only the newest revision per sale (`exportedAt` is an ISO-8601 UTC string,
+--   so it sorts lexicographically; `exportEventId` identifies one export run
+--   and breaks ties). Query the raw tables directly only if you want history.
+--
 -- Why views:
 --   * Keep business logic (store_id derivation, date bucketing, age bands) in
 --     one version-controlled place instead of scattered Looker fields.
@@ -68,6 +78,11 @@ WITH orders AS (
       ORDER BY createdDate
     ) AS customer_order_seq
   FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
+  -- Keep only the newest revision of each sale.
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY saleDocumentId
+    ORDER BY exportedAt DESC, exportEventId DESC
+  ) = 1
 )
 SELECT
   store_id,
@@ -115,8 +130,32 @@ SELECT
   sp.unitPrice                                       AS unit_price,
   sp.unitDiscounted                                  AS unit_discounted,
   sp.totalPrice                                      AS line_revenue
-FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales_products` sp
-LEFT JOIN `ecommerceapp-auth-db-cleana.sales_analytics.sales` s
+FROM (
+  -- Keep only the newest exported batch of line items per sale: every row of
+  -- one batch shares its `exportEventId`, so rank batches, not rows.
+  SELECT * EXCEPT (batch_exported_at)
+  FROM (
+    SELECT
+      *,
+      -- Legacy rows (written before the batch-wide timestamp) can differ by a
+      -- millisecond within one batch, so rank on the batch maximum.
+      MAX(exportedAt) OVER (PARTITION BY saleDocumentId, exportEventId)
+        AS batch_exported_at
+    FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales_products`
+  )
+  QUALIFY DENSE_RANK() OVER (
+    PARTITION BY saleDocumentId
+    ORDER BY batch_exported_at DESC, exportEventId DESC
+  ) = 1
+) sp
+LEFT JOIN (
+  SELECT *
+  FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY saleDocumentId
+    ORDER BY exportedAt DESC, exportEventId DESC
+  ) = 1
+) s
   ON s.id = sp.salesId;
 
 -- ------------------------------------------------------------ v_sales_daily --

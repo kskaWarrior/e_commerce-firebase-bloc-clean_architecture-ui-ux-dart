@@ -8,7 +8,7 @@
  */
 
 import {setGlobalOptions} from "firebase-functions";
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {BigQuery} from "@google-cloud/bigquery";
@@ -267,51 +267,87 @@ async function insertRowsWithAutoCreate(
   }
 }
 
-export const exportSaleToBigQuery = onDocumentCreated(
+/**
+ * Fields that differ on every export run and therefore say nothing about
+ * whether the underlying sale actually changed.
+ */
+const VOLATILE_EXPORT_FIELDS = ["exportEventId", "exportedAt", "id"];
+
+/**
+ * Compares two candidate export payloads ignoring per-run bookkeeping fields.
+ * @param {Record<string, unknown>[]} before Rows built from the prior state.
+ * @param {Record<string, unknown>[]} after Rows built from the new state.
+ * @return {boolean} True when the exported content is unchanged.
+ */
+function isSameExport(
+  before: Record<string, unknown>[],
+  after: Record<string, unknown>[],
+): boolean {
+  const strip = (rows: Record<string, unknown>[]) =>
+    JSON.stringify(rows.map((row) => {
+      const copy = {...row};
+      for (const field of VOLATILE_EXPORT_FIELDS) {
+        delete copy[field];
+      }
+      return copy;
+    }));
+  return strip(before) === strip(after);
+}
+
+export const exportSaleToBigQuery = onDocumentWritten(
   {
     document: "stores/{storeId}/sales/{saleId}",
     region: REGION,
   },
   async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) {
-      logger.warn("No Firestore snapshot found for sales trigger", {
-        eventId: event.id,
-      });
+    const after = event.data?.after;
+    if (!after?.exists) {
+      // Deletion (or a missing snapshot): nothing to export.
       return;
     }
 
-    const saleData = normalizeFirestoreValue(
-      snapshot.data() as Record<string, unknown>
-    );
-    const saleFields = saleData as Record<string, unknown>;
-    const price = toNumberOrNull(saleFields.price);
-    const discountedPrice = toNumberOrNull(saleFields.discountedPrice);
-    const products = JSON.stringify(saleFields.productsList ?? null);
+    const buildRow = (raw: Record<string, unknown>) => {
+      const saleData = normalizeFirestoreValue(raw);
+      const saleFields = saleData as Record<string, unknown>;
+      const price = toNumberOrNull(saleFields.price);
+      const discountedPrice = toNumberOrNull(saleFields.discountedPrice);
+      const products = JSON.stringify(saleFields.productsList ?? null);
 
-    const saleRow = {
-      exportEventId: event.id,
-      saleDocumentId: event.params.saleId,
-      storeId: event.params.storeId,
-      exportedAt: new Date().toISOString(),
-      firestoreCollection: `stores/${event.params.storeId}/sales`,
-      createdDate: saleFields.createdDate,
-      discountedPrice,
-      freight: toNumberOrNull(saleFields.freight),
-      id: String(saleFields.id ?? event.params.saleId),
-      installmentsNumber: toNumberOrNull(saleFields.installmentsNumber),
-      paymentMethod: saleFields.paymentMethod,
-      price,
-      products,
-      totalPrice: toNumberOrNull(saleFields.totalPrice),
-      discount: price !== null && discountedPrice !== null ?
-        price - discountedPrice : null,
-      userBirthDate: saleFields.userBirthDate,
-      userGender: saleFields.userGender,
-      userId: saleFields.userId,
-      userName: saleFields.userName,
-      payload: saleData,
+      return {
+        exportEventId: event.id,
+        saleDocumentId: event.params.saleId,
+        storeId: event.params.storeId,
+        exportedAt: new Date().toISOString(),
+        firestoreCollection: `stores/${event.params.storeId}/sales`,
+        createdDate: saleFields.createdDate,
+        discountedPrice,
+        freight: toNumberOrNull(saleFields.freight),
+        id: String(saleFields.id ?? event.params.saleId),
+        installmentsNumber: toNumberOrNull(saleFields.installmentsNumber),
+        paymentMethod: saleFields.paymentMethod,
+        price,
+        products,
+        totalPrice: toNumberOrNull(saleFields.totalPrice),
+        discount: price !== null && discountedPrice !== null ?
+          price - discountedPrice : null,
+        userBirthDate: saleFields.userBirthDate,
+        userGender: saleFields.userGender,
+        userId: saleFields.userId,
+        userName: saleFields.userName,
+        payload: saleData,
+      } as Record<string, unknown>;
     };
+
+    const saleRow = buildRow(after.data() as Record<string, unknown>);
+    const before = event.data?.before;
+    if (before?.exists) {
+      const previous = buildRow(before.data() as Record<string, unknown>);
+      if (isSameExport([previous], [saleRow])) {
+        // A write that touched nothing this table carries (e.g. the payment
+        // preference being pinned). Skip it rather than emit a duplicate.
+        return;
+      }
+    }
 
     try {
       await insertRowsWithAutoCreate(bigQueryTarget, salesSchema, [saleRow]);
@@ -335,28 +371,64 @@ export const exportSaleToBigQuery = onDocumentCreated(
   }
 );
 
-export const exportSaleProductsToBigQuery = onDocumentCreated(
+export const exportSaleProductsToBigQuery = onDocumentWritten(
   {
     document: "stores/{storeId}/sales/{saleId}",
     region: REGION,
   },
   async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) {
-      logger.warn("No Firestore snapshot found for sales products trigger", {
-        eventId: event.id,
-      });
+    const after = event.data?.after;
+    if (!after?.exists) {
+      // Deletion (or a missing snapshot): nothing to export.
       return;
     }
 
-    const saleData = normalizeFirestoreValue(
-      snapshot.data() as Record<string, unknown>
-    );
-    const saleFields = saleData as Record<string, unknown>;
-    const orderId = String(saleFields.id ?? event.params.saleId);
-    const productsRaw = saleFields.productsList;
+    const buildRows = (raw: Record<string, unknown>) => {
+      const saleData = normalizeFirestoreValue(raw);
+      const saleFields = saleData as Record<string, unknown>;
+      const orderId = String(saleFields.id ?? event.params.saleId);
+      const productsRaw = saleFields.productsList;
+      if (!Array.isArray(productsRaw)) {
+        return [];
+      }
+      // One timestamp for the whole batch: the views rank batches by it, so
+      // per-row timestamps could split a batch across revisions.
+      const exportedAt = new Date().toISOString();
+      return productsRaw.map((item, index) => {
+        const product = typeof item === "object" && item !== null ?
+          item as Record<string, unknown> : {};
 
-    if (!Array.isArray(productsRaw) || productsRaw.length === 0) {
+        return {
+          id: randomUUID(),
+          storeId: event.params.storeId,
+          orderId,
+          salesId: orderId,
+          saleDocumentId: event.params.saleId,
+          productId: String(product.productId ?? ""),
+          title: product.title,
+          categoryName: product.categoryName,
+          color: product.color,
+          colorHex: product.colorHex,
+          size: product.size,
+          quantity: toNumberOrNull(product.quantity),
+          unitPrice: toNumberOrNull(product.unitPrice),
+          unitDiscounted: toNumberOrNull(product.unitDiscounted),
+          totalPrice: toNumberOrNull(product.totalPrice),
+          productIndex: index,
+          createdDate: saleFields.createdDate,
+          userId: saleFields.userId,
+          userName: saleFields.userName,
+          exportedAt,
+          exportEventId: event.id,
+          firestoreCollection: `stores/${event.params.storeId}/sales`,
+          payload: product,
+        } as Record<string, unknown>;
+      });
+    };
+
+    const rows = buildRows(after.data() as Record<string, unknown>);
+    const orderId = String(rows[0]?.orderId ?? event.params.saleId);
+    if (rows.length === 0) {
       logger.warn("Sale has no productsList to export", {
         orderId,
         saleDocumentId: event.params.saleId,
@@ -364,36 +436,14 @@ export const exportSaleProductsToBigQuery = onDocumentCreated(
       return;
     }
 
-    const rows = productsRaw.map((item, index) => {
-      const product = typeof item === "object" && item !== null ?
-        item as Record<string, unknown> : {};
-
-      return {
-        id: randomUUID(),
-        storeId: event.params.storeId,
-        orderId,
-        salesId: orderId,
-        saleDocumentId: event.params.saleId,
-        productId: String(product.productId ?? ""),
-        title: product.title,
-        categoryName: product.categoryName,
-        color: product.color,
-        colorHex: product.colorHex,
-        size: product.size,
-        quantity: toNumberOrNull(product.quantity),
-        unitPrice: toNumberOrNull(product.unitPrice),
-        unitDiscounted: toNumberOrNull(product.unitDiscounted),
-        totalPrice: toNumberOrNull(product.totalPrice),
-        productIndex: index,
-        createdDate: saleFields.createdDate,
-        userId: saleFields.userId,
-        userName: saleFields.userName,
-        exportedAt: new Date().toISOString(),
-        exportEventId: event.id,
-        firestoreCollection: `stores/${event.params.storeId}/sales`,
-        payload: product,
-      };
-    });
+    const before = event.data?.before;
+    if (before?.exists) {
+      const previous = buildRows(before.data() as Record<string, unknown>);
+      if (isSameExport(previous, rows)) {
+        // Nothing this table carries changed; skip the duplicate batch.
+        return;
+      }
+    }
 
     try {
       await insertRowsWithAutoCreate(
