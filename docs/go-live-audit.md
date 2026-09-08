@@ -17,7 +17,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 | Brands | `brands/{acme,buybuy}/` | Per-brand `brand.json` + assets; `tool/activate_brand.dart` materializes `brand.current.json`. Both share one Firebase project. |
 | Analytics | `analytics/looker_studio/` | 4 BigQuery views over `sales_analytics`; per-store Looker embed URL; 12-stage setup wizard. |
 
-**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 26 rules tests (`rules_tests/firestore.rules.test.mjs`, including `shipping` and the sealed `private/` docs); ~250 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
+**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 26 rules tests (`rules_tests/firestore.rules.test.mjs`, including `shipping` and the sealed `private/` docs); 251 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
 
 ## Go-live blockers
 
@@ -45,8 +45,13 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
 - ~~**Order rows overflow at mobile width**, hiding the *Pagar agora* retry~~ — fixed 2026-09-08: below 520 px the
   footer stacks savings / freight+total / pay button (`_kOrderFooterBreakpoint`). The retry is now reachable on a
   phone.
-- The shopper web layer still has **no widget tests** — these three regressions were only caught by eye in the
-  screenshot pass, and nothing would catch them again.
+- ~~The shopper web layer still has **no widget tests**~~ — first ones landed 2026-09-08:
+  `test/presentation/web/web_responsive_test.dart` pumps `WebScaffold`, `WebCartPage` and `WebPurchasesPage`
+  at 390×844 and 1440×900 and guards all three fixed breakpoints (each was verified to fail when its
+  breakpoint is reverted). Note the header fix needed a behavioural assertion, not an overflow one: its
+  search field is `Expanded`, so a bar that no longer fits squeezes the search box away and pushes the cart
+  button off-screen **without throwing**. The rest of the layer — home, product, favorites — is still
+  untested.
 - ~~**`USE_EMULATORS` does not wire the Functions emulator.**~~ — fixed 2026-09-08: both entrypoints now call
   `useFunctionsEmulator` (`lib/core/configs/firebase/functions_config.dart`), which redirects the *regional*
   `southamerica-east1` instance the app actually resolves. Checkout can now be exercised locally.
