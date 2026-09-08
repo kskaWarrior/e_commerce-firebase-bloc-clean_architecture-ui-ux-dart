@@ -61,8 +61,9 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
   the create-only ETL never re-ran. Looker therefore reported unvalidated revenue. Both triggers are now
   `onDocumentWritten` and re-export whenever the exported content changes (writes that change nothing the
   table carries are skipped, so the payment-preference pin alone does not duplicate a row). The tables are
-  now append-only revision history, and `reporting_views.sql` keeps only the newest revision per
-  `saleDocumentId`. **`analytics/looker_studio/reporting_views.sql` must be re-run in BigQuery** for the
+  now append-only revision history, and `reporting_views.sql` keeps only the newest revision per sale (keyed on
+  `firestoreCollection` + `id`, and on `salesId` for line items — the live tables have no `saleDocumentId`
+  column, exactly like `storeId`). **`analytics/looker_studio/reporting_views.sql` must be re-run in BigQuery** for the
   dashboards to pick this up — until then the views double-count re-exported sales.
 - **Sale prices are still client-authored at create.** Rules check only `userId` / `status` / `storeId`, so a
   crafted sale can carry any price. Nothing downstream trusts those numbers any more (the callable

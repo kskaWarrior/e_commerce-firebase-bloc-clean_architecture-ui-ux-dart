@@ -17,10 +17,14 @@
 --   sale is re-exported whenever its exported content changes — notably when
 --   `createPaymentPreference` replaces the client-authored money fields with
 --   server-recomputed ones. The tables are therefore append-only revision
---   history: several rows can share a `saleDocumentId`. Every view below keeps
---   only the newest revision per sale (`exportedAt` is an ISO-8601 UTC string,
---   so it sorts lexicographically; `exportEventId` identifies one export run
---   and breaks ties). Query the raw tables directly only if you want history.
+--   history: several rows can share one sale. Every view below keeps only the
+--   newest revision per sale (`exportedAt` is an ISO-8601 UTC string, so it
+--   sorts lexicographically; `exportEventId` identifies one export run and
+--   breaks ties). Query the raw tables directly only if you want history.
+--   The revision key is `firestoreCollection` + `id` on `sales` and `salesId`
+--   on `sales_products`, NOT `saleDocumentId` — like `storeId`, that column
+--   does not exist on the live tables (they predate it and inserts use
+--   ignoreUnknownValues, so it was silently dropped).
 --
 -- Why views:
 --   * Keep business logic (store_id derivation, date bucketing, age bands) in
@@ -78,9 +82,11 @@ WITH orders AS (
       ORDER BY createdDate
     ) AS customer_order_seq
   FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
-  -- Keep only the newest revision of each sale.
+  -- Keep only the newest revision of each sale. `saleDocumentId` would be
+  -- the natural key but the live tables predate it and ignoreUnknownValues
+  -- dropped it, so partition on the tenant path plus the order id.
   QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY saleDocumentId
+    PARTITION BY firestoreCollection, id
     ORDER BY exportedAt DESC, exportEventId DESC
   ) = 1
 )
@@ -139,12 +145,12 @@ FROM (
       *,
       -- Legacy rows (written before the batch-wide timestamp) can differ by a
       -- millisecond within one batch, so rank on the batch maximum.
-      MAX(exportedAt) OVER (PARTITION BY saleDocumentId, exportEventId)
+      MAX(exportedAt) OVER (PARTITION BY salesId, exportEventId)
         AS batch_exported_at
     FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales_products`
   )
   QUALIFY DENSE_RANK() OVER (
-    PARTITION BY saleDocumentId
+    PARTITION BY salesId
     ORDER BY batch_exported_at DESC, exportEventId DESC
   ) = 1
 ) sp
@@ -152,7 +158,7 @@ LEFT JOIN (
   SELECT *
   FROM `ecommerceapp-auth-db-cleana.sales_analytics.sales`
   QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY saleDocumentId
+    PARTITION BY firestoreCollection, id
     ORDER BY exportedAt DESC, exportEventId DESC
   ) = 1
 ) s
