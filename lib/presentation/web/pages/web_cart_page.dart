@@ -361,8 +361,15 @@ class _WebCartPageState extends State<WebCartPage> {
           subtitle: s.itemsReadyForCheckout(drafts.length),
         ),
         const SizedBox(height: 20),
-        const _CartHeaderRow(),
-        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) =>
+              constraints.maxWidth < _kCartTableBreakpoint
+                  ? const SizedBox.shrink()
+                  : const Padding(
+                      padding: EdgeInsets.only(bottom: 10),
+                      child: _CartHeaderRow(),
+                    ),
+        ),
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -451,6 +458,10 @@ class _WebCartPageState extends State<WebCartPage> {
 }
 
 // Shared column metrics so the header row and item rows stay aligned.
+/// Below this the four fixed columns no longer leave room for the product
+/// name, so the table collapses into stacked cards.
+const double _kCartTableBreakpoint = 560;
+
 const double _kCartColUnitPrice = 92;
 const double _kCartColQuantity = 76;
 const double _kCartColTotal = 104;
@@ -554,6 +565,123 @@ class _CartItemRow extends StatelessWidget {
         ? s.codeLabel(code.isEmpty ? '-' : code)
         : metaParts.join(' · ');
 
+    final thumbnail = Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: brand.primary.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child:
+          Icon(Icons.shopping_bag_outlined, color: brand.iconStrong, size: 22),
+    );
+
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          resolvedTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          meta,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 13, color: brand.muted),
+        ),
+      ],
+    );
+
+    final unitPriceText = Text(
+      '\$${unitDiscounted.toStringAsFixed(2)}',
+      textAlign: TextAlign.right,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: brand.textPrimary,
+      ),
+    );
+
+    final quantityText = Text(
+      quantity,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: brand.textPrimary,
+      ),
+    );
+
+    final totalText = Text(
+      '\$${draft.totalPrice.toStringAsFixed(2)}',
+      textAlign: TextAlign.right,
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: brand.iconStrong,
+      ),
+    );
+
+    final removeButton = IconButton(
+      tooltip: s.remove,
+      onPressed: onRemove,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      icon: Icon(Icons.delete_outline, size: 21, color: brand.muted),
+      hoverColor: brand.danger.withOpacity(0.08),
+    );
+
+    // Wide: one aligned table row. Narrow: the product on top, then a
+    // "unit x qty" / total line, so nothing has to share a line it cannot
+    // fit on.
+    final wideRow = Row(
+      children: [
+        thumbnail,
+        const SizedBox(width: 16),
+        Expanded(child: titleBlock),
+        SizedBox(width: _kCartColUnitPrice, child: unitPriceText),
+        SizedBox(width: _kCartColQuantity, child: quantityText),
+        SizedBox(width: _kCartColTotal, child: totalText),
+        SizedBox(width: _kCartColAction, child: Center(child: removeButton)),
+      ],
+    );
+
+    final stacked = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            thumbnail,
+            const SizedBox(width: 12),
+            Expanded(child: titleBlock),
+            removeButton,
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                s.unitTimesQuantity(
+                  '\$${unitDiscounted.toStringAsFixed(2)}',
+                  quantity,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: brand.muted),
+              ),
+            ),
+            const SizedBox(width: 12),
+            totalText,
+          ],
+        ),
+      ],
+    );
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -562,92 +690,11 @@ class _CartItemRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
               horizontal: _kCartRowHPadding, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: brand.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.shopping_bag_outlined,
-                    color: brand.iconStrong, size: 22),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      resolvedTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      meta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: brand.muted),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: _kCartColUnitPrice,
-                child: Text(
-                  '\$${unitDiscounted.toStringAsFixed(2)}',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: brand.textPrimary,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: _kCartColQuantity,
-                child: Text(
-                  quantity,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: brand.textPrimary,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: _kCartColTotal,
-                child: Text(
-                  '\$${draft.totalPrice.toStringAsFixed(2)}',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: brand.iconStrong,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: _kCartColAction,
-                child: Center(
-                  child: IconButton(
-                    tooltip: s.remove,
-                    onPressed: onRemove,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                        minWidth: 36, minHeight: 36),
-                    icon: Icon(Icons.delete_outline,
-                        size: 21, color: brand.muted),
-                    hoverColor: brand.danger.withOpacity(0.08),
-                  ),
-                ),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) =>
+                constraints.maxWidth < _kCartTableBreakpoint
+                    ? stacked
+                    : wideRow,
           ),
         ),
       ),

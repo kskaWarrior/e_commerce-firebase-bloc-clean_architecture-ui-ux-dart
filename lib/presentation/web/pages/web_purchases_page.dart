@@ -349,46 +349,86 @@ class _OrderCardState extends State<_OrderCard> {
         Divider(color: brand.iconStrong.withOpacity(0.07), height: 1),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 20, 16),
-          child: Row(
-            children: [
-              if (savings > 0)
-                Text(
-                  s.youSaved('\$${savings.toStringAsFixed(2)}'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: brand.successStrong,
-                  ),
-                ),
-              const Spacer(),
-              Text(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final savingsText = savings > 0
+                  ? Text(
+                      s.youSaved('\$${savings.toStringAsFixed(2)}'),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: brand.successStrong,
+                      ),
+                    )
+                  : null;
+              final freightText = Text(
                 s.freightLabel('\$${sale.freight.toStringAsFixed(2)}'),
                 style: TextStyle(fontSize: 13, color: brand.muted),
-              ),
-              const SizedBox(width: 18),
-              Text(
+              );
+              final totalText = Text(
                 s.totalLabel('\$${sale.totalPrice.toStringAsFixed(2)}'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: brand.iconStrong,
                 ),
-              ),
-              if (_canPayNow) ...[
-                const SizedBox(width: 18),
-                FilledButton.icon(
-                  onPressed: _paying ? null : _payNow,
-                  icon: _paying
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.payment, size: 16),
-                  label: Text(s.payNow),
-                ),
-              ],
-            ],
+              );
+              final payButton = _canPayNow
+                  ? FilledButton.icon(
+                      onPressed: _paying ? null : _payNow,
+                      icon: _paying
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.payment, size: 16),
+                      label: Text(s.payNow),
+                    )
+                  : null;
+
+              // Phone width cannot hold savings, freight, total and the
+              // pay button on one line; stack them so the retry button
+              // stays reachable instead of overflowing off the card.
+              if (constraints.maxWidth < _kOrderFooterBreakpoint) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (savingsText != null) ...[
+                      savingsText,
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(child: freightText),
+                        const SizedBox(width: 12),
+                        totalText,
+                      ],
+                    ),
+                    if (payButton != null) ...[
+                      const SizedBox(height: 12),
+                      payButton,
+                    ],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  if (savingsText != null) savingsText,
+                  const Spacer(),
+                  freightText,
+                  const SizedBox(width: 18),
+                  totalText,
+                  if (payButton != null) ...[
+                    const SizedBox(width: 18),
+                    payButton,
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -445,6 +485,10 @@ class _OrderCardState extends State<_OrderCard> {
     return 0;
   }
 }
+
+/// Below this the order footer stacks instead of laying its figures out
+/// on a single line.
+const double _kOrderFooterBreakpoint = 520;
 
 class _WebStatusChip extends StatelessWidget {
   const _WebStatusChip({required this.status});

@@ -46,6 +46,12 @@ class WebScaffold extends StatelessWidget {
   static const double headerHeight = mainBarHeight + categoryStripHeight;
   static const double contentMaxWidth = 1200;
 
+  /// Below this the main bar cannot fit the logo, the search field and the
+  /// full icon cluster side by side, so the header folds the secondary
+  /// controls into the account menu. Measured against the bar's inner width
+  /// (i.e. inside [WebMaxWidth]'s padding).
+  static const double compactBarBreakpoint = 660;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,181 +173,70 @@ class _WebHeaderState extends State<_WebHeader> {
                 ),
               ),
               child: WebMaxWidth(
-                child: Row(
-                  children: [
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () => _goHome(context),
-                        child: Image.asset(
-                          AppImages.brandWordmark,
-                          height: 32,
-                          errorBuilder: (_, __, ___) => Text(
-                            BrandConfig.appName,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
-                              color: brand.iconStrong,
-                            ),
-                          ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Phone-width browsers cannot fit the logo, the search
+                    // field and the whole icon cluster on one line, so the
+                    // language picker, favourites and orders fold into the
+                    // account menu instead of being pushed off the edge.
+                    final compact = constraints.maxWidth <
+                        WebScaffold.compactBarBreakpoint;
+
+                    return Row(
+                      children: [
+                        _Wordmark(
+                          height: compact ? 26 : 32,
+                          maxWidth: compact ? 128 : 220,
+                          onTap: () => _goHome(context),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 28),
-                    // ------------------------------- prominent search bar
-                    Expanded(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 620),
-                        child: SizedBox(
-                          height: 44,
-                          child: TextField(
+                        SizedBox(width: compact ? 10 : 28),
+                        Expanded(
+                          child: _HeaderSearchField(
                             controller: _searchController,
-                            onSubmitted: (_) => _submitSearch(),
-                            textInputAction: TextInputAction.search,
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: s.searchProductsHint,
-                              hintStyle: TextStyle(
-                                  color: brand.muted, fontSize: 14),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16),
-                              filled: true,
-                              fillColor:
-                                  brand.background.withOpacity(0.85),
-                              suffixIcon: Padding(
-                                padding: const EdgeInsets.all(5),
-                                child: Material(
-                                  color: brand.primary,
-                                  borderRadius: BorderRadius.circular(9),
-                                  child: InkWell(
-                                    onTap: _submitSearch,
-                                    borderRadius:
-                                        BorderRadius.circular(9),
-                                    child: SizedBox(
-                                      width: 46,
-                                      child: Icon(Icons.search,
-                                          size: 21,
-                                          color: brand.onPrimary),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color:
-                                      brand.iconStrong.withOpacity(0.14),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                    color: brand.iconStrong, width: 1.4),
-                              ),
-                            ),
+                            onSubmit: _submitSearch,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                    // ------------------------------------- right cluster
-                    LanguageMenuButton(
-                        iconColor: brand.iconStrong, showLabel: true),
-                    const SizedBox(width: 8),
-                    _HeaderIconButton(
-                      icon: Icons.favorite_border,
-                      tooltip: s.favorites,
-                      active: widget.section == WebSection.favorites,
-                      onTap: widget.section == WebSection.favorites
-                          ? () {}
-                          : () => AppNavigator.push(
-                              context, const FavoritesPage()),
-                    ),
-                    _HeaderIconButton(
-                      icon: Icons.receipt_long_outlined,
-                      tooltip: s.myOrders,
-                      active: widget.section == WebSection.orders,
-                      onTap: widget.section == WebSection.orders
-                          ? () {}
-                          : () => AppNavigator.push(
-                              context, const MyPurchasesPage()),
-                    ),
-                    _CartButton(
-                      active: widget.section == WebSection.cart,
-                      onTap: widget.section == WebSection.cart
-                          ? () {}
-                          : () =>
-                              AppNavigator.push(context, const CartPage()),
-                    ),
-                    const SizedBox(width: 10),
-                    PopupMenuButton<String>(
-                      tooltip: user?.email ?? S.of(context).account,
-                      offset: const Offset(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      color: brand.surfaceBright,
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'profile':
-                            AppNavigator.push(
-                                context, const MyProfilePage());
-                          case 'orders':
-                            AppNavigator.push(
-                                context, const MyPurchasesPage());
-                          case 'signout':
-                            _signOut(context);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem<String>(
-                          enabled: false,
-                          child: Text(
-                            user?.email ?? S.of(context).signedInUser,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: brand.muted,
-                            ),
+                        SizedBox(width: compact ? 6 : 18),
+                        if (!compact) ...[
+                          LanguageMenuButton(
+                              iconColor: brand.iconStrong, showLabel: true),
+                          const SizedBox(width: 8),
+                          _HeaderIconButton(
+                            icon: Icons.favorite_border,
+                            tooltip: s.favorites,
+                            active: widget.section == WebSection.favorites,
+                            onTap: widget.section == WebSection.favorites
+                                ? () {}
+                                : () => AppNavigator.push(
+                                    context, const FavoritesPage()),
                           ),
+                          _HeaderIconButton(
+                            icon: Icons.receipt_long_outlined,
+                            tooltip: s.myOrders,
+                            active: widget.section == WebSection.orders,
+                            onTap: widget.section == WebSection.orders
+                                ? () {}
+                                : () => AppNavigator.push(
+                                    context, const MyPurchasesPage()),
+                          ),
+                        ],
+                        _CartButton(
+                          active: widget.section == WebSection.cart,
+                          onTap: widget.section == WebSection.cart
+                              ? () {}
+                              : () =>
+                                  AppNavigator.push(context, const CartPage()),
                         ),
-                        PopupMenuItem<String>(
-                          value: 'profile',
-                          child: _MenuRow(
-                              icon: Icons.account_circle_outlined,
-                              label: s.myProfile),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'orders',
-                          child: _MenuRow(
-                              icon: Icons.shopping_bag_outlined,
-                              label: s.myPurchases),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<String>(
-                          value: 'signout',
-                          child:
-                              _MenuRow(icon: Icons.logout, label: s.signOut),
+                        SizedBox(width: compact ? 2 : 10),
+                        _HeaderAccountMenu(
+                          user: user,
+                          showFavorites: compact,
+                          showLanguage: compact,
+                          onSignOut: () => _signOut(context),
                         ),
                       ],
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: brand.iconStrong,
-                        child: Text(
-                          _initial(user),
-                          style: TextStyle(
-                            color: brand.textInverse,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -352,12 +247,219 @@ class _WebHeaderState extends State<_WebHeader> {
       ],
     );
   }
+}
 
-  String _initial(User? user) {
+/// Brand wordmark that returns to the storefront root, falling back to the
+/// brand name when the asset is missing. Width-capped so a wide wordmark
+/// cannot squeeze the search field on a narrow bar.
+class _Wordmark extends StatelessWidget {
+  const _Wordmark({
+    required this.height,
+    required this.maxWidth,
+    required this.onTap,
+  });
+
+  final double height;
+  final double maxWidth;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Image.asset(
+            AppImages.brandWordmark,
+            height: height,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Text(
+              BrandConfig.appName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: brand.iconStrong,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The header's product search box.
+class _HeaderSearchField extends StatelessWidget {
+  const _HeaderSearchField({
+    required this.controller,
+    required this.onSubmit,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 620),
+      child: SizedBox(
+        height: 44,
+        child: TextField(
+          controller: controller,
+          onSubmitted: (_) => onSubmit(),
+          textInputAction: TextInputAction.search,
+          style: const TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w600,
+          ),
+          decoration: InputDecoration(
+            hintText: s.searchProductsHint,
+            hintStyle: TextStyle(color: brand.muted, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            filled: true,
+            fillColor: brand.background.withOpacity(0.85),
+            suffixIcon: Padding(
+              padding: const EdgeInsets.all(5),
+              child: Material(
+                color: brand.primary,
+                borderRadius: BorderRadius.circular(9),
+                child: InkWell(
+                  onTap: onSubmit,
+                  borderRadius: BorderRadius.circular(9),
+                  child: SizedBox(
+                    width: 46,
+                    child:
+                        Icon(Icons.search, size: 21, color: brand.onPrimary),
+                  ),
+                ),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: brand.iconStrong.withOpacity(0.14),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: brand.iconStrong, width: 1.4),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Account avatar and its menu. On a compact bar it also carries the
+/// controls the bar dropped (language, favourites) so they stay reachable.
+class _HeaderAccountMenu extends StatelessWidget {
+  const _HeaderAccountMenu({
+    required this.user,
+    required this.showFavorites,
+    required this.showLanguage,
+    required this.onSignOut,
+  });
+
+  final User? user;
+  final bool showFavorites;
+  final bool showLanguage;
+  final VoidCallback onSignOut;
+
+  static String initialFor(User? user) {
     final source = (user?.displayName ?? '').trim().isNotEmpty
         ? user!.displayName!.trim()
         : (user?.email ?? '').trim();
     return source.isEmpty ? '?' : source[0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.brand;
+    final s = S.of(context);
+
+    return PopupMenuButton<String>(
+      tooltip: user?.email ?? s.account,
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      color: brand.surfaceBright,
+      onSelected: (value) {
+        switch (value) {
+          case 'profile':
+            AppNavigator.push(context, const MyProfilePage());
+          case 'favorites':
+            AppNavigator.push(context, const FavoritesPage());
+          case 'orders':
+            AppNavigator.push(context, const MyPurchasesPage());
+          case 'language':
+            showLanguagePicker(context);
+          case 'signout':
+            onSignOut();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Text(
+            user?.email ?? s.signedInUser,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: brand.muted,
+            ),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'profile',
+          child: _MenuRow(
+              icon: Icons.account_circle_outlined, label: s.myProfile),
+        ),
+        if (showFavorites)
+          PopupMenuItem<String>(
+            value: 'favorites',
+            child: _MenuRow(icon: Icons.favorite_border, label: s.favorites),
+          ),
+        PopupMenuItem<String>(
+          value: 'orders',
+          child: _MenuRow(
+              icon: Icons.shopping_bag_outlined, label: s.myPurchases),
+        ),
+        if (showLanguage)
+          PopupMenuItem<String>(
+            value: 'language',
+            child: _MenuRow(icon: Icons.language, label: s.language),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'signout',
+          child: _MenuRow(icon: Icons.logout, label: s.signOut),
+        ),
+      ],
+      child: CircleAvatar(
+        radius: 18,
+        backgroundColor: brand.iconStrong,
+        child: Text(
+          initialFor(user),
+          style: TextStyle(
+            color: brand.textInverse,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+      ),
+    );
   }
 }
 

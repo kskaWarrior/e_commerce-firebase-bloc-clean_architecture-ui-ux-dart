@@ -162,6 +162,9 @@ abstract class AppStrings {
   String get totalSaved;
   String get cartSummary;
   String get unitPrice;
+
+  /// Compact cart line, e.g. "$135.90 x 2".
+  String unitTimesQuantity(String unitPrice, String quantity);
   String get unitDiscounted;
   String get discounted;
 
@@ -714,6 +717,10 @@ class AppStringsEn extends AppStrings {
   String get cartSummary => 'Cart summary';
   @override
   String get unitPrice => 'Unit price';
+
+  @override
+  String unitTimesQuantity(String unitPrice, String quantity) =>
+      '$unitPrice x $quantity';
   @override
   String get unitDiscounted => 'Unit discounted';
   @override
@@ -1522,6 +1529,10 @@ class AppStringsPtBr extends AppStrings {
   String get cartSummary => 'Resumo do carrinho';
   @override
   String get unitPrice => 'Preço unitário';
+
+  @override
+  String unitTimesQuantity(String unitPrice, String quantity) =>
+      '$unitPrice x $quantity';
   @override
   String get unitDiscounted => 'Unitário com desconto';
   @override
