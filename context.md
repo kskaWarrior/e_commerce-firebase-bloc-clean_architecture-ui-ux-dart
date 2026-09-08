@@ -13,7 +13,7 @@ White-label multi-tenant e-commerce SaaS. Flutter (Cubits, clean architecture) +
 - **Payments/freight:** per-store MP access token in `stores/{id}/private/payment` (rules seal `private/*` to functions-only); freight from the store doc's `shipping` map (CEP-range zones, free-shipping threshold, pickup toggle — admin settings UI) computed client-side as estimate and recomputed in `createPaymentPreference`; structured `addressData` on user profile (ViaCEP autofill) copied onto orders with `deliveryMethod`.
 - **Analytics:** BigQuery views in `analytics/looker_studio/reporting_views.sql`; per-store Looker Studio embed URL stored in the store doc's `branding.lookerEmbedUrl` (rules workaround — owner may only update `branding`/`name`).
 - **i18n:** hand-rolled en/pt-BR `lib/core/i18n/app_strings.dart` (no ARB/gen-l10n).
-- **CI:** Codemagic only (`codemagic.yaml`): analyze → tests → Firebase Test Lab → App Distribution. No backend CI; rules tests (`rules_tests/firestore.rules.test.mjs`) run manually.
+- **CI:** Codemagic (`codemagic.yaml`) for the app: analyze → tests → Firebase Test Lab → App Distribution. GitHub Actions for the backend: `backend.yml` lints/builds `functions/` and runs the rules tests against the Firestore emulator on PRs and master pushes; `backend-deploy.yml` deploys rules/storage/functions but is opt-in (needs `FIREBASE_SERVICE_ACCOUNT`, and `BACKEND_AUTO_DEPLOY=true` for the push trigger). BigQuery views are still applied by hand.
 
 ## Current state / known gaps
 

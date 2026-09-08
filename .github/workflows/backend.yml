@@ -1,0 +1,95 @@
+name: Backend
+
+# Verification for everything Codemagic does not cover: the Cloud Functions
+# and the Firestore/Storage security rules. Both were hand-checked until now,
+# and the rules tests in particular were easy to forget (CLAUDE.md requires
+# them on every rules change, and nothing enforced it).
+#
+# Deployment lives in backend-deploy.yml and is deliberately separate.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - functions/**
+      - rules_tests/**
+      - firestore.rules
+      - storage.rules
+      - firestore.indexes.json
+      - firebase.json
+      - .github/workflows/backend.yml
+  pull_request:
+    paths:
+      - functions/**
+      - rules_tests/**
+      - firestore.rules
+      - storage.rules
+      - firestore.indexes.json
+      - firebase.json
+      - .github/workflows/backend.yml
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  functions:
+    name: Functions lint + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches functions/package.json engines.node.
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install
+        working-directory: functions
+        run: npm ci
+
+      - name: Lint
+        working-directory: functions
+        run: npm run lint
+
+      - name: Build
+        working-directory: functions
+        run: npm run build
+
+  rules:
+    name: Firestore rules tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: rules_tests/package-lock.json
+
+      # The Firestore emulator is a JVM process.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install test deps
+        working-directory: rules_tests
+        run: npm ci
+
+      - name: Install firebase-tools
+        run: npm install --global firebase-tools@15
+
+      # emulators:exec starts the Firestore emulator, runs the suite against
+      # it and tears it down, exiting non-zero if the suite fails. No
+      # credentials are involved: the emulator needs only a project id.
+      - name: Run rules tests
+        run: >
+          firebase emulators:exec
+          --only firestore
+          --project demo-rules-test
+          "npm --prefix rules_tests test"

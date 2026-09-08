@@ -4,7 +4,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 **Keep this document current:** update it whenever a gap below is fixed, a new gap is found, or the architecture changes.
 
-**Verdict: not ready for production, but the payment blocker is now code-complete.** The architecture is solid — clean layering, well-executed tenant isolation, good rules. The Mercado Pago Checkout Pro stack (CEP-zone freight, server-validated totals, webhook status updates) landed 2026-08-18 but is **not deployed**. The analytics embed still leaks revenue across tenants, and there is still zero backend CI.
+**Verdict: not ready for production, but the payment blocker is now code-complete.** The architecture is solid — clean layering, well-executed tenant isolation, good rules. The Mercado Pago Checkout Pro stack (CEP-zone freight, server-validated totals, webhook status updates) landed 2026-08-18 but is **not deployed**. The analytics embed still leaks revenue across tenants; backend CI now verifies functions and rules on every PR, but production deploys are still a deliberate manual step.
 
 ## How the system is put together
 
@@ -24,7 +24,15 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 1. **Payment stack implemented but not live.** Mercado Pago Checkout Pro landed 2026-08-18 (fake card form removed; checkout registers a pending sale → `createPaymentPreference` → opens init_point; `mpWebhook` flips pending→paid/cancelled). Remaining to go live: deploy rules + functions, per-store MP tokens via the admin Payments section, sandbox E2E. Freight is real: CEP-range zones + free-shipping threshold + pickup from the store doc's `shipping` map.
 2. **Prices now server-validated at payment time; creation still open.** `createPaymentPreference` recomputes subtotal from live product docs and freight from the shipping config, overwriting the sale totals before charging. The initially client-written sale doc and `sales_products` line items still have no rules-level field validation, and rules tests for the new `shipping`/`private` rules are missing (CLAUDE.md directive).
 3. **Cross-tenant analytics leak.** Looker embed filtered only by a `storeId` URL parameter. Needs BigQuery RLS / signed embedding; `analytics/looker_studio/add_store_id_column.sql` is written but unapplied.
-4. **No backend CI/CD.** `.github/workflows/` empty; rules tests never run in CI; functions/rules/indexes/views deployed by hand.
+4. **Backend CI/CD, partly closed.** `.github/workflows/backend.yml` (added 2026-09-08) lints and builds the
+   functions and runs the 26 rules tests against the Firestore emulator on every PR and master push that
+   touches them — the CLAUDE.md "run the rules tests" directive is now enforced rather than remembered.
+   `backend-deploy.yml` can deploy rules/storage/functions but is **opt-in**: it needs a
+   `FIREBASE_SERVICE_ACCOUNT` secret, and the automatic push trigger additionally needs the
+   `BACKEND_AUTO_DEPLOY` repository variable set to `true`. It is left off on purpose — these functions move
+   money, there is no staging project, and a rules deploy hits every tenant at once. Run it by hand from the
+   Actions tab until the sandbox E2E has passed. The BigQuery views are still applied by hand (different
+   product, different credentials).
 
 ## High-priority before real customers
 

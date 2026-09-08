@@ -1,0 +1,99 @@
+name: Backend deploy
+
+# Deploys the Firestore/Storage rules, the indexes and the Cloud Functions to
+# PRODUCTION.
+#
+# This is deliberately opt-in rather than automatic on merge to master:
+# these functions move money (createPaymentPreference, mpWebhook), there is
+# no staging project, and a rules deploy takes effect for every tenant the
+# moment it lands. Two things must both be true before it will run:
+#
+#   1. secrets.FIREBASE_SERVICE_ACCOUNT — a GCP service-account key JSON with
+#      the Firebase Admin / Cloud Functions Developer roles on
+#      ecommerceapp-auth-db-cleana.
+#   2. vars.BACKEND_AUTO_DEPLOY == 'true' — repository variable, only
+#      consulted for the automatic push trigger.
+#
+# Without the variable the workflow still exists and can be run by hand from
+# the Actions tab (Run workflow), which is the recommended way to use it
+# until the payment stack has been through a sandbox end-to-end.
+#
+# NOT deployed here: the BigQuery reporting views
+# (analytics/looker_studio/reporting_views.sql). They live in a different
+# product with different credentials and are still applied by hand — see
+# docs/go-live-audit.md.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - functions/**
+      - firestore.rules
+      - storage.rules
+      - firestore.indexes.json
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: What to deploy
+        required: true
+        default: firestore:rules,storage,functions
+        type: choice
+        options:
+          - firestore:rules,storage,functions
+          - firestore:rules,storage
+          - functions
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    # A push only deploys once the repository has explicitly opted in;
+    # a manual run always proceeds.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      vars.BACKEND_AUTO_DEPLOY == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install function deps
+        working-directory: functions
+        run: npm ci
+
+      # Fail before touching production if the code does not even build.
+      - name: Build
+        working-directory: functions
+        run: npm run build
+
+      - name: Install firebase-tools
+        run: npm install --global firebase-tools@15
+
+      - name: Authenticate
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT is not set; refusing to deploy."
+            exit 1
+          fi
+          printf '%s' "$KEY" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Deploy
+        env:
+          TARGETS: ${{ inputs.targets || 'firestore:rules,storage,functions' }}
+        run: >
+          firebase deploy
+          --only "$TARGETS"
+          --project ecommerceapp-auth-db-cleana
+          --non-interactive
+          --force
