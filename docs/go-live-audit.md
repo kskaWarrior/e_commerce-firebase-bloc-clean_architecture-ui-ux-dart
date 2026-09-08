@@ -17,7 +17,7 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 | Brands | `brands/{acme,buybuy}/` | Per-brand `brand.json` + assets; `tool/activate_brand.dart` materializes `brand.current.json`. Both share one Firebase project. |
 | Analytics | `analytics/looker_studio/` | 4 BigQuery views over `sales_analytics`; per-store Looker embed URL; 12-stage setup wizard. |
 
-**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 26 rules tests (`rules_tests/firestore.rules.test.mjs`, including `shipping` and the sealed `private/` docs); 251 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
+**Genuinely strong:** tenant isolation consistent end-to-end (paths + claims + default-deny rules sealing legacy roots); 26 rules tests (`rules_tests/firestore.rules.test.mjs`, including `shipping` and the sealed `private/` docs); 255 Flutter test cases; Codemagic CI (analyze → tests → Test Lab → App Distribution); no secrets tracked in git.
 
 ## Go-live blockers
 
@@ -78,8 +78,11 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
   recomputes before charging; analytics now follow the callable), but the write itself is still unvalidated.
 - **`functions/` has no test harness at all** — no runner, no tests. `isSameExport` and the freight/subtotal
   maths in `payments.ts` are pure functions and would be cheap to cover once one exists.
-- **Super-admin store selection is a free-text store-id field,** not a list — even though the rules already allow
-  `list` on `stores` for a `super` claim. The platform owner must know the tenant id by heart.
+- ~~**Super-admin store selection is a free-text store-id field**~~ — fixed 2026-09-08: `SelectStorePage` now
+  lists the real stores via a new `ListStoresUseCase` (the rules already allowed `list` for `super`), with a
+  search box past six stores and non-active stores flagged. The free-text field survives as a fallback, and
+  is what you get automatically if the listing fails — e.g. before the `super` claim has propagated.
+  Covered by `test/presentation/admin/select_store_page_test.dart`.
 - ~~**`seedCatalog.ts` never creates the `stores/{storeId}` doc**~~ — fixed 2026-09-08: it now creates the
   store document (`name`/`status`/`plan`/`branding`/`shipping` defaults) when absent, and leaves an existing
   one untouched so re-seeding cannot clobber an owner's edits.

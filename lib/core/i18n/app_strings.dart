@@ -213,6 +213,10 @@ abstract class AppStrings {
   String get signedInAsPlatformOwner;
   String get storeIdLabel;
   String get storeIdHint;
+  String get storesEmpty;
+  String get storesLoadFailed;
+  String get enterStoreIdInstead;
+  String get searchStores;
   String adminOrdersSubtitle(int count);
   String get adminOrdersEmpty;
   String get adminProductsSubtitle;
@@ -812,6 +816,14 @@ class AppStringsEn extends AppStrings {
   String get storeIdLabel => 'Store ID';
   @override
   String get storeIdHint => 'e.g. buybuy';
+  @override
+  String get storesEmpty => 'No stores yet.';
+  @override
+  String get storesLoadFailed => 'Could not load the store list.';
+  @override
+  String get enterStoreIdInstead => 'Enter a store ID instead';
+  @override
+  String get searchStores => 'Search stores';
   @override
   String adminOrdersSubtitle(int count) => '$count order(s) in your store';
   @override
@@ -1629,6 +1641,14 @@ class AppStringsPtBr extends AppStrings {
   String get storeIdLabel => 'ID da loja';
   @override
   String get storeIdHint => 'ex.: buybuy';
+  @override
+  String get storesEmpty => 'Nenhuma loja ainda.';
+  @override
+  String get storesLoadFailed => 'Não foi possível carregar a lista de lojas.';
+  @override
+  String get enterStoreIdInstead => 'Informar um ID de loja';
+  @override
+  String get searchStores => 'Buscar lojas';
   @override
   String adminOrdersSubtitle(int count) => '$count pedido(s) na sua loja';
   @override
