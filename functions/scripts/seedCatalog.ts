@@ -2,6 +2,8 @@
  * Seeds a store's catalog (categories + products) from a manifest and local
  * image files: uploads each image to Cloud Storage and writes the Firestore
  * documents under stores/{storeId}/categories and stores/{storeId}/products.
+ * Creates the stores/{storeId} document too when it does not exist yet, so a
+ * freshly seeded tenant is renderable; an existing one is never overwritten.
  *
  * The manifest (scripts/catalog.seed.json) maps the source image files to
  * catalog entries; edit it to change titles, prices, colors, etc.
@@ -150,6 +152,27 @@ async function main(): Promise<void> {
   console.log(`  assets:    ${assetsDir}`);
 
   const storeRef = db.doc(`stores/${storeId}`);
+
+  // The store document itself. Seeding only its subcollections leaves a
+  // tenant with a catalog but no name, branding or shipping config, so the
+  // storefront falls back to defaults until someone saves the settings form.
+  // Never overwrite an existing store: an owner may have edited it.
+  const storeSnapshot = await storeRef.get();
+  if (storeSnapshot.exists) {
+    console.log(`  store    ${storeId} -> already exists, left untouched`);
+  } else {
+    await storeRef.set({
+      id: storeId,
+      name: storeId,
+      status: "active",
+      plan: "free",
+      // Claimed by setStoreOwner; the storefront does not need it to render.
+      ownerUid: "",
+      branding: {},
+      shipping: {},
+    });
+    console.log(`  store    ${storeId} -> created`);
+  }
 
   // Categories.
   for (const category of manifest.categories) {

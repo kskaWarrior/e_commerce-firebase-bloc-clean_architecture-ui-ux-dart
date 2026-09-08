@@ -7,6 +7,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/prod
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/products/bloc/admin_products_cubit.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/presentation/admin/theme/admin_theme.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/service_locator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -133,6 +134,56 @@ class AdminProductsPage extends StatelessWidget {
   }
 }
 
+/// A product thumbnail.
+///
+/// On web this deliberately uses [Image.network] rather than
+/// [CachedNetworkImage], which is what the edit form has always used and why
+/// the form showed these images while the list did not. CachedNetworkImage
+/// fetches through an HTTP client, so on web the request is a cross-origin
+/// XHR and Cloud Storage rejects it unless the bucket sends CORS headers;
+/// Image.network goes through the browser's own image loader, which is not
+/// subject to that. Native keeps CachedNetworkImage for its disk cache.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.url});
+
+  final String? url;
+
+  static const double _size = 52;
+
+  Widget _placeholder(IconData icon) => Container(
+        width: _size,
+        height: _size,
+        color: AdminColors.surfaceTintStrong,
+        child: Icon(icon, color: AdminColors.textSecondary, size: 22),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final source = url;
+    if (source == null) {
+      return _placeholder(Icons.image_outlined);
+    }
+
+    if (kIsWeb) {
+      return Image.network(
+        source,
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(Icons.broken_image_outlined),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: source,
+      width: _size,
+      height: _size,
+      fit: BoxFit.cover,
+      errorWidget: (_, __, ___) => _placeholder(Icons.broken_image_outlined),
+    );
+  }
+}
+
 class _ProductRow extends StatefulWidget {
   const _ProductRow({
     required this.image,
@@ -190,27 +241,7 @@ class _ProductRowState extends State<_ProductRow> {
                           ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: widget.image == null
-                        ? Container(
-                            width: 52,
-                            height: 52,
-                            color: AdminColors.surfaceTintStrong,
-                            child: const Icon(Icons.image_outlined,
-                                color: AdminColors.textSecondary, size: 22),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: widget.image!,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Container(
-                              width: 52,
-                              height: 52,
-                              color: AdminColors.surfaceTintStrong,
-                              child: const Icon(Icons.broken_image_outlined,
-                                  color: AdminColors.textSecondary, size: 22),
-                            ),
-                          ),
+                    child: _Thumbnail(url: widget.image),
                   ),
                 ),
               ),

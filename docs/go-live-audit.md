@@ -80,9 +80,16 @@ Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844
   maths in `payments.ts` are pure functions and would be cheap to cover once one exists.
 - **Super-admin store selection is a free-text store-id field,** not a list — even though the rules already allow
   `list` on `stores` for a `super` claim. The platform owner must know the tenant id by heart.
-- **`seedCatalog.ts` never creates the `stores/{storeId}` doc**, only its subcollections; a freshly seeded store has
-  no name/branding/shipping until someone saves the settings form.
-- **Admin product list renders no thumbnails** although the edit form loads the same images.
+- ~~**`seedCatalog.ts` never creates the `stores/{storeId}` doc**~~ — fixed 2026-09-08: it now creates the
+  store document (`name`/`status`/`plan`/`branding`/`shipping` defaults) when absent, and leaves an existing
+  one untouched so re-seeding cannot clobber an owner's edits.
+- ~~**Admin product list renders no thumbnails**~~ — fixed 2026-09-08. The cause was the widget, not the
+  URLs: the list used `CachedNetworkImage`, which fetches through an HTTP client, so on web the request is a
+  cross-origin XHR that Cloud Storage rejects without CORS headers on the bucket. The edit form always
+  worked because it uses `Image.network`, which goes through the browser's image loader. The list now does
+  the same on web and keeps `CachedNetworkImage` (and its disk cache) on native. **The same trap applies to
+  every other `CachedNetworkImage` on web** — the storefront uses it too; setting CORS on the bucket is the
+  real fix.
 
 ## Worth fixing, not blocking
 
