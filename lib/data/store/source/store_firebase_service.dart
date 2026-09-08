@@ -4,6 +4,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/core/tenant
 
 abstract class StoreFirebaseService {
   Future<Either> getStore();
+  Future<Either> listStores();
   Future<Either> updateStoreBranding(
       Map<String, dynamic> branding, String name);
   Future<Either> updateStoreShipping(Map<String, dynamic> shipping);
@@ -25,6 +26,21 @@ class StoreFirebaseServiceImpl implements StoreFirebaseService {
       return Right(<String, dynamic>{...data, 'id': doc.id});
     } catch (e) {
       return Left('Failed to load store: $e');
+    }
+  }
+
+  /// Every store on the platform. Rules restrict this to a `super` claim,
+  /// so an owner calling it gets permission-denied rather than another
+  /// tenant's data.
+  @override
+  Future<Either> listStores() async {
+    try {
+      final snapshot = await _tenant.stores.orderBy('name').get();
+      return Right(snapshot.docs
+          .map((doc) => <String, dynamic>{...doc.data(), 'id': doc.id})
+          .toList());
+    } catch (e) {
+      return Left('Failed to load stores: $e');
     }
   }
 

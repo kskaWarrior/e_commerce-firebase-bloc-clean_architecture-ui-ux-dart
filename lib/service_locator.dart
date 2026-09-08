@@ -57,6 +57,7 @@ import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/store/
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/data/store/source/store_firebase_service.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/repository/store_repository.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/get_store.dart';
+import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/list_stores.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_branding.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/store/usecases/update_store_shipping.dart';
 import 'package:e_commerce_app_with_firebase_bloc_clean_architecture/domain/products/usecases/get_all_products_usecase.dart';
@@ -160,6 +161,7 @@ Future<void> init() async {
 
   //admin usecases
   sl.registerLazySingleton<GetStoreUseCase>(() => GetStoreUseCase());
+  sl.registerLazySingleton<ListStoresUseCase>(() => ListStoresUseCase());
   sl.registerLazySingleton<UpdateStoreBrandingUseCase>(
       () => UpdateStoreBrandingUseCase());
   sl.registerLazySingleton<UpdateStoreShippingUseCase>(

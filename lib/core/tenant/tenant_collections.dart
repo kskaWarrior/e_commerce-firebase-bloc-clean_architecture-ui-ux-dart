@@ -14,8 +14,15 @@ class TenantCollections {
 
   String get storeId => _context.storeId;
 
+  /// The tenant registry. Not tenant-scoped by definition, so this is the
+  /// one ref here that crosses stores: rules allow `list` on it only for a
+  /// `super` claim, and it exists so the platform owner can pick a store
+  /// instead of typing its id.
+  CollectionReference<Map<String, dynamic>> get stores =>
+      _db.collection('stores');
+
   DocumentReference<Map<String, dynamic>> get storeDoc =>
-      _db.collection('stores').doc(_context.storeId);
+      stores.doc(_context.storeId);
 
   CollectionReference<Map<String, dynamic>> get products =>
       storeDoc.collection('products');

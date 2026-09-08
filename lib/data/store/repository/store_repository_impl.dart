@@ -19,6 +19,23 @@ class StoreRepositoryImpl extends StoreRepository {
   }
 
   @override
+  Future<Either> listStores() async {
+    try {
+      final data = await sl<StoreFirebaseService>().listStores();
+      return data.fold(
+        (error) => Left(error),
+        (stores) => Right((stores as List)
+            .map((store) =>
+                StoreModel.fromMap(Map<String, dynamic>.from(store as Map))
+                    .toEntity())
+            .toList()),
+      );
+    } catch (e) {
+      return Left('Failed to parse stores: $e');
+    }
+  }
+
+  @override
   Future<Either> updateStoreBranding(
       Map<String, dynamic> branding, String name) async {
     return await sl<StoreFirebaseService>().updateStoreBranding(branding, name);
