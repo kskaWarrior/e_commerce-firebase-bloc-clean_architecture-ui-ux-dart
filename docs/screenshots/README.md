@@ -1,6 +1,7 @@
 # Platform screenshots
 
-Captured 2026-08-23 against the **local Firebase emulators** (auth 9099, firestore 8085, storage 9199) with the
+The `shopper-mobile` set was recaptured 2026-09-08 on the responsive-fix build; the rest date from 2026-08-23.
+All of it was captured against the **local Firebase emulators** (auth 9099, firestore 8085, storage 9199) with the
 `buybuy` brand active. Nothing here touched production. The red *"Running in emulator mode"* banner at the foot of
 every frame is the app's own emulator warning, and is the proof of that.
 
@@ -90,12 +91,18 @@ happened between the three frames, so they demonstrate the `watchSalesByUserId` 
 
 ## Issues these captures surfaced
 
-Recorded in `docs/go-live-audit.md`; visible in the frames themselves:
+- **Storefront header overflowed by 94 px below ~420 px wide** — the cart button was pushed off-screen and Flutter's
+  overflow stripe showed on every narrow frame; the footer links were the only route to the cart.
+- **Cart table was not responsive** — three nested overflows at 390 px, with the column headings rendering one letter
+  per line.
+- **Order rows overflowed at mobile width**, hiding the *Pagar agora* retry that desktop showed fine.
 
-- **Storefront header overflows by 94 px below ~420 px wide** — the cart button is pushed off-screen and Flutter's
-  overflow stripe is visible in every `shopper-mobile` frame. The footer links are the only way to reach the cart.
-- **Cart table is not responsive** — three nested overflows at 390 px (`12b-cart-filled.png`); the column headings
-  render one letter per line.
-- **Order rows overflow at mobile width**, hiding the *Pagar agora* button that `05b-orders-pay-now.png` shows on
-  desktop.
-- **Admin product list renders no thumbnails** (`03-products.png`), though the edit form loads the same images fine.
+All three are fixed, and the `shopper-mobile` set above was recaptured on the fixed build: the main bar now folds the
+language picker, favourites and orders into the account menu below 660 px, the cart collapses into stacked cards
+below 560 px, and the order footer stacks below 520 px. `shopper-desktop`, `owner-admin` and `super-admin` are
+unchanged, because every one of those breakpoints keeps the original wide layout at their widths.
+
+Still open, recorded in `docs/go-live-audit.md`:
+
+- **Admin product list renders no thumbnails** (`owner-admin/03-products.png`), though the edit form loads the same
+  images fine.

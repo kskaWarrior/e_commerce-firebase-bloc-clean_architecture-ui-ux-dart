@@ -1,6 +1,6 @@
 # Go-Live Audit
 
-White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · last updated 2026-08-23.
+White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · last updated 2026-09-08.
 
 **Keep this document current:** update it whenever a gap below is fixed, a new gap is found, or the architecture changes.
 
@@ -37,11 +37,16 @@ White-label e-commerce SaaS · Flutter + Firebase + BLoC clean architecture · l
 
 Evidence: `docs/screenshots/` (emulator run of both entrypoints, mobile 390×844 and desktop 1440×900).
 
-- **Web storefront header overflows by 94 px below ~420 px wide.** A `RenderFlex` overflow stripe is visible on
-  every narrow-width frame and the cart button is pushed off-screen — the footer links are the only route to the
-  cart on a phone-width browser. The shopper web pages (`lib/presentation/web/`) are the untested layer.
-- **Cart table is not responsive.** Three nested overflows at 390 px; column headings render one letter per line.
-- **Order rows overflow at mobile width**, hiding the *Pagar agora* retry that renders correctly on desktop.
+- ~~**Web storefront header overflows by 94 px below ~420 px wide**, pushing the cart button off-screen~~ — fixed
+  2026-09-08. Below 660 px the main bar keeps the logo, search and cart and folds the language picker, favourites
+  and orders into the account menu (`WebScaffold.compactBarBreakpoint`).
+- ~~**Cart table is not responsive** (three nested overflows at 390 px)~~ — fixed 2026-09-08: below 560 px the
+  column headings are dropped and each line becomes a stacked card (`_kCartTableBreakpoint`).
+- ~~**Order rows overflow at mobile width**, hiding the *Pagar agora* retry~~ — fixed 2026-09-08: below 520 px the
+  footer stacks savings / freight+total / pay button (`_kOrderFooterBreakpoint`). The retry is now reachable on a
+  phone.
+- The shopper web layer still has **no widget tests** — these three regressions were only caught by eye in the
+  screenshot pass, and nothing would catch them again.
 - **`USE_EMULATORS` does not wire the Functions emulator.** `lib/main.dart` and `lib/main_admin.dart` redirect auth,
   Firestore and Storage only, so `createPaymentPreference` / `setStorePaymentConfig` calls from an "emulator" run
   still target production `southamerica-east1`. Checkout cannot be exercised end-to-end locally, and a careless

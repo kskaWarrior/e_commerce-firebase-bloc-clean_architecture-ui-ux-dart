@@ -1,6 +1,6 @@
 # Project Context
 
-White-label multi-tenant e-commerce SaaS. Flutter (Cubits, clean architecture) + Firebase, one codebase serving branded shopper apps and a shared admin console. Audit snapshot: 2026-08-18.
+White-label multi-tenant e-commerce SaaS. Flutter (Cubits, clean architecture) + Firebase, one codebase serving branded shopper apps and a shared admin console. Audit snapshot: 2026-09-08.
 
 ## Architecture
 
@@ -28,7 +28,7 @@ Full audit: `docs/go-live-audit.md` (keep it and this file updated as the projec
 - **ETL fragile** — two triggers on same doc, no retries/idempotency, `ignoreUnknownValues` drops fields (how `storeId` went missing). Zero function tests.
 - **Coverage stale** — `coverage/lcov.info` is from May; `lib/presentation/admin/`, `lib/presentation/web/`, store feature, tenant core all untested.
 - **`seedOrders.ts` (uncommitted) bugs** — writes `salesProducts` (app uses `sales_products`) and status `processing` (not in rules whitelist).
-- **Web storefront not responsive below ~420px** — header overflows 94px (cart button unreachable), cart table and order rows overflow; found 2026-08-23, see `docs/screenshots/`.
+- ~~**Web storefront not responsive below ~420px**~~ — fixed 2026-09-08: the web header, cart table and order footer now have compact layouts (660/560/520px breakpoints). The web layer still has no widget tests, so nothing guards against a repeat.
 - **`USE_EMULATORS` skips the Functions emulator** — only auth/Firestore/Storage are redirected, so callables from a local run hit production. Checkout can't be exercised end-to-end locally.
 - Sale status enum (rules-enforced): `pending|paid|shipped|delivered|cancelled`.
 
